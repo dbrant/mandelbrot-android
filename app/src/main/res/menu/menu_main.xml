@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item android:id="@+id/menu_julia_mode"
+        android:title="Julia mode"
+        android:icon="@drawable/julia_128"
+        app:showAsAction="always"
+        />
+    <item android:id="@+id/menu_save_image"
+        android:title="Save image"
+        app:showAsAction="never"
+        />
+    <item android:id="@+id/menu_reset"
+        android:title="Reset"
+        app:showAsAction="never"
+        />
+    <item android:id="@+id/menu_about"
+        android:title="About..."
+        app:showAsAction="never"
+        />
+</menu>

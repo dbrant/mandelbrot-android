@@ -10,7 +10,7 @@ def getDate() {
 
 android {
     compileSdkVersion 21
-    buildToolsVersion "21.1.1"
+    buildToolsVersion "21.1.2"
 
     defaultConfig {
         applicationId "com.dmitrybrant.android.mandelbrot"
@@ -31,8 +31,12 @@ android {
 
     buildTypes {
         release {
-            runProguard true
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt')
         }
     }
+}
+
+dependencies {
+    compile 'com.android.support:appcompat-v7:21.0.3'
 }
