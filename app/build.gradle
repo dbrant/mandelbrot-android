@@ -14,7 +14,7 @@ android {
 
     defaultConfig {
         applicationId "com.dmitrybrant.android.mandelbrot"
-        minSdkVersion 7
+        minSdkVersion 8
         targetSdkVersion 21
         versionCode 38
         versionName "${versionStart}-${date}"

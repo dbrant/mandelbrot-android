@@ -26,6 +26,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:orientation="horizontal"
             android:layout_margin="8dp">
             <TextView
                 android:id="@+id/txtIterations"
@@ -36,11 +37,10 @@
                 android:layout_marginRight="4dp"
                 android:layout_weight="0"
                 android:text="Iterations:"
-                android:textColor="#ffffff"
-                android:textSize="10sp" />
+                android:textColor="#ffffff"/>
             <SeekBar
                 android:id="@+id/seekBarIterations"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
                 android:layout_weight="1" />
