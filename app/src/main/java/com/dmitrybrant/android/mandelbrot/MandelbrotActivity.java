@@ -68,13 +68,7 @@ public class MandelbrotActivity extends ActionBarActivity {
                 if (!fromUser) {
                     return;
                 }
-                mandelbrotView.numIterations = progress * progress;
-                if (mandelbrotView.numIterations < MandelbrotCanvas.MIN_ITERATIONS) {
-                    mandelbrotView.numIterations = MandelbrotCanvas.MIN_ITERATIONS;
-                }
-                if (mandelbrotView.numIterations > MandelbrotCanvas.MAX_ITERATIONS) {
-                    mandelbrotView.numIterations = MandelbrotCanvas.MAX_ITERATIONS;
-                }
+                mandelbrotView.setNumIterations(progress * progress);
                 mandelbrotView.RenderMandelbrot();
             }
             public void onStartTrackingTouch(SeekBar arg0) {
@@ -88,13 +82,13 @@ public class MandelbrotActivity extends ActionBarActivity {
         
         //restore settings...
         SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
-        mandelbrotView.xcenter = Double.parseDouble(settings.getString("xcenter", "-0.5"));
-        mandelbrotView.ycenter = Double.parseDouble(settings.getString("ycenter", "0.0"));
-        mandelbrotView.xextent = Double.parseDouble(settings.getString("xextent", "3.0"));
-        mandelbrotView.numIterations = settings.getInt("iterations", 128);
+        mandelbrotView.setXCenter(Double.parseDouble(settings.getString("xcenter", Double.toString(MandelbrotCanvas.DEFAULT_X_CENTER))));
+        mandelbrotView.setYCenter(Double.parseDouble(settings.getString("ycenter", Double.toString(MandelbrotCanvas.DEFAULT_Y_CENTER))));
+        mandelbrotView.setXExtent(Double.parseDouble(settings.getString("xextent", Double.toString(MandelbrotCanvas.DEFAULT_X_EXTENT))));
+        mandelbrotView.setNumIterations(settings.getInt("iterations", MandelbrotCanvas.DEFAULT_ITERATIONS));
         mandelbrotView.currentColorScheme = settings.getInt("colorscheme", 0);
 
-        seekBarIterations.setProgress((int)Math.sqrt(mandelbrotView.numIterations));
+        updateIterationBar();
     }
 
     /**
@@ -118,23 +112,26 @@ public class MandelbrotActivity extends ActionBarActivity {
         }
     }
 
+    private void updateIterationBar() {
+        seekBarIterations.setProgress((int)Math.sqrt(mandelbrotView.getNumIterations()));
+    }
+
     @Override
     protected void onStop(){
         super.onStop();
         SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
         SharedPreferences.Editor editor = settings.edit();
-        editor.putString("xcenter", Double.toString(mandelbrotView.xcenter));
-        editor.putString("ycenter", Double.toString(mandelbrotView.ycenter));
-        editor.putString("xextent", Double.toString(mandelbrotView.xextent));
-        editor.putInt("iterations", mandelbrotView.numIterations);
+        editor.putString("xcenter", Double.toString(mandelbrotView.getXCenter()));
+        editor.putString("ycenter", Double.toString(mandelbrotView.getYCenter()));
+        editor.putString("xextent", Double.toString(mandelbrotView.getXExtent()));
+        editor.putInt("iterations", mandelbrotView.getNumIterations());
         editor.putInt("colorscheme", mandelbrotView.currentColorScheme);
         editor.commit();
     }
     
     @Override
     public void onDestroy(){
-        mandelbrotView.TerminateThread();
-
+        mandelbrotView.terminateThreads();
         mandelnative.ReleaseParameters();
         mandelnative.ReleaseBitmap();
         super.onDestroy();
@@ -142,7 +139,7 @@ public class MandelbrotActivity extends ActionBarActivity {
     
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        int iterationInc = mandelbrotView.numIterations / 16;
+        int iterationInc = mandelbrotView.getNumIterations() / 16;
         if (iterationInc < 1) {
             iterationInc = 1;
         }
@@ -150,17 +147,13 @@ public class MandelbrotActivity extends ActionBarActivity {
             finish();
             return true;
         } else if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN){
-            mandelbrotView.numIterations -= iterationInc;
-            if(mandelbrotView.numIterations < MandelbrotCanvas.MIN_ITERATIONS)
-                mandelbrotView.numIterations = MandelbrotCanvas.MIN_ITERATIONS;
-            seekBarIterations.setProgress((int)Math.sqrt(mandelbrotView.numIterations));
+            mandelbrotView.setNumIterations(mandelbrotView.getNumIterations() - iterationInc);
+            updateIterationBar();
             mandelbrotView.RenderMandelbrot();
             return true;
         } else if (keyCode == KeyEvent.KEYCODE_VOLUME_UP){
-            mandelbrotView.numIterations += iterationInc;
-            if(mandelbrotView.numIterations > MandelbrotCanvas.MAX_ITERATIONS)
-                mandelbrotView.numIterations = MandelbrotCanvas.MAX_ITERATIONS;
-            seekBarIterations.setProgress((int)Math.sqrt(mandelbrotView.numIterations));
+            mandelbrotView.setNumIterations(mandelbrotView.getNumIterations() + iterationInc);
+            updateIterationBar();
             mandelbrotView.RenderMandelbrot();
             return true;
         }
