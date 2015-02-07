@@ -40,10 +40,8 @@ public class MandelbrotActivity extends ActionBarActivity {
 
 	MandelbrotCanvas mandelbrotView;
 	FrameLayout topLayout;
-	View iterationsContainer;
+	View settingsContainer;
 	public TextView txtInfo, txtIterations;
-	Button btnOptions;
-	Button btnColorScheme;
 	SeekBar seekBarIterations;
 
 	@Override
@@ -63,45 +61,9 @@ public class MandelbrotActivity extends ActionBarActivity {
         txtInfo.setVisibility(View.INVISIBLE);
         txtIterations = (TextView)findViewById(R.id.txtIterations);
 
-        btnColorScheme = (Button)findViewById(R.id.btnColorScheme);
-        btnColorScheme.getBackground().setAlpha(128);
-        btnColorScheme.setVisibility(View.INVISIBLE);
-        btnColorScheme.setOnClickListener(new OnClickListener(){
-			public void onClick(View arg0) {
-	        	mandelbrotView.currentColorScheme++;
-	        	mandelbrotView.setColorScheme();
-	        	mandelbrotView.RenderMandelbrot();
-			}
-        });
+        settingsContainer = findViewById(R.id.settings_container);
+        settingsContainer.setVisibility(View.GONE);
 
-        btnOptions = (Button)findViewById(R.id.btnOptions);
-        btnOptions.getBackground().setAlpha(128);
-        btnOptions.setOnClickListener(new OnClickListener(){
-			public void onClick(View arg0) {
-	        	if(txtInfo.getVisibility() != View.VISIBLE){
-	        		btnOptions.setText("Hide");
-	        		txtInfo.setVisibility(View.VISIBLE);
-	        		btnReset.setVisibility(View.VISIBLE);
-	        		btnAbout.setVisibility(View.VISIBLE);
-	        		btnColorScheme.setVisibility(View.VISIBLE);
-	        		btnSave.setVisibility(View.VISIBLE);
-	        		iterationsContainer.setVisibility(View.VISIBLE);
-	        		
-	        	}else{
-	        		btnOptions.setText("Options");
-	        		txtInfo.setVisibility(View.INVISIBLE);
-	        		btnReset.setVisibility(View.INVISIBLE);
-	        		btnAbout.setVisibility(View.INVISIBLE);
-	        		btnColorScheme.setVisibility(View.INVISIBLE);
-	        		btnSave.setVisibility(View.INVISIBLE);
-	        		iterationsContainer.setVisibility(View.GONE);
-
-	        	}
-			}
-        });
-
-        iterationsContainer = findViewById(R.id.iterationsContainer);
-        iterationsContainer.setVisibility(View.GONE);
         seekBarIterations = (SeekBar)findViewById(R.id.seekBarIterations);
         seekBarIterations.setMax((int)Math.sqrt(MandelbrotCanvas.MAX_ITERATIONS) + 1);
         seekBarIterations.setOnSeekBarChangeListener(new OnSeekBarChangeListener(){
@@ -226,6 +188,13 @@ public class MandelbrotActivity extends ActionBarActivity {
             case android.R.id.home:
                 onBackPressed();
                 return true;
+            case R.id.menu_settings:
+                if (settingsContainer.getVisibility() != View.VISIBLE) {
+                    settingsContainer.setVisibility(View.VISIBLE);
+                } else {
+                    settingsContainer.setVisibility(View.GONE);
+                }
+                return true;
             case R.id.menu_julia_mode:
                 mandelbrotView.juliaMode = !mandelbrotView.juliaMode;
                 mandelbrotView.RenderMandelbrot();
@@ -240,6 +209,11 @@ public class MandelbrotActivity extends ActionBarActivity {
                 }catch(Exception ex){
                     Toast.makeText(MandelbrotActivity.this, "Error saving file: " + ex.getMessage(), Toast.LENGTH_SHORT).show();
                 }
+                return true;
+            case R.id.menu_color_scheme:
+                mandelbrotView.currentColorScheme++;
+                mandelbrotView.setColorScheme();
+                mandelbrotView.RenderMandelbrot();
                 return true;
             case R.id.menu_reset:
                 mandelbrotView.Reset();

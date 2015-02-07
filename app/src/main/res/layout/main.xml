@@ -16,40 +16,36 @@
     android:textColor="#ffffff"
     android:textSize="10sp" />
 
-<LinearLayout
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical" >
-
     <LinearLayout
-        android:id="@+id/iterationsContainer"
+        android:id="@+id/settings_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="4dp"
-        android:background="#50000000" >
-
-        <TextView
-            android:id="@+id/txtIterations"
-            android:layout_width="72dp"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical"
-            android:layout_marginLeft="4dp"
-            android:layout_marginRight="4dp"
-            android:layout_weight="0"
-            android:text="Iterations:"
-            android:textColor="#ffffff"
-            android:textSize="10sp" />
-
-        <SeekBar
-            android:id="@+id/seekBarIterations"
+        android:orientation="vertical"
+        android:layout_gravity="bottom"
+        android:background="#80000000">
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical"
-            android:layout_weight="1" />
-
+            android:layout_margin="8dp">
+            <TextView
+                android:id="@+id/txtIterations"
+                android:layout_width="72dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:layout_marginLeft="4dp"
+                android:layout_marginRight="4dp"
+                android:layout_weight="0"
+                android:text="Iterations:"
+                android:textColor="#ffffff"
+                android:textSize="10sp" />
+            <SeekBar
+                android:id="@+id/seekBarIterations"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:layout_weight="1" />
+        </LinearLayout>
     </LinearLayout>
-
-</LinearLayout>
 
     <android.support.v7.widget.Toolbar
         android:id="@+id/main_toolbar"
