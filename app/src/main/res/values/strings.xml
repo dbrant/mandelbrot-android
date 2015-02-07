@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sample">-</string>
+    <string name="app_name">Mandelbrot</string>
+    <string name="str_about">"- Hold and drag to move\n- Pinch to zoom in/out\n- Volume up/down to change iterations\n- Press the 'Julia mode' button to switch between Julia and Mandelbrot mode. While in Julia mode, tap on any point in the Mandelbrot set to redraw the Julia fractal.\n\nCopyright © Dmitry Brant, 2014</string>
+</resources>

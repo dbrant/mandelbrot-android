@@ -1,0 +1,38 @@
+apply plugin: 'com.android.application'
+
+def versionStart = '1.5'
+
+def getDate() {
+    def date = new Date()
+    def formattedDate = date.format('yyyy-MM-dd')
+    return formattedDate
+}
+
+android {
+    compileSdkVersion 21
+    buildToolsVersion "21.1.1"
+
+    defaultConfig {
+        applicationId "com.dmitrybrant.android.mandelbrot"
+        minSdkVersion 8
+        targetSdkVersion 21
+        versionCode 38
+        versionName "${versionStart}-${date}"
+
+        ndk {
+            moduleName "mandelnative_jni"
+        }
+	}
+
+	sourceSets.main {
+		jni.srcDirs = []
+		jniLibs.srcDir 'src/main/libs'
+	}
+
+    buildTypes {
+        release {
+            runProguard true
+            proguardFiles getDefaultProguardFile('proguard-android.txt')
+        }
+    }
+}
