@@ -4,15 +4,16 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent" >
 
-    <com.dmitrybrant.android.mandelbrot.MandelbrotCanvas
+    <com.dmitrybrant.android.mandelbrot.MandelbrotView
         android:id="@+id/mandelbrot_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <com.dmitrybrant.android.mandelbrot.MandelbrotCanvas
-        android:id="@+id/mandelbrot_view"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+    <com.dmitrybrant.android.mandelbrot.JuliaView
+        android:id="@+id/julia_view"
+        android:layout_width="200dp"
+        android:layout_height="200dp"
+        android:layout_gravity="bottom|start"/>
 
     <TextView
         android:id="@+id/txtInfo"

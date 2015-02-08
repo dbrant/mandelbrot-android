@@ -12,7 +12,6 @@
 #define JULIA_YMAX		(1.5)
 
 static fractalParams params[2];
-volatile static int terminateJob = 0;
 
 #ifdef __cplusplus
 extern "C" {
@@ -23,11 +22,13 @@ JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_mandelnative_Init
 	params[paramIndex].pixelBuffer = NULL;
 	params[paramIndex].pixelBufferLen = 0;
 	params[paramIndex].x0array = NULL;
+	params[paramIndex].terminateJob = 0;
 }
 
 JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_mandelnative_SetBitmap(JNIEnv *jenv, jclass jcls, jint paramIndex, jobject bitmap) {
 	AndroidBitmapInfo bitmapInfo;
 	int ret;
+	LOGD("setting bitmap (%d)", paramIndex);
 	ret = AndroidBitmap_getInfo(jenv, bitmap, &bitmapInfo);
 	if(ret < 0) {
 		LOGE("AndroidBitmap_getInfo() failed: error %d", ret);
@@ -50,6 +51,7 @@ JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_mandelnative_SetB
 }
 
 JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_mandelnative_ReleaseBitmap(JNIEnv *jenv, jclass jcls, jint paramIndex) {
+	LOGD("releasing bitmap (%d)", paramIndex);
 	if(params[paramIndex].pixelBuffer != NULL){
 		LOGD("freeing buffer...");
 		free(params[paramIndex].pixelBuffer);
@@ -62,6 +64,7 @@ JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_mandelnative_Upda
 	void* bitmapPixels;
 	int ret;
 	AndroidBitmapInfo bitmapInfo;
+	LOGD("updating bitmap (%d)", paramIndex);
 	ret = AndroidBitmap_getInfo(jenv, bitmap, &bitmapInfo);
 	if(ret < 0) {
 		LOGE("AndroidBitmap_getInfo() failed: error %d", ret);
@@ -83,6 +86,7 @@ JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_mandelnative_Upda
 JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_mandelnative_SetColorPalette(JNIEnv *jenv, jclass jcls, jint paramIndex, jobject colorArray, jint numColors) {
 	jint *c_array;
     int i = 0;
+	LOGD("setting color palette (%d)", paramIndex);
 	c_array = (*jenv)->GetIntArrayElements(jenv, colorArray, NULL);
 	if (c_array == NULL) {
 		LOGE("Color palette array is null...");
@@ -99,7 +103,7 @@ JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_mandelnative_SetC
 JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_mandelnative_SetParameters(JNIEnv *jenv, jclass jcls, jint paramIndex,
                        jint numIterations, jdouble xMin, jdouble xMax, jdouble yMin, jdouble yMax,
 					   jint isJulia, jdouble juliaX, jdouble juliaY, jint viewWidth, jint viewHeight) {
-	LOGD("setting parameters...");
+	LOGD("setting parameters (%d)", paramIndex);
 	params[paramIndex].numIterations = numIterations;
 	params[paramIndex].xmin = xMin;
 	params[paramIndex].xmax = xMax;
@@ -114,7 +118,7 @@ JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_mandelnative_SetP
 		free(params[paramIndex].x0array);
 	}
 	params[paramIndex].x0array = (double*)malloc(sizeof(double) * params[paramIndex].viewWidth * 2);
-	terminateJob = 0;
+	params[paramIndex].terminateJob = 0;
 }
 
 JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_mandelnative_ReleaseParameters(JNIEnv *jenv, jclass jcls, jint paramIndex) {
@@ -125,8 +129,7 @@ JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_mandelnative_Rele
 }
 
 
-
-void drawMandelbrot(int paramIndex, int startX, int startY, int startWidth, int startHeight, int level, int doall){
+void drawPixels(int paramIndex, int startX, int startY, int startWidth, int startHeight, int level, int doall){
 	int maxY = startY + startHeight;
 	int maxX = startX + startWidth;
 	double x, y, x0, y0, tempx, tempy;
@@ -168,23 +171,39 @@ void drawMandelbrot(int paramIndex, int startX, int startY, int startWidth, int 
 					continue;
 				}
 			}
-			
-			x = y = xsq = ysq = 0.0;
-			iteration = 0;
-			x0 = params[paramIndex].x0array[px];
-			
-			while (xsq + ysq < 4.0) {
-				y = x * y;
-				y += y;
-				y += y0;
-				x = xsq - ysq + x0;
-				xsq = x*x;
-				ysq = y*y;
-				if (++iteration > numIterations) {
-					break;
+
+			if (params[paramIndex].isJulia) {
+				x = params[paramIndex].x0array[px];
+				y = y0;
+				iteration = 0;
+				while (iteration++ < numIterations) {
+					xsq = x*x;
+					ysq = y*y;
+					if (xsq + ysq > 4.0) {
+						break;
+					}
+					tempx = xsq - ysq + params[paramIndex].juliaX;
+					tempy = 2*x*y + params[paramIndex].juliaY;
+					x = tempx;
+					y = tempy;
+				}
+			} else {
+				x = y = xsq = ysq = 0.0;
+				iteration = 0;
+				x0 = params[paramIndex].x0array[px];
+				while (xsq + ysq < 4.0) {
+					y = x * y;
+					y += y;
+					y += y0;
+					x = xsq - ysq + x0;
+					xsq = x*x;
+					ysq = y*y;
+					if (++iteration > numIterations) {
+						break;
+					}
 				}
 			}
-			
+
 			if (iteration >= numIterations) {
 				color = 0;
 			} else {
@@ -206,95 +225,7 @@ void drawMandelbrot(int paramIndex, int startX, int startY, int startWidth, int 
 				params[paramIndex].pixelBuffer[yptr + px] = color;
 			}
 		}
-		if (terminateJob) {
-			//__android_log_print(ANDROID_LOG_WARN, ANDROID_LOG_TAG, "Terminating drawing...");
-			break;
-		}
-	}
-}
-
-
-void drawJulia(int paramIndex, int startX, int startY, int startWidth, int startHeight, int level, int doall){
-	int maxY = startY + startHeight;
-	int maxX = startX + startWidth;
-	double jxmin = JULIA_XMIN, jxmax = JULIA_XMAX;
-	double jymin = JULIA_YMIN, jymax = JULIA_YMAX;
-	double x, y, x0, y0, tempx, tempy;
-	double xsq, ysq;
-	int ix, iy;
-	int iteration, color;
-	int iterScale = 1;
-	int px, py, xindex=0, yindex=0, yptr, yptr2;
-	double xscale = (jxmax - jxmin) / (startWidth);
-	double yscale = (jymax - jymin) / (startHeight);
-	int numIterations = params[paramIndex].numIterations;
-	int numPaletteColors = params[paramIndex].numPaletteColors;
-
-	if (level < 1) {
-		return;
-	}
-	if (params[paramIndex].pixelBuffer == NULL) {
-		LOGE("Pixel buffer is null! Cannot continue.");
-		return;
-	}
-	
-	for (px = startX; px < maxX; px++) {
-		params[paramIndex].x0array[px] = jxmin + (double)(px - startX) * xscale;
-	}
-	
-	if (numIterations < numPaletteColors) {
-		iterScale = numPaletteColors / numIterations;
-	}
-
-	for (py = startY; py < maxY; py += level, yindex++) {
-		y0 = jymin + (double)(py - startY) * yscale;
-		yptr = py * params[paramIndex].viewWidth;
-
-		for (px = startX; px < maxX; px += level, xindex++) {
-			if (!doall) {
-				if ((yindex % 2 == 0) && (xindex % 2 == 0)) {
-					continue;
-				}
-			}
-
-			x = params[paramIndex].x0array[px];
-			y = y0;
-			iteration = 0;
-
-			while (iteration++ < numIterations) {
-				xsq = x*x;
-				ysq = y*y;
-				if (xsq + ysq > 4.0) {
-					break;
-				}
-				tempx = xsq - ysq + params[paramIndex].juliaX;
-				tempy = 2*x*y + params[paramIndex].juliaY;
-				x = tempx;
-				y = tempy;
-			}
-
-			if (iteration >= numIterations) {
-				color = 0;
-			} else {
-				color = params[paramIndex].colorPalette[(iteration * iterScale) % numPaletteColors];
-			}
-
-			if (level > 1) {
-				yptr2 = yptr;
-				for (iy = py+level-1; iy >= py; iy--){
-					if (iy >= maxY) {
-						continue;
-					}
-					for (ix = px+level-1; ix >= px; ix--) {
-						params[paramIndex].pixelBuffer[yptr2 + ix] = color;
-					}
-					yptr2 += params[paramIndex].viewWidth;
-				}
-			} else {
-				params[paramIndex].pixelBuffer[yptr + px] = color;
-			}
-		}
-		if (terminateJob) {
+		if (params[paramIndex].terminateJob) {
 			//__android_log_print(ANDROID_LOG_WARN, ANDROID_LOG_TAG, "Terminating drawing...");
 			break;
 		}
@@ -304,15 +235,13 @@ void drawJulia(int paramIndex, int startX, int startY, int startWidth, int start
 
 JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_mandelnative_DrawFractal(JNIEnv *jenv, jclass jcls, jint paramIndex,
                                         jint startX, jint startY, jint startWidth, jint startHeight, jint level, jint doAll) {
-	if (params[paramIndex].isJulia) {
-		drawJulia(paramIndex, (int)startX, (int)startY, (int)startWidth, (int)startHeight, (int)level, (int)doAll);
-	} else {
-		drawMandelbrot(paramIndex, (int)startX, (int)startY, (int)startWidth, (int)startHeight, (int)level, (int)doAll);
-	}
+	LOGD("drawing (%d)", paramIndex);
+	drawPixels(paramIndex, (int)startX, (int)startY, (int)startWidth, (int)startHeight, (int)level, (int)doAll);
 }
 
-JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_mandelnative_SignalTerminate(JNIEnv *jenv, jclass jcls) {
-	terminateJob = 1;
+JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_mandelnative_SignalTerminate(JNIEnv *jenv, jclass jcls, jint paramIndex) {
+	LOGD("terminating...");
+	params[paramIndex].terminateJob = 1;
 }
 
 

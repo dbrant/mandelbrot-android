@@ -35,7 +35,8 @@ public class MandelbrotActivity extends ActionBarActivity {
         System.loadLibrary("mandelnative_jni");
     }
 
-    private MandelbrotCanvas mandelbrotView;
+    private MandelbrotView mandelbrotView;
+    private JuliaView juliaView;
     private FrameLayout topLayout;
     private View settingsContainer;
     public TextView txtInfo, txtIterations;
@@ -62,30 +63,45 @@ public class MandelbrotActivity extends ActionBarActivity {
         settingsContainer.setVisibility(View.GONE);
 
         seekBarIterations = (SeekBar)findViewById(R.id.seekBarIterations);
-        seekBarIterations.setMax((int)Math.sqrt(MandelbrotCanvas.MAX_ITERATIONS) + 1);
+        seekBarIterations.setMax((int)Math.sqrt(MandelbrotViewBase.MAX_ITERATIONS) + 1);
         seekBarIterations.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if (!fromUser) {
                     return;
                 }
                 mandelbrotView.setNumIterations(progress * progress);
-                mandelbrotView.RenderMandelbrot();
+                mandelbrotView.render();
             }
             public void onStartTrackingTouch(SeekBar arg0) {
             }
             public void onStopTrackingTouch(SeekBar arg0) {
             }
         });
-        
-        mandelbrotView = (MandelbrotCanvas)findViewById(R.id.mandelbrot_view);
+
+        juliaView = (JuliaView)findViewById(R.id.julia_view);
+        mandelbrotView = (MandelbrotView)findViewById(R.id.mandelbrot_view);
+        mandelbrotView.setOnPointSelected(new MandelbrotViewBase.OnPointSelected() {
+            @Override
+            public void pointSelected(double x, double y) {
+                juliaView.terminateThreads();
+                juliaView.setJuliaCoords(x, y);
+                juliaView.render();
+            }
+        });
 
         //restore settings...
         SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
-        mandelbrotView.setXCenter(Double.parseDouble(settings.getString("xcenter", Double.toString(MandelbrotCanvas.DEFAULT_X_CENTER))));
-        mandelbrotView.setYCenter(Double.parseDouble(settings.getString("ycenter", Double.toString(MandelbrotCanvas.DEFAULT_Y_CENTER))));
-        mandelbrotView.setXExtent(Double.parseDouble(settings.getString("xextent", Double.toString(MandelbrotCanvas.DEFAULT_X_EXTENT))));
-        mandelbrotView.setNumIterations(settings.getInt("iterations", MandelbrotCanvas.DEFAULT_ITERATIONS));
+        mandelbrotView.setXCenter(Double.parseDouble(settings.getString("xcenter", Double.toString(MandelbrotViewBase.DEFAULT_X_CENTER))));
+        mandelbrotView.setYCenter(Double.parseDouble(settings.getString("ycenter", Double.toString(MandelbrotViewBase.DEFAULT_Y_CENTER))));
+        mandelbrotView.setXExtent(Double.parseDouble(settings.getString("xextent", Double.toString(MandelbrotViewBase.DEFAULT_X_EXTENT))));
+        mandelbrotView.setNumIterations(settings.getInt("iterations", MandelbrotViewBase.DEFAULT_ITERATIONS));
         mandelbrotView.currentColorScheme = settings.getInt("colorscheme", 0);
+
+        juliaView.setXCenter(0.0);
+        juliaView.setYCenter(0.0);
+        juliaView.setXExtent(4.0);
+        juliaView.currentColorScheme = 1;
+        juliaView.setNumIterations(mandelbrotView.getNumIterations());
 
         updateIterationBar();
     }
@@ -131,6 +147,7 @@ public class MandelbrotActivity extends ActionBarActivity {
     @Override
     public void onDestroy(){
         mandelbrotView.terminateThreads();
+        juliaView.terminateThreads();
         mandelnative.ReleaseParameters(0);
         mandelnative.ReleaseBitmap(0);
         mandelnative.ReleaseParameters(1);
@@ -150,12 +167,12 @@ public class MandelbrotActivity extends ActionBarActivity {
         } else if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN){
             mandelbrotView.setNumIterations(mandelbrotView.getNumIterations() - iterationInc);
             updateIterationBar();
-            mandelbrotView.RenderMandelbrot();
+            mandelbrotView.render();
             return true;
         } else if (keyCode == KeyEvent.KEYCODE_VOLUME_UP){
             mandelbrotView.setNumIterations(mandelbrotView.getNumIterations() + iterationInc);
             updateIterationBar();
-            mandelbrotView.RenderMandelbrot();
+            mandelbrotView.render();
             return true;
         }
         return super.onKeyDown(keyCode, event);
@@ -185,8 +202,7 @@ public class MandelbrotActivity extends ActionBarActivity {
                 }
                 return true;
             case R.id.menu_julia_mode:
-                mandelbrotView.juliaMode = !mandelbrotView.juliaMode;
-                mandelbrotView.RenderMandelbrot();
+
                 return true;
             case R.id.menu_save_image:
                 try{
@@ -202,7 +218,7 @@ public class MandelbrotActivity extends ActionBarActivity {
             case R.id.menu_color_scheme:
                 mandelbrotView.currentColorScheme++;
                 mandelbrotView.setColorScheme();
-                mandelbrotView.RenderMandelbrot();
+                mandelbrotView.render();
                 return true;
             case R.id.menu_reset:
                 mandelbrotView.Reset();

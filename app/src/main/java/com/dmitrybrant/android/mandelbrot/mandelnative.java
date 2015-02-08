@@ -10,5 +10,5 @@ public class mandelnative {
 	  public static native void UpdateBitmap(int paramIndex, Bitmap bmp);
 	  public static native void ReleaseBitmap(int paramIndex);
 	  public static native void SetColorPalette(int paramIndex, int[] colors, int numColors);
-	  public static native void SignalTerminate();
+	  public static native void SignalTerminate(int paramIndex);
 }

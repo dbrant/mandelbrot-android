@@ -22,5 +22,6 @@ typedef struct {
 	uint32_t* pixelBuffer;
 	int pixelBufferLen;
 	double* x0array;
+	volatile int terminateJob;
 } fractalParams;
 

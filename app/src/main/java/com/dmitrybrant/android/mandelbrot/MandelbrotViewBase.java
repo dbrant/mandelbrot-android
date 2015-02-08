@@ -19,7 +19,7 @@ import android.graphics.Rect;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 
-public class MandelbrotCanvas extends View {
+public abstract class MandelbrotViewBase extends View {
     private static final String TAG = "MandelbrotCanvas";
     public static final int DEFAULT_ITERATIONS = 128;
     public static final int MAX_ITERATIONS = 2048;
@@ -28,8 +28,8 @@ public class MandelbrotCanvas extends View {
     public static final double DEFAULT_Y_CENTER = 0.0;
     public static final double DEFAULT_X_EXTENT = 3.0;
 
-    public static final int MANDELBROT_PARAM = 0;
-    public static final int JULIA_PARAM = 1;
+    private boolean isJulia = false;
+    private int paramIndex = 0;
 
     private MandelbrotActivity parentActivity;
 
@@ -66,16 +66,15 @@ public class MandelbrotCanvas extends View {
     public int getNumIterations() { return numIterations; }
     public void setNumIterations(int iter) {
         numIterations = iter;
-        if (numIterations < MandelbrotCanvas.MIN_ITERATIONS) {
-            numIterations = MandelbrotCanvas.MIN_ITERATIONS;
+        if (numIterations < MIN_ITERATIONS) {
+            numIterations = MIN_ITERATIONS;
         }
-        if (numIterations > MandelbrotCanvas.MAX_ITERATIONS) {
-            numIterations = MandelbrotCanvas.MAX_ITERATIONS;
+        if (numIterations > MAX_ITERATIONS) {
+            numIterations = MAX_ITERATIONS;
         }
     }
 
     public int currentColorScheme = 0;
-    public boolean juliaMode = false;
 
     public int startCoarseness = 16;
     public int endCoarseness = 1;
@@ -85,25 +84,32 @@ public class MandelbrotCanvas extends View {
     private boolean zooming = false;
     private ScaleGestureDetector gesture;
 
-    public MandelbrotCanvas(Context context) {
+    public interface OnPointSelected {
+        void pointSelected(double x, double y);
+    }
+    private OnPointSelected onPointSelected;
+    public void setOnPointSelected(OnPointSelected listener) {
+        onPointSelected = listener;
+    }
+
+    public MandelbrotViewBase(Context context) {
         super(context);
-        init(context);
     }
 
-    public MandelbrotCanvas(Context context, AttributeSet attrs) {
+    public MandelbrotViewBase(Context context, AttributeSet attrs) {
         super(context, attrs);
-        init(context);
     }
 
-    public MandelbrotCanvas(Context context, AttributeSet attrs, int defStyle) {
+    public MandelbrotViewBase(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
-        init(context);
     }
 
-    private void init(Context context) {
+    protected void init(Context context, boolean isJulia) {
         if (isInEditMode()) {
             return;
         }
+        this.isJulia = isJulia;
+        this.paramIndex = isJulia ? 1 : 0;
         parentActivity = (MandelbrotActivity)context;
 
         paint = new Paint();
@@ -131,32 +137,34 @@ public class MandelbrotCanvas extends View {
             initMinMax();
 
             theBitmap = Bitmap.createBitmap(screenWidth, screenHeight, Bitmap.Config.ARGB_8888);
-            mandelnative.SetBitmap(MANDELBROT_PARAM, theBitmap);
+            mandelnative.SetBitmap(paramIndex, theBitmap);
             theRect = new Rect(0, 0, theBitmap.getWidth() - 1, theBitmap.getHeight() - 1);
 
-            RenderMandelbrot();
+            render();
             return;
         }
         if ((screenWidth == 0) || (screenHeight == 0)) {
             return;
         }
 
-        mandelnative.UpdateBitmap(MANDELBROT_PARAM, theBitmap);
+        mandelnative.UpdateBitmap(paramIndex, theBitmap);
         canvas.drawBitmap(theBitmap, theRect, theRect, paint);
 
         parentActivity.txtIterations.setText("Iterations: " + Integer.toString(numIterations));
 
+        /*
         String str = "Real: " + Double.toString(xmin) + " to " + Double.toString(xmax) + "\n";
         str += "Imag: " + Double.toString(ymin) + " to " + Double.toString(ymax);
         if (juliaMode) {
             str += "\nJulia: " + Double.toString(jx) + ", " + Double.toString(jy);
         }
         parentActivity.txtInfo.setText(str);
+        */
     }
 
     public void terminateThreads() {
         try {
-            mandelnative.SignalTerminate();
+            mandelnative.SignalTerminate(paramIndex);
             terminateThreads = true;
 
             for(Thread t : currentThreads){
@@ -189,18 +197,17 @@ public class MandelbrotCanvas extends View {
         setColorScheme();
     }
 
-    void Reset() {
+    public void Reset() {
         xcenter = DEFAULT_X_CENTER;
         ycenter = DEFAULT_Y_CENTER;
         xextent = DEFAULT_X_EXTENT;
         numIterations = DEFAULT_ITERATIONS;
-        juliaMode = false;
         currentColorScheme = 0;
         initMinMax();
-        RenderMandelbrot();
+        render();
     }
 
-    void setColorScheme() {
+    public void setColorScheme() {
         int[] colors = new int[2];
         currentColorScheme = currentColorScheme % 5;
 
@@ -257,10 +264,15 @@ public class MandelbrotCanvas extends View {
             colors[0] = 0xff000000;
             colors[1] = 0xffffffff;
         }
-        mandelnative.SetColorPalette(MANDELBROT_PARAM, colors, colors.length);
+        mandelnative.SetColorPalette(paramIndex, colors, colors.length);
     }
 
-    void SavePicture(String fileName) throws IOException
+    public void setJuliaCoords(double jx, double jy) {
+        this.jx = jx;
+        this.jy = jy;
+    }
+
+    public void SavePicture(String fileName) throws IOException
     {
         FileOutputStream fs = new FileOutputStream(fileName);
         theBitmap.compress(Bitmap.CompressFormat.PNG, 100, fs);
@@ -286,12 +298,8 @@ public class MandelbrotCanvas extends View {
         public void run(){
             int curLevel = level;
             while (true) {
-                if (juliaMode) {
-                    //mandelnative.JuliaPixels(startX, startY, startWidth, startHeight, curLevel, curLevel == level ? 1 : 0);
-                } else {
-                    mandelnative.DrawFractal(MANDELBROT_PARAM, startX, startY, startWidth, startHeight, curLevel, curLevel == level ? 1 : 0);
-                }
-                MandelbrotCanvas.this.postInvalidate();
+                mandelnative.DrawFractal(paramIndex, startX, startY, startWidth, startHeight, curLevel, curLevel == level ? 1 : 0);
+                MandelbrotViewBase.this.postInvalidate();
                 if (terminateThreads) {
                     break;
                 }
@@ -303,35 +311,29 @@ public class MandelbrotCanvas extends View {
         }    
     }
 
-    protected void RenderMandelbrot() {
+    public void render() {
         terminateThreads();
         xextent = xmax - xmin;
         xcenter = xmin + xextent / 2.0;
         ycenter = ymin + (ymax - ymin) / 2.0;
 
-        mandelnative.SetParameters(MANDELBROT_PARAM, numIterations, xmin, xmax, ymin, ymax, 0, jx, jy, screenWidth, screenHeight);
+        mandelnative.SetParameters(paramIndex, numIterations, xmin, xmax, ymin, ymax,
+                isJulia ? 1 : 0, jx, jy, screenWidth, screenHeight);
         Thread t;
 
-        if (juliaMode) {
-            int juliaSize = screenWidth > screenHeight ? 2*screenHeight/3 : 2*screenWidth/3;
-            t = new MandelThread(0, screenHeight - juliaSize - 1, juliaSize, juliaSize, startCoarseness);
-            t.start();
-            currentThreads.add(t);
-        } else {
-            t = new MandelThread(0, 0, screenWidth, screenHeight / 2, startCoarseness);
-            t.start();
-            currentThreads.add(t);
-            t = new MandelThread(0, screenHeight / 2, screenWidth, screenHeight / 2, startCoarseness);
-            t.start();
-            currentThreads.add(t);
-        }
+        t = new MandelThread(0, 0, screenWidth, screenHeight / 2, startCoarseness);
+        t.start();
+        currentThreads.add(t);
+        t = new MandelThread(0, screenHeight / 2, screenWidth, screenHeight / 2, startCoarseness);
+        t.start();
+        currentThreads.add(t);
     }
 
     private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener {
         @Override
         public boolean onScale(ScaleGestureDetector detector) {
             double s = detector.getScaleFactor();
-            if (s != 1.0 && s > 0.0 && !juliaMode) {
+            if (s != 1.0 && s > 0.0) {
                 zooming = true;
                 endCoarseness = startCoarseness;
 
@@ -343,7 +345,7 @@ public class MandelbrotCanvas extends View {
                 ymax = yoff + ((ymax - yoff) / s);
                 ymin = yoff + ((ymin - yoff) / s);
 
-                RenderMandelbrot();
+                render();
             }
             return true;
         }
@@ -360,34 +362,31 @@ public class MandelbrotCanvas extends View {
         } else if (event.getAction() == MotionEvent.ACTION_UP) {
             zooming = false;
             endCoarseness = 1;
-            if(juliaMode){
-                jx = xmin + ((double)event.getX() * (xmax - xmin) / screenWidth);
-                jy = ymin + ((double)event.getY() * (ymax - ymin) / screenHeight);
+            if (onPointSelected != null) {
+                onPointSelected.pointSelected(xmin + ((double)event.getX() * (xmax - xmin) / screenWidth),
+                    ymin + ((double)event.getY() * (ymax - ymin) / screenHeight));
             }
-            RenderMandelbrot();
+            render();
             return true;
         } else if(event.getAction() == MotionEvent.ACTION_MOVE){
-            if(juliaMode){
-                jx = xmin + ((double)event.getX() * (xmax - xmin) / screenWidth);
-                jy = ymin + ((double)event.getY() * (ymax - ymin) / screenHeight);
-                RenderMandelbrot();
+            if (onPointSelected != null) {
+                onPointSelected.pointSelected(xmin + ((double)event.getX() * (xmax - xmin) / screenWidth),
+                    ymin + ((double)event.getY() * (ymax - ymin) / screenHeight));
             }
-            else{
-                if(!zooming){
-                    endCoarseness = startCoarseness;
-                    
-                    int dx = (int)event.getX() - touchStartX;
-                    int dy = (int)event.getY() - touchStartY;
-                    if((dx != 0) || (dy != 0)){
-                        double amountX = ((double)dx / (double)screenWidth) * (xmax - xmin);
-                        double amountY = ((double)dy / (double)screenHeight) * (ymax - ymin);
-                        xmin -= amountX; xmax -= amountX;
-                        ymin -= amountY; ymax -= amountY;            
-                        RenderMandelbrot();
-                    }
-                    touchStartX = (int)event.getX();
-                    touchStartY = (int)event.getY();
+            if(!zooming){
+                endCoarseness = startCoarseness;
+
+                int dx = (int)event.getX() - touchStartX;
+                int dy = (int)event.getY() - touchStartY;
+                if((dx != 0) || (dy != 0)){
+                    double amountX = ((double)dx / (double)screenWidth) * (xmax - xmin);
+                    double amountY = ((double)dy / (double)screenHeight) * (ymax - ymin);
+                    xmin -= amountX; xmax -= amountX;
+                    ymin -= amountY; ymax -= amountY;
+                    render();
                 }
+                touchStartX = (int)event.getX();
+                touchStartY = (int)event.getY();
             }
             return true;
         }
