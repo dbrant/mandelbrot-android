@@ -77,9 +77,8 @@ public class MandelbrotActivity extends ActionBarActivity {
             }
         });
         
-        mandelbrotView = new MandelbrotCanvas(this);
-        topLayout.addView(mandelbrotView, 0, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
-        
+        mandelbrotView = (MandelbrotCanvas)findViewById(R.id.mandelbrot_view);
+
         //restore settings...
         SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
         mandelbrotView.setXCenter(Double.parseDouble(settings.getString("xcenter", Double.toString(MandelbrotCanvas.DEFAULT_X_CENTER))));
@@ -132,8 +131,10 @@ public class MandelbrotActivity extends ActionBarActivity {
     @Override
     public void onDestroy(){
         mandelbrotView.terminateThreads();
-        mandelnative.ReleaseParameters();
-        mandelnative.ReleaseBitmap();
+        mandelnative.ReleaseParameters(0);
+        mandelnative.ReleaseBitmap(0);
+        mandelnative.ReleaseParameters(1);
+        mandelnative.ReleaseBitmap(1);
         super.onDestroy();
     }
     

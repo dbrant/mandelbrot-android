@@ -13,7 +13,6 @@ LOCAL_MODULE := mandelnative_jni
 
 LOCAL_SRC_FILES := \
     mandelbrot_wrap.c \
-	mandel_native.cpp \
 
 include $(BUILD_SHARED_LIBRARY)
 

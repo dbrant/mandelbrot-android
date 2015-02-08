@@ -6,27 +6,21 @@
 
 #define MAX_PALETTE_COLORS		512
 
+typedef struct {
+	int numIterations;
+	double xmin;
+	double xmax;
+	double ymin;
+	double ymax;
+	int viewWidth;
+	int viewHeight;
+	int isJulia;
+	double juliaX;
+	double juliaY;
+	uint32_t colorPalette[MAX_PALETTE_COLORS];
+	int numPaletteColors;
+	uint32_t* pixelBuffer;
+	int pixelBufferLen;
+	double* x0array;
+} fractalParams;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-extern uint32_t* pixelBuffer;
-extern int pixelBufferLen;
-
-extern uint32_t colorPalette[];
-extern uint32_t colorPaletteJulia[];
-extern int numPaletteColors;
-
-
-void setParameters(int iterations, double xMin, double xMax, double yMin, double yMax, double jx, double jy, int screenWid, int screenHgt, int coarseness);
-void releaseParameters();
-
-void mandelbrotPixels(int startX, int startY, int startWidth, int startHeight, int level, int doall);
-void juliaPixels(int startX, int startY, int startWidth, int startHeight, int level, int doall);
-
-void signalTerminate();
-
-#ifdef __cplusplus
-}
-#endif

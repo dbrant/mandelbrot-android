@@ -7,6 +7,7 @@ import java.util.List;
 
 import android.support.annotation.NonNull;
 import android.text.format.DateUtils;
+import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
 import android.content.Context;
@@ -26,6 +27,9 @@ public class MandelbrotCanvas extends View {
     public static final double DEFAULT_X_CENTER = -0.5;
     public static final double DEFAULT_Y_CENTER = 0.0;
     public static final double DEFAULT_X_EXTENT = 3.0;
+
+    public static final int MANDELBROT_PARAM = 0;
+    public static final int JULIA_PARAM = 1;
 
     private MandelbrotActivity parentActivity;
 
@@ -83,6 +87,23 @@ public class MandelbrotCanvas extends View {
 
     public MandelbrotCanvas(Context context) {
         super(context);
+        init(context);
+    }
+
+    public MandelbrotCanvas(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        init(context);
+    }
+
+    public MandelbrotCanvas(Context context, AttributeSet attrs, int defStyle) {
+        super(context, attrs, defStyle);
+        init(context);
+    }
+
+    private void init(Context context) {
+        if (isInEditMode()) {
+            return;
+        }
         parentActivity = (MandelbrotActivity)context;
 
         paint = new Paint();
@@ -96,6 +117,9 @@ public class MandelbrotCanvas extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+        if (isInEditMode()) {
+            return;
+        }
         if ((screenWidth != this.getWidth()) || (screenHeight != this.getHeight())) {
             screenWidth = this.getWidth();
             screenHeight = this.getHeight();
@@ -107,7 +131,7 @@ public class MandelbrotCanvas extends View {
             initMinMax();
 
             theBitmap = Bitmap.createBitmap(screenWidth, screenHeight, Bitmap.Config.ARGB_8888);
-            mandelnative.SetBitmap(theBitmap);
+            mandelnative.SetBitmap(MANDELBROT_PARAM, theBitmap);
             theRect = new Rect(0, 0, theBitmap.getWidth() - 1, theBitmap.getHeight() - 1);
 
             RenderMandelbrot();
@@ -117,7 +141,7 @@ public class MandelbrotCanvas extends View {
             return;
         }
 
-        mandelnative.UpdateBitmap(theBitmap);
+        mandelnative.UpdateBitmap(MANDELBROT_PARAM, theBitmap);
         canvas.drawBitmap(theBitmap, theRect, theRect, paint);
 
         parentActivity.txtIterations.setText("Iterations: " + Integer.toString(numIterations));
@@ -233,7 +257,7 @@ public class MandelbrotCanvas extends View {
             colors[0] = 0xff000000;
             colors[1] = 0xffffffff;
         }
-        mandelnative.SetColorPalette(colors, colors.length);
+        mandelnative.SetColorPalette(MANDELBROT_PARAM, colors, colors.length);
     }
 
     void SavePicture(String fileName) throws IOException
@@ -263,9 +287,9 @@ public class MandelbrotCanvas extends View {
             int curLevel = level;
             while (true) {
                 if (juliaMode) {
-                    mandelnative.JuliaPixels(startX, startY, startWidth, startHeight, curLevel, curLevel == level ? 1 : 0);
+                    //mandelnative.JuliaPixels(startX, startY, startWidth, startHeight, curLevel, curLevel == level ? 1 : 0);
                 } else {
-                    mandelnative.MandelbrotPixels(startX, startY, startWidth, startHeight, curLevel, curLevel == level ? 1 : 0);
+                    mandelnative.DrawFractal(MANDELBROT_PARAM, startX, startY, startWidth, startHeight, curLevel, curLevel == level ? 1 : 0);
                 }
                 MandelbrotCanvas.this.postInvalidate();
                 if (terminateThreads) {
@@ -285,7 +309,7 @@ public class MandelbrotCanvas extends View {
         xcenter = xmin + xextent / 2.0;
         ycenter = ymin + (ymax - ymin) / 2.0;
 
-        mandelnative.SetParameters(numIterations, xmin, xmax, ymin, ymax, jx, jy, screenWidth, screenHeight, startCoarseness);
+        mandelnative.SetParameters(MANDELBROT_PARAM, numIterations, xmin, xmax, ymin, ymax, 0, jx, jy, screenWidth, screenHeight);
         Thread t;
 
         if (juliaMode) {
