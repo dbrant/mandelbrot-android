@@ -27,11 +27,14 @@ public abstract class MandelbrotViewBase extends View {
     public static final double DEFAULT_X_CENTER = -0.5;
     public static final double DEFAULT_Y_CENTER = 0.0;
     public static final double DEFAULT_X_EXTENT = 3.0;
+    public static final double DEFAULT_JULIA_X_CENTER = 0.0;
+    public static final double DEFAULT_JULIA_Y_CENTER = 0.0;
+    public static final double DEFAULT_JULIA_EXTENT = 3.0;
+
+    private static final float CROSSHAIR_WIDTH = 16f;
 
     private boolean isJulia = false;
     private int paramIndex = 0;
-
-    private MandelbrotActivity parentActivity;
 
     private List<Thread> currentThreads = new ArrayList<>();
     private volatile boolean terminateThreads = false;
@@ -39,6 +42,7 @@ public abstract class MandelbrotViewBase extends View {
     private Paint paint;
     private Bitmap theBitmap;
     private Rect theRect;
+    private boolean showCrosshairs = false;
 
     private int screenWidth = 0;
     private int screenHeight = 0;
@@ -74,15 +78,14 @@ public abstract class MandelbrotViewBase extends View {
         }
     }
 
-    public int currentColorScheme = 0;
-
-    public int startCoarseness = 16;
-    public int endCoarseness = 1;
+    private int startCoarseness = 16;
+    private int endCoarseness = 1;
 
     private int touchStartX;
     private int touchStartY;
     private boolean zooming = false;
     private ScaleGestureDetector gesture;
+    private float displayDensity;
 
     public interface OnPointSelected {
         void pointSelected(double x, double y);
@@ -110,13 +113,12 @@ public abstract class MandelbrotViewBase extends View {
         }
         this.isJulia = isJulia;
         this.paramIndex = isJulia ? 1 : 0;
-        parentActivity = (MandelbrotActivity)context;
 
         paint = new Paint();
         paint.setStyle(Paint.Style.FILL);
-
-        setBackgroundColor(Color.BLACK);
-        setFocusable(false);
+        paint.setColor(Color.WHITE);
+        paint.setStrokeWidth(1.0f);
+        displayDensity = getResources().getDisplayMetrics().density;
         gesture = new ScaleGestureDetector(context, new ScaleListener());
     }
 
@@ -150,9 +152,13 @@ public abstract class MandelbrotViewBase extends View {
         mandelnative.UpdateBitmap(paramIndex, theBitmap);
         canvas.drawBitmap(theBitmap, theRect, theRect, paint);
 
-        parentActivity.txtIterations.setText("Iterations: " + Integer.toString(numIterations));
+        if (showCrosshairs) {
+            canvas.drawLine(screenWidth / 2 - CROSSHAIR_WIDTH * displayDensity, screenHeight / 2, screenWidth / 2 + CROSSHAIR_WIDTH * displayDensity, screenHeight / 2, paint);
+            canvas.drawLine(screenWidth / 2, screenHeight / 2 - CROSSHAIR_WIDTH * displayDensity, screenWidth / 2, screenHeight / 2 + CROSSHAIR_WIDTH * displayDensity, paint);
+        }
 
         /*
+        parentActivity.txtIterations.setText("Iterations: " + Integer.toString(numIterations));
         String str = "Real: " + Double.toString(xmin) + " to " + Double.toString(xmax) + "\n";
         str += "Imag: " + Double.toString(ymin) + " to " + Double.toString(ymax);
         if (juliaMode) {
@@ -184,92 +190,39 @@ public abstract class MandelbrotViewBase extends View {
     }
 
     void initMinMax() {
-        double ratio = (double)screenHeight / (double)screenWidth;
-
+        double ratio = (double)screenHeight / (double)(screenWidth == 0 ? 1 : screenWidth);
         xmin = xcenter - xextent / 2.0;
         xmax = xcenter + xextent / 2.0;
         ymin = ycenter - ratio * xextent / 2.0;
         ymax = ycenter + ratio * xextent / 2.0;
-
-        jx = xcenter;
-        jy = ycenter;
-
-        setColorScheme();
     }
 
-    public void Reset() {
-        xcenter = DEFAULT_X_CENTER;
-        ycenter = DEFAULT_Y_CENTER;
-        xextent = DEFAULT_X_EXTENT;
+    public void reset() {
+        if (isJulia) {
+            xcenter = DEFAULT_JULIA_X_CENTER;
+            ycenter = DEFAULT_JULIA_Y_CENTER;
+            xextent = DEFAULT_JULIA_EXTENT;
+        } else {
+            xcenter = DEFAULT_X_CENTER;
+            ycenter = DEFAULT_Y_CENTER;
+            xextent = DEFAULT_X_EXTENT;
+        }
         numIterations = DEFAULT_ITERATIONS;
-        currentColorScheme = 0;
         initMinMax();
         render();
     }
 
-    public void setColorScheme() {
-        int[] colors = new int[2];
-        currentColorScheme = currentColorScheme % 5;
-
-        if(currentColorScheme == 0){
-            colors = new int[320];
-            int col=0, i;
-            for(i=0; i<64; i++)
-                colors[col++] = 0xff000000 | ((i * 4) << 8) | (((63 - i) * 4) << 16);
-            for(i=0; i<64; i++)
-                colors[col++] = 0xff000000 | 0xff00 | (i * 4);
-            for(i=0; i<64; i++)
-                colors[col++] = 0xff000000 | (((63 - i) * 4) << 8) | 0xff;
-            for(i=0; i<64; i++)
-                colors[col++] = 0xff000000 | ((i * 4) << 16) | 0xff;
-            for(i=0; i<64; i++)
-                colors[col++] = 0xff000000 | 0xff0000 | ((63 - i) * 4);
-        }
-        if(currentColorScheme == 1){
-            colors = new int[320];
-            int col=0, i;
-            for(i=0; i<64; i++)
-                colors[col++] = 0xff000000 | ((i * 4) << 8) | (((63 - i) * 4) << 16);
-            for(i=0; i<64; i++)
-                colors[col++] = 0xff000000 | 0xff00 | (i * 4);
-            for(i=0; i<64; i++)
-                colors[col++] = 0xff000000 | (((63 - i) * 4) << 8) | 0xff;
-            for(i=0; i<64; i++)
-                colors[col++] = 0xff000000 | ((i * 4) << 16) | 0xff;
-            for(i=0; i<64; i++)
-                colors[col++] = 0xff000000 | 0xff0000 | ((63 - i) * 4);
-            
-            for (i=0; i<colors.length; i++) {
-                colors[i] = 0xff000000 | (~colors[i]);
-            }
-        }
-        if (currentColorScheme == 2) {
-            colors = new int[256];
-            int col=0, i;
-            for(i=0; i<128; i++)
-                colors[col++] = 0xff000000 | ((i*2)<<16) | ((i*2)<<8) | ((i*2));
-            for(i=0; i<128; i++)
-                colors[col++] = 0xff000000 | (((127-i)*2)<<16) | (((127-i)*2)<<8) | (((127-i)*2));
-        }
-        if (currentColorScheme == 3) {
-            colors = new int[256];
-            int col=0, i;
-            for(i=0; i<128; i++)
-                colors[col++] = 0xff000000 | (((127-i)*2)<<16) | (((127-i)*2)<<8) | (((127-i)*2));
-            for(i=0; i<128; i++)
-                colors[col++] = 0xff000000 | ((i*2)<<16) | ((i*2)<<8) | ((i*2));
-        }
-        if (currentColorScheme == 4) {
-            colors = new int[2];
-            colors[0] = 0xff000000;
-            colors[1] = 0xffffffff;
-        }
+    public void setColorScheme(int[] colors) {
         mandelnative.SetColorPalette(paramIndex, colors, colors.length);
     }
 
     public void setJuliaCoords(double jx, double jy) {
         this.jx = jx;
         this.jy = jy;
+    }
+
+    public void setCrosshairsEnabled(boolean enabled) {
+        showCrosshairs = enabled;
     }
 
     public void SavePicture(String fileName) throws IOException
@@ -313,6 +266,10 @@ public abstract class MandelbrotViewBase extends View {
 
     public void render() {
         terminateThreads();
+        if (getVisibility() != View.VISIBLE) {
+            return;
+        }
+
         xextent = xmax - xmin;
         xcenter = xmin + xextent / 2.0;
         ycenter = ymin + (ymax - ymin) / 2.0;
@@ -370,8 +327,8 @@ public abstract class MandelbrotViewBase extends View {
             return true;
         } else if(event.getAction() == MotionEvent.ACTION_MOVE){
             if (onPointSelected != null) {
-                onPointSelected.pointSelected(xmin + ((double)event.getX() * (xmax - xmin) / screenWidth),
-                    ymin + ((double)event.getY() * (ymax - ymin) / screenHeight));
+                onPointSelected.pointSelected(xmin + ((double) event.getX() * (xmax - xmin) / screenWidth),
+                        ymin + ((double) event.getY() * (ymax - ymin) / screenHeight));
             }
             if(!zooming){
                 endCoarseness = startCoarseness;

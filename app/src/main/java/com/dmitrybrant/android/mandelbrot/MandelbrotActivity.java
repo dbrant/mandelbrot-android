@@ -20,9 +20,7 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
-import android.view.ViewGroup.LayoutParams;
 import android.view.WindowManager;
-import android.widget.FrameLayout;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
@@ -37,7 +35,9 @@ public class MandelbrotActivity extends ActionBarActivity {
 
     private MandelbrotView mandelbrotView;
     private JuliaView juliaView;
-    private FrameLayout topLayout;
+    private boolean juliaEnabled = false;
+    private int currentColorScheme = 0;
+
     private View settingsContainer;
     public TextView txtInfo, txtIterations;
     private SeekBar seekBarIterations;
@@ -47,7 +47,8 @@ public class MandelbrotActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.main);
-        topLayout = (FrameLayout)findViewById(R.id.topLayout);
+
+        ColorScheme.initColorSchemes();
 
         final Toolbar toolbar = (Toolbar) findViewById(R.id.main_toolbar);
         setSupportActionBar(toolbar);
@@ -69,8 +70,7 @@ public class MandelbrotActivity extends ActionBarActivity {
                 if (!fromUser) {
                     return;
                 }
-                mandelbrotView.setNumIterations(progress * progress);
-                mandelbrotView.render();
+                updateIterations(progress * progress);
             }
             public void onStartTrackingTouch(SeekBar arg0) {
             }
@@ -84,23 +84,23 @@ public class MandelbrotActivity extends ActionBarActivity {
             @Override
             public void pointSelected(double x, double y) {
                 juliaView.terminateThreads();
-                juliaView.setJuliaCoords(x, y);
+                juliaView.setJuliaCoords(mandelbrotView.getXCenter(), mandelbrotView.getYCenter());
                 juliaView.render();
             }
         });
 
         //restore settings...
+        mandelbrotView.reset();
         SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
         mandelbrotView.setXCenter(Double.parseDouble(settings.getString("xcenter", Double.toString(MandelbrotViewBase.DEFAULT_X_CENTER))));
         mandelbrotView.setYCenter(Double.parseDouble(settings.getString("ycenter", Double.toString(MandelbrotViewBase.DEFAULT_Y_CENTER))));
         mandelbrotView.setXExtent(Double.parseDouble(settings.getString("xextent", Double.toString(MandelbrotViewBase.DEFAULT_X_EXTENT))));
         mandelbrotView.setNumIterations(settings.getInt("iterations", MandelbrotViewBase.DEFAULT_ITERATIONS));
-        mandelbrotView.currentColorScheme = settings.getInt("colorscheme", 0);
+        currentColorScheme = settings.getInt("colorscheme", 0);
+        updateColorScheme();
 
-        juliaView.setXCenter(0.0);
-        juliaView.setYCenter(0.0);
-        juliaView.setXExtent(4.0);
-        juliaView.currentColorScheme = 1;
+        juliaView.reset();
+        juliaView.setJuliaCoords(mandelbrotView.getXCenter(), mandelbrotView.getYCenter());
         juliaView.setNumIterations(mandelbrotView.getNumIterations());
 
         updateIterationBar();
@@ -131,6 +131,31 @@ public class MandelbrotActivity extends ActionBarActivity {
         seekBarIterations.setProgress((int)Math.sqrt(mandelbrotView.getNumIterations()));
     }
 
+    private void updateJulia() {
+        mandelbrotView.setCrosshairsEnabled(juliaEnabled);
+        mandelbrotView.invalidate();
+        juliaView.setVisibility(juliaEnabled ? View.VISIBLE : View.GONE);
+        if (juliaEnabled) {
+            juliaView.render();
+        }
+    }
+
+    private void updateColorScheme() {
+        if (currentColorScheme >= ColorScheme.getColorSchemes().size()) {
+            currentColorScheme = 0;
+        }
+        mandelbrotView.setColorScheme(ColorScheme.getColorSchemes().get(currentColorScheme));
+        juliaView.setColorScheme(ColorScheme.getShiftedScheme(ColorScheme.getColorSchemes().get(currentColorScheme),
+                ColorScheme.getColorSchemes().get(currentColorScheme).length / 2));
+    }
+
+    private void updateIterations(int iterations) {
+        mandelbrotView.setNumIterations(iterations);
+        mandelbrotView.render();
+        juliaView.setNumIterations(iterations);
+        juliaView.render();
+    }
+
     @Override
     protected void onStop(){
         super.onStop();
@@ -140,7 +165,7 @@ public class MandelbrotActivity extends ActionBarActivity {
         editor.putString("ycenter", Double.toString(mandelbrotView.getYCenter()));
         editor.putString("xextent", Double.toString(mandelbrotView.getXExtent()));
         editor.putInt("iterations", mandelbrotView.getNumIterations());
-        editor.putInt("colorscheme", mandelbrotView.currentColorScheme);
+        editor.putInt("colorscheme", currentColorScheme);
         editor.commit();
     }
     
@@ -165,14 +190,12 @@ public class MandelbrotActivity extends ActionBarActivity {
             finish();
             return true;
         } else if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN){
-            mandelbrotView.setNumIterations(mandelbrotView.getNumIterations() - iterationInc);
+            updateIterations(mandelbrotView.getNumIterations() - iterationInc);
             updateIterationBar();
-            mandelbrotView.render();
             return true;
         } else if (keyCode == KeyEvent.KEYCODE_VOLUME_UP){
-            mandelbrotView.setNumIterations(mandelbrotView.getNumIterations() + iterationInc);
+            updateIterations(mandelbrotView.getNumIterations() + iterationInc);
             updateIterationBar();
-            mandelbrotView.render();
             return true;
         }
         return super.onKeyDown(keyCode, event);
@@ -202,7 +225,8 @@ public class MandelbrotActivity extends ActionBarActivity {
                 }
                 return true;
             case R.id.menu_julia_mode:
-
+                juliaEnabled = !juliaEnabled;
+                updateJulia();
                 return true;
             case R.id.menu_save_image:
                 try{
@@ -216,12 +240,14 @@ public class MandelbrotActivity extends ActionBarActivity {
                 }
                 return true;
             case R.id.menu_color_scheme:
-                mandelbrotView.currentColorScheme++;
-                mandelbrotView.setColorScheme();
+                currentColorScheme++;
+                updateColorScheme();
                 mandelbrotView.render();
+                juliaView.render();
                 return true;
             case R.id.menu_reset:
-                mandelbrotView.Reset();
+                mandelbrotView.reset();
+                juliaView.reset();
                 return true;
             case R.id.menu_about:
                 LayoutInflater inflater = (LayoutInflater)MandelbrotActivity.this.getSystemService(LAYOUT_INFLATER_SERVICE);

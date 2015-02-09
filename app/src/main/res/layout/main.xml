@@ -7,12 +7,15 @@
     <com.dmitrybrant.android.mandelbrot.MandelbrotView
         android:id="@+id/mandelbrot_view"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        android:background="@android:color/black"/>
 
     <com.dmitrybrant.android.mandelbrot.JuliaView
         android:id="@+id/julia_view"
-        android:layout_width="200dp"
-        android:layout_height="200dp"
+        android:layout_width="280dp"
+        android:layout_height="280dp"
+        android:background="@android:color/black"
+        android:visibility="gone"
         android:layout_gravity="bottom|start"/>
 
     <TextView
