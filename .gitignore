@@ -1,0 +1,16 @@
+*.class
+local.properties
+default.properties
+
+.gradle
+/local.properties
+/build
+/app/build
+/app/src/main/obj
+
+*.iml
+.idea
+*.tmproj
+
+*~
+.DS_Store
