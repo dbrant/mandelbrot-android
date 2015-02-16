@@ -132,14 +132,14 @@ JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_mandelnative_Rele
 void drawPixels(int paramIndex, int startX, int startY, int startWidth, int startHeight, int level, int doall){
 	int maxY = startY + startHeight;
 	int maxX = startX + startWidth;
-	double x, y, x0, y0, tempx, tempy;
+	double x, y, x0, y0;
 	double xsq, ysq;
 	int ix, iy;
 	double xscale = (params[paramIndex].xmax - params[paramIndex].xmin) / params[paramIndex].viewWidth;
 	double yscale = (params[paramIndex].ymax - params[paramIndex].ymin) / params[paramIndex].viewHeight;
 	int iteration, color;
 	int iterScale = 1;
-	int px, py, xindex=0, yindex=0, yptr, yptr2;
+	int px, py, xindex=0, yindex=0, yptr, yptr2, maxIx;
 	int numIterations = params[paramIndex].numIterations;
 	int numPaletteColors = params[paramIndex].numPaletteColors;
 
@@ -182,19 +182,15 @@ void drawPixels(int paramIndex, int startX, int startY, int startWidth, int star
 					if (xsq + ysq > 4.0) {
 						break;
 					}
-					tempx = xsq - ysq + params[paramIndex].juliaX;
-					tempy = 2*x*y + params[paramIndex].juliaY;
-					x = tempx;
-					y = tempy;
+					y = 2*x*y + params[paramIndex].juliaY;
+					x = xsq - ysq + params[paramIndex].juliaX;
 				}
 			} else {
 				x = y = xsq = ysq = 0.0;
 				iteration = 0;
 				x0 = params[paramIndex].x0array[px];
 				while (xsq + ysq < 4.0) {
-					y = x * y;
-					y += y;
-					y += y0;
+					y = 2*x*y + y0;
 					x = xsq - ysq + x0;
 					xsq = x*x;
 					ysq = y*y;
@@ -216,7 +212,11 @@ void drawPixels(int paramIndex, int startX, int startY, int startWidth, int star
 					if (iy >= maxY) {
 						continue;
 					}
-					for (ix = px+level-1; ix >= px; ix--) {
+					maxIx = px+level-1;
+					if (maxIx >= maxX) {
+						maxIx = maxX - 1;
+					}
+					for (ix = maxIx; ix >= px; ix--) {
 						params[paramIndex].pixelBuffer[yptr2 + ix] = color;
 					}
 					yptr2 += params[paramIndex].viewWidth;

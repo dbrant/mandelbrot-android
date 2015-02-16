@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.Toolbar;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -21,6 +22,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
@@ -97,11 +99,34 @@ public class MandelbrotActivity extends ActionBarActivity {
         mandelbrotView.setXExtent(Double.parseDouble(settings.getString("xextent", Double.toString(MandelbrotViewBase.DEFAULT_X_EXTENT))));
         mandelbrotView.setNumIterations(settings.getInt("iterations", MandelbrotViewBase.DEFAULT_ITERATIONS));
         currentColorScheme = settings.getInt("colorscheme", 0);
+        juliaEnabled = settings.getBoolean("juliaEnabled", false);
         updateColorScheme();
 
         juliaView.reset();
         juliaView.setJuliaCoords(mandelbrotView.getXCenter(), mandelbrotView.getYCenter());
         juliaView.setNumIterations(mandelbrotView.getNumIterations());
+
+        // set the position and gravity of the Julia view, based on screen orientation
+        juliaView.post(new Runnable() {
+            @Override
+            public void run() {
+                final int widthOffset = 32;
+                int width = getWindow().getDecorView().getWidth();
+                int height = getWindow().getDecorView().getHeight();
+                FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) juliaView.getLayoutParams();
+                if (width > height) {
+                    params.gravity = Gravity.START;
+                    params.height = FrameLayout.LayoutParams.MATCH_PARENT;
+                    params.width = width / 2 - (int)(widthOffset * getResources().getDisplayMetrics().density);
+                } else {
+                    params.gravity = Gravity.BOTTOM;
+                    params.width = FrameLayout.LayoutParams.MATCH_PARENT;
+                    params.height = height / 2 - (int)(widthOffset * getResources().getDisplayMetrics().density);
+                }
+                juliaView.setLayoutParams(params);
+                updateJulia();
+            }
+        });
 
         updateIterationBar();
     }
@@ -166,6 +191,7 @@ public class MandelbrotActivity extends ActionBarActivity {
         editor.putString("xextent", Double.toString(mandelbrotView.getXExtent()));
         editor.putInt("iterations", mandelbrotView.getNumIterations());
         editor.putInt("colorscheme", currentColorScheme);
+        editor.putBoolean("juliaEnabled", juliaEnabled);
         editor.commit();
     }
     

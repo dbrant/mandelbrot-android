@@ -12,20 +12,19 @@
 
     <com.dmitrybrant.android.mandelbrot.JuliaView
         android:id="@+id/julia_view"
-        android:layout_width="280dp"
+        android:layout_width="match_parent"
         android:layout_height="280dp"
         android:background="@android:color/black"
         android:visibility="gone"
-        android:layout_gravity="bottom|start"/>
+        android:layout_gravity="bottom"/>
 
     <TextView
         android:id="@+id/txtInfo"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="4dp"
+        android:padding="8dp"
         android:layout_marginTop="40dp"
         android:background="#50000000"
-        android:padding="4dp"
         android:text="@string/sample"
         android:textColor="#ffffff"
         android:textSize="10sp" />

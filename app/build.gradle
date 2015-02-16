@@ -1,6 +1,6 @@
 apply plugin: 'com.android.application'
 
-def versionStart = '1.6'
+def versionStart = '1.7'
 
 def getDate() {
     def date = new Date()
@@ -16,7 +16,7 @@ android {
         applicationId "com.dmitrybrant.android.mandelbrot"
         minSdkVersion 8
         targetSdkVersion 21
-        versionCode 39
+        versionCode 40
         versionName "${versionStart}-${date}"
 
         ndk {
