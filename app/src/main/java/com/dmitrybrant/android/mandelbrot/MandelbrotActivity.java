@@ -41,7 +41,7 @@ public class MandelbrotActivity extends ActionBarActivity {
     private int currentColorScheme = 0;
 
     private View settingsContainer;
-    public TextView txtInfo, txtIterations;
+    public TextView txtInfo;
     private SeekBar seekBarIterations;
 
     @Override
@@ -59,8 +59,7 @@ public class MandelbrotActivity extends ActionBarActivity {
         forceOverflowMenuIcon(this);
 
         txtInfo = (TextView)findViewById(R.id.txtInfo);
-        txtInfo.setVisibility(View.INVISIBLE);
-        txtIterations = (TextView)findViewById(R.id.txtIterations);
+        txtInfo.setVisibility(View.GONE);
 
         settingsContainer = findViewById(R.id.settings_container);
         settingsContainer.setVisibility(View.GONE);
@@ -90,6 +89,7 @@ public class MandelbrotActivity extends ActionBarActivity {
                 juliaView.render();
             }
         });
+        mandelbrotView.setOnCoordinatesChanged(coordinatesChangedListener);
 
         //restore settings...
         mandelbrotView.reset();
@@ -117,11 +117,11 @@ public class MandelbrotActivity extends ActionBarActivity {
                 if (width > height) {
                     params.gravity = Gravity.START;
                     params.height = FrameLayout.LayoutParams.MATCH_PARENT;
-                    params.width = width / 2 - (int)(widthOffset * getResources().getDisplayMetrics().density);
+                    params.width = width / 2 - (int) (widthOffset * getResources().getDisplayMetrics().density);
                 } else {
                     params.gravity = Gravity.BOTTOM;
                     params.width = FrameLayout.LayoutParams.MATCH_PARENT;
-                    params.height = height / 2 - (int)(widthOffset * getResources().getDisplayMetrics().density);
+                    params.height = height / 2 - (int) (widthOffset * getResources().getDisplayMetrics().density);
                 }
                 juliaView.setLayoutParams(params);
                 updateJulia();
@@ -130,6 +130,30 @@ public class MandelbrotActivity extends ActionBarActivity {
 
         updateIterationBar();
     }
+
+    private MandelbrotViewBase.OnCoordinatesChanged coordinatesChangedListener = new MandelbrotViewBase.OnCoordinatesChanged() {
+        @Override
+        public void newCoordinates(double xmin, double xmax, double ymin, double ymax) {
+            StringBuilder sb = new StringBuilder(512);
+            sb.append("Iterations: ");
+            sb.append(mandelbrotView.getNumIterations());
+            sb.append("\nReal: ");
+            sb.append(xmin);
+            sb.append(" to ");
+            sb.append(xmax);
+            sb.append("\nImag: ");
+            sb.append(ymin);
+            sb.append(" to ");
+            sb.append(ymax);
+            if (juliaEnabled) {
+                sb.append("\nJulia: ");
+                sb.append(mandelbrotView.getXCenter());
+                sb.append(", ");
+                sb.append(mandelbrotView.getYCenter());
+            }
+            txtInfo.setText(sb.toString());
+        }
+    };
 
     /**
      * Helper function to force the Activity to show the three-dot overflow icon in its ActionBar.
@@ -153,7 +177,7 @@ public class MandelbrotActivity extends ActionBarActivity {
     }
 
     private void updateIterationBar() {
-        seekBarIterations.setProgress((int)Math.sqrt(mandelbrotView.getNumIterations()));
+        seekBarIterations.setProgress((int) Math.sqrt(mandelbrotView.getNumIterations()));
     }
 
     private void updateJulia() {
@@ -246,8 +270,10 @@ public class MandelbrotActivity extends ActionBarActivity {
             case R.id.menu_settings:
                 if (settingsContainer.getVisibility() != View.VISIBLE) {
                     settingsContainer.setVisibility(View.VISIBLE);
+                    txtInfo.setVisibility(View.VISIBLE);
                 } else {
                     settingsContainer.setVisibility(View.GONE);
+                    txtInfo.setVisibility(View.GONE);
                 }
                 return true;
             case R.id.menu_julia_mode:

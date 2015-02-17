@@ -95,6 +95,14 @@ public abstract class MandelbrotViewBase extends View {
         onPointSelected = listener;
     }
 
+    public interface OnCoordinatesChanged {
+        void newCoordinates(double xmin, double xmax, double ymin, double ymax);
+    }
+    private OnCoordinatesChanged onCoordinatesChanged;
+    public void setOnCoordinatesChanged(OnCoordinatesChanged listener) {
+        onCoordinatesChanged = listener;
+    }
+
     public MandelbrotViewBase(Context context) {
         super(context);
     }
@@ -156,16 +164,6 @@ public abstract class MandelbrotViewBase extends View {
             canvas.drawLine(screenWidth / 2 - CROSSHAIR_WIDTH * displayDensity, screenHeight / 2, screenWidth / 2 + CROSSHAIR_WIDTH * displayDensity, screenHeight / 2, paint);
             canvas.drawLine(screenWidth / 2, screenHeight / 2 - CROSSHAIR_WIDTH * displayDensity, screenWidth / 2, screenHeight / 2 + CROSSHAIR_WIDTH * displayDensity, paint);
         }
-
-        /*
-        parentActivity.txtIterations.setText("Iterations: " + Integer.toString(numIterations));
-        String str = "Real: " + Double.toString(xmin) + " to " + Double.toString(xmax) + "\n";
-        str += "Imag: " + Double.toString(ymin) + " to " + Double.toString(ymax);
-        if (juliaMode) {
-            str += "\nJulia: " + Double.toString(jx) + ", " + Double.toString(jy);
-        }
-        parentActivity.txtInfo.setText(str);
-        */
     }
 
     public void terminateThreads() {
@@ -268,6 +266,9 @@ public abstract class MandelbrotViewBase extends View {
         terminateThreads();
         if (getVisibility() != View.VISIBLE) {
             return;
+        }
+        if (onCoordinatesChanged != null) {
+            onCoordinatesChanged.newCoordinates(xmin, xmax, ymin, ymax);
         }
 
         xextent = xmax - xmin;

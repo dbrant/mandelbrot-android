@@ -42,7 +42,6 @@
             android:orientation="horizontal"
             android:layout_margin="8dp">
             <TextView
-                android:id="@+id/txtIterations"
                 android:layout_width="72dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
