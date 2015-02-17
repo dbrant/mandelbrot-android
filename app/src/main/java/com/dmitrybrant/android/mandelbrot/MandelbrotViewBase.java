@@ -262,6 +262,12 @@ public abstract class MandelbrotViewBase extends View {
         }    
     }
 
+    public void requestCoordinates() {
+        if (onCoordinatesChanged != null) {
+            onCoordinatesChanged.newCoordinates(xmin, xmax, ymin, ymax);
+        }
+    }
+
     public void render() {
         terminateThreads();
         if (getVisibility() != View.VISIBLE) {

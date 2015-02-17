@@ -41,7 +41,8 @@ public class MandelbrotActivity extends ActionBarActivity {
     private int currentColorScheme = 0;
 
     private View settingsContainer;
-    public TextView txtInfo;
+    private TextView txtInfo;
+    private TextView txtIterations;
     private SeekBar seekBarIterations;
 
     @Override
@@ -59,8 +60,7 @@ public class MandelbrotActivity extends ActionBarActivity {
         forceOverflowMenuIcon(this);
 
         txtInfo = (TextView)findViewById(R.id.txtInfo);
-        txtInfo.setVisibility(View.GONE);
-
+        txtIterations = (TextView)findViewById(R.id.txtIterations);
         settingsContainer = findViewById(R.id.settings_container);
         settingsContainer.setVisibility(View.GONE);
 
@@ -134,10 +134,12 @@ public class MandelbrotActivity extends ActionBarActivity {
     private MandelbrotViewBase.OnCoordinatesChanged coordinatesChangedListener = new MandelbrotViewBase.OnCoordinatesChanged() {
         @Override
         public void newCoordinates(double xmin, double xmax, double ymin, double ymax) {
+            if (txtInfo.getVisibility() != View.VISIBLE) {
+                return;
+            }
+            txtIterations.setText(Integer.toString(mandelbrotView.getNumIterations()));
             StringBuilder sb = new StringBuilder(512);
-            sb.append("Iterations: ");
-            sb.append(mandelbrotView.getNumIterations());
-            sb.append("\nReal: ");
+            sb.append("Real: ");
             sb.append(xmin);
             sb.append(" to ");
             sb.append(xmax);
@@ -183,6 +185,7 @@ public class MandelbrotActivity extends ActionBarActivity {
     private void updateJulia() {
         mandelbrotView.setCrosshairsEnabled(juliaEnabled);
         mandelbrotView.invalidate();
+        mandelbrotView.requestCoordinates();
         juliaView.setVisibility(juliaEnabled ? View.VISIBLE : View.GONE);
         if (juliaEnabled) {
             juliaView.render();
@@ -270,11 +273,10 @@ public class MandelbrotActivity extends ActionBarActivity {
             case R.id.menu_settings:
                 if (settingsContainer.getVisibility() != View.VISIBLE) {
                     settingsContainer.setVisibility(View.VISIBLE);
-                    txtInfo.setVisibility(View.VISIBLE);
                 } else {
                     settingsContainer.setVisibility(View.GONE);
-                    txtInfo.setVisibility(View.GONE);
                 }
+                mandelbrotView.requestCoordinates();
                 return true;
             case R.id.menu_julia_mode:
                 juliaEnabled = !juliaEnabled;
