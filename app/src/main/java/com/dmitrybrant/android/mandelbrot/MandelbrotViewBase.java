@@ -121,12 +121,12 @@ public abstract class MandelbrotViewBase extends View {
         }
         this.isJulia = isJulia;
         this.paramIndex = isJulia ? 1 : 0;
+        displayDensity = getResources().getDisplayMetrics().density;
 
         paint = new Paint();
         paint.setStyle(Paint.Style.FILL);
         paint.setColor(Color.WHITE);
-        paint.setStrokeWidth(1.0f);
-        displayDensity = getResources().getDisplayMetrics().density;
+        paint.setStrokeWidth(1.5f * displayDensity);
         gesture = new ScaleGestureDetector(context, new ScaleListener());
     }
 

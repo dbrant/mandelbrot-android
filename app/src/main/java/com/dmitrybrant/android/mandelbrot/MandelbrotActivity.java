@@ -11,7 +11,7 @@ import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Environment;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -28,7 +28,7 @@ import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class MandelbrotActivity extends ActionBarActivity {
+public class MandelbrotActivity extends AppCompatActivity {
     public static final String PREFS_NAME = "MandelbrotActivityPrefs";
 
     static {
@@ -110,9 +110,9 @@ public class MandelbrotActivity extends ActionBarActivity {
         juliaView.post(new Runnable() {
             @Override
             public void run() {
-                final int widthOffset = 32;
-                int width = getWindow().getDecorView().getWidth();
-                int height = getWindow().getDecorView().getHeight();
+                final int widthOffset = 24;
+                int width = mandelbrotView.getWidth();
+                int height = mandelbrotView.getHeight();
                 FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) juliaView.getLayoutParams();
                 if (width > height) {
                     params.gravity = Gravity.START;
