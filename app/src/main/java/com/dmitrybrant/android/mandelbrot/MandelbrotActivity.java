@@ -6,11 +6,11 @@ import java.util.Date;
 import java.util.Locale;
 
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Environment;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Gravity;
@@ -22,6 +22,8 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.WindowManager;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.FrameLayout;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
@@ -183,12 +185,46 @@ public class MandelbrotActivity extends AppCompatActivity {
     }
 
     private void updateJulia() {
+        if (juliaView.getAnimation() != null && !juliaView.getAnimation().hasEnded()) {
+            return;
+        }
         mandelbrotView.setCrosshairsEnabled(juliaEnabled);
         mandelbrotView.invalidate();
         mandelbrotView.requestCoordinates();
-        juliaView.setVisibility(juliaEnabled ? View.VISIBLE : View.GONE);
         if (juliaEnabled) {
+            juliaView.setVisibility(View.VISIBLE);
+            Animation anim = AnimationUtils.loadAnimation(this, R.anim.slide_in_bottom);
+            anim.setAnimationListener(new Animation.AnimationListener() {
+                @Override
+                public void onAnimationStart(Animation animation) {
+                }
+                @Override
+                public void onAnimationEnd(Animation animation) {
+                    juliaView.setVisibility(View.VISIBLE);
+                }
+                @Override
+                public void onAnimationRepeat(Animation animation) {
+                }
+            });
+            juliaView.startAnimation(anim);
             juliaView.render();
+        } else {
+            Animation anim = AnimationUtils.loadAnimation(this, R.anim.slide_out_bottom);
+            anim.setAnimationListener(new Animation.AnimationListener() {
+                @Override
+                public void onAnimationStart(Animation animation) {
+                }
+
+                @Override
+                public void onAnimationEnd(Animation animation) {
+                    juliaView.setVisibility(View.GONE);
+                }
+
+                @Override
+                public void onAnimationRepeat(Animation animation) {
+                }
+            });
+            juliaView.startAnimation(anim);
         }
     }
 
@@ -239,10 +275,7 @@ public class MandelbrotActivity extends AppCompatActivity {
         if (iterationInc < 1) {
             iterationInc = 1;
         }
-        if (keyCode == KeyEvent.KEYCODE_BACK){
-            finish();
-            return true;
-        } else if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN){
+        if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN){
             updateIterations(mandelbrotView.getNumIterations() - iterationInc);
             updateIterationBar();
             return true;
@@ -271,16 +304,11 @@ public class MandelbrotActivity extends AppCompatActivity {
                 onBackPressed();
                 return true;
             case R.id.menu_settings:
-                if (settingsContainer.getVisibility() != View.VISIBLE) {
-                    settingsContainer.setVisibility(View.VISIBLE);
-                } else {
-                    settingsContainer.setVisibility(View.GONE);
-                }
+                toggleSettings();
                 mandelbrotView.requestCoordinates();
                 return true;
             case R.id.menu_julia_mode:
-                juliaEnabled = !juliaEnabled;
-                updateJulia();
+                toggleJulia();
                 return true;
             case R.id.menu_save_image:
                 try{
@@ -323,4 +351,65 @@ public class MandelbrotActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    private boolean isSettingsVisible() {
+        return settingsContainer.getVisibility() == View.VISIBLE;
+    }
+
+    private void toggleSettings() {
+        if (settingsContainer.getAnimation() != null && !settingsContainer.getAnimation().hasEnded()) {
+            return;
+        }
+        if (settingsContainer.getVisibility() != View.VISIBLE) {
+            settingsContainer.setVisibility(View.VISIBLE);
+            Animation anim = AnimationUtils.loadAnimation(this, R.anim.slide_in_bottom);
+            anim.setAnimationListener(new Animation.AnimationListener() {
+                @Override
+                public void onAnimationStart(Animation animation) {
+                }
+                @Override
+                public void onAnimationEnd(Animation animation) {
+                    settingsContainer.setVisibility(View.VISIBLE);
+                }
+                @Override
+                public void onAnimationRepeat(Animation animation) {
+                }
+            });
+            settingsContainer.startAnimation(anim);
+        } else {
+            Animation anim = AnimationUtils.loadAnimation(this, R.anim.slide_out_bottom);
+            anim.setAnimationListener(new Animation.AnimationListener() {
+                @Override
+                public void onAnimationStart(Animation animation) {
+                }
+                @Override
+                public void onAnimationEnd(Animation animation) {
+                    settingsContainer.setVisibility(View.GONE);
+                }
+                @Override
+                public void onAnimationRepeat(Animation animation) {
+                }
+            });
+            settingsContainer.startAnimation(anim);
+        }
+    }
+
+    private void toggleJulia() {
+        if (juliaView.getAnimation() != null && !juliaView.getAnimation().hasEnded()) {
+            return;
+        }
+        juliaEnabled = !juliaEnabled;
+        updateJulia();
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (isSettingsVisible()) {
+            toggleSettings();
+            return;
+        } else if (juliaEnabled) {
+            toggleJulia();
+            return;
+        }
+        super.onBackPressed();
+    }
 }
