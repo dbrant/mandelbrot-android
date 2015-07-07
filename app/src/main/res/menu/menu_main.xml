@@ -5,28 +5,28 @@
     <item
         android:id="@+id/menu_settings"
         android:icon="@drawable/ic_settings"
-        android:title="Settings"
+        android:title="@string/menu_settings"
         app:showAsAction="always" />
     <item
         android:id="@+id/menu_julia_mode"
         android:icon="@drawable/julia_128"
-        android:title="Julia mode"
+        android:title="@string/menu_julia"
         app:showAsAction="always" />
     <item
         android:id="@+id/menu_color_scheme"
         android:icon="@drawable/colors_128"
-        android:title="Color scheme"
+        android:title="@string/menu_colorscheme"
         app:showAsAction="always" />
     <item
         android:id="@+id/menu_save_image"
-        android:title="Save image"
+        android:title="@string/menu_save"
         app:showAsAction="never" />
     <item
         android:id="@+id/menu_reset"
-        android:title="Reset"
+        android:title="@string/menu_reset"
         app:showAsAction="never" />
     <item
         android:id="@+id/menu_about"
-        android:title="About..."
+        android:title="@string/menu_about"
         app:showAsAction="never" />
 </menu>
