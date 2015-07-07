@@ -22,12 +22,12 @@ android {
         ndk {
             moduleName "mandelnative_jni"
         }
-	}
+    }
 
-	sourceSets.main {
-		jni.srcDirs = []
-		jniLibs.srcDir 'src/main/libs'
-	}
+    sourceSets.main {
+        jni.srcDirs = []
+        jniLibs.srcDir 'src/main/libs'
+    }
 
     buildTypes {
         release {

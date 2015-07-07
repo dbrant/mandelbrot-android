@@ -2,30 +2,31 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/topLayout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent" >
+    android:layout_height="match_parent">
 
     <com.dmitrybrant.android.mandelbrot.MandelbrotView
         android:id="@+id/mandelbrot_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@android:color/black"/>
+        android:background="@android:color/black" />
 
     <com.dmitrybrant.android.mandelbrot.JuliaView
         android:id="@+id/julia_view"
         android:layout_width="match_parent"
         android:layout_height="280dp"
+        android:layout_gravity="bottom"
         android:background="@android:color/black"
-        android:visibility="gone"
-        android:layout_gravity="bottom"/>
+        android:visibility="gone" />
 
     <LinearLayout
         android:id="@+id/settings_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
         android:layout_gravity="bottom"
-        android:padding="16dp"
-        android:background="@color/info_background">
+        android:background="@color/info_background"
+        android:orientation="vertical"
+        android:padding="16dp">
+
         <TextView
             android:id="@+id/txtInfo"
             android:layout_width="wrap_content"
@@ -34,29 +35,34 @@
             android:text="@string/sample"
             android:textColor="@color/info_text"
             android:textSize="10sp" />
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal">
+
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="0"
                 android:orientation="vertical">
+
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
-                    android:text="Iterations:"
-                    android:textColor="@color/info_text"/>
+                    android:text="@string/iterations"
+                    android:textColor="@color/info_text" />
+
                 <TextView
                     android:id="@+id/txtIterations"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
                     android:text="@string/sample"
-                    android:textColor="@color/info_text"/>
+                    android:textColor="@color/info_text" />
             </LinearLayout>
+
             <SeekBar
                 android:id="@+id/seekBarIterations"
                 android:layout_width="0dp"
@@ -71,7 +77,6 @@
         android:layout_width="match_parent"
         android:layout_height="96dp"
         android:layout_gravity="top"
-        android:background="@drawable/toolbar_gradient">
-    </android.support.v7.widget.Toolbar>
+        android:background="@drawable/toolbar_gradient"></android.support.v7.widget.Toolbar>
 
 </FrameLayout>

@@ -1,7 +1,7 @@
 package com.dmitrybrant.android.mandelbrot;
 
-import android.util.AttributeSet;
 import android.content.Context;
+import android.util.AttributeSet;
 
 public class MandelbrotView extends MandelbrotViewBase {
 

@@ -1,10 +1,5 @@
 package com.dmitrybrant.android.mandelbrot;
 
-import java.lang.reflect.Field;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
-
 import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
@@ -28,7 +23,11 @@ import android.widget.FrameLayout;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
-import android.widget.Toast;
+
+import java.lang.reflect.Field;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 public class MandelbrotActivity extends AppCompatActivity {
     public static final String PREFS_NAME = "MandelbrotActivityPrefs";
@@ -46,6 +45,53 @@ public class MandelbrotActivity extends AppCompatActivity {
     private TextView txtInfo;
     private TextView txtIterations;
     private SeekBar seekBarIterations;
+    private MandelbrotViewBase.OnCoordinatesChanged coordinatesChangedListener = new MandelbrotViewBase.OnCoordinatesChanged() {
+        @Override
+        public void newCoordinates(double xmin, double xmax, double ymin, double ymax) {
+            if (txtInfo.getVisibility() != View.VISIBLE) {
+                return;
+            }
+            txtIterations.setText(Integer.toString(mandelbrotView.getNumIterations()));
+            StringBuilder sb = new StringBuilder(512);
+            sb.append("Real: ");
+            sb.append(xmin);
+            sb.append(" to ");
+            sb.append(xmax);
+            sb.append("\nImag: ");
+            sb.append(ymin);
+            sb.append(" to ");
+            sb.append(ymax);
+            if (juliaEnabled) {
+                sb.append("\nJulia: ");
+                sb.append(mandelbrotView.getXCenter());
+                sb.append(", ");
+                sb.append(mandelbrotView.getYCenter());
+            }
+            txtInfo.setText(sb.toString());
+        }
+    };
+
+    /**
+     * Helper function to force the Activity to show the three-dot overflow icon in its ActionBar.
+     *
+     * @param activity Activity whose overflow icon will be forced.
+     */
+    private static void forceOverflowMenuIcon(Activity activity) {
+        try {
+            ViewConfiguration config = ViewConfiguration.get(activity);
+            // Note: this field doesn't exist in API <11, so those users will need to tap the physical menu button,
+            // unless we figure out another solution.
+            // This field also doesn't exist in 4.4, where the overflow icon is always shown:
+            // https://android.googlesource.com/platform/frameworks/base.git/+/ea04f3cfc6e245fb415fd352ed0048cd940a46fe%5E!/
+            Field menuKeyField = ViewConfiguration.class.getDeclaredField("sHasPermanentMenuKey");
+            if (menuKeyField != null) {
+                menuKeyField.setAccessible(true);
+                menuKeyField.setBoolean(config, false);
+            }
+        } catch (Exception ex) {
+            // multiple exceptions may be thrown above, but it's not super critical if it fails.
+        }
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -61,13 +107,13 @@ public class MandelbrotActivity extends AppCompatActivity {
         getSupportActionBar().setTitle("");
         forceOverflowMenuIcon(this);
 
-        txtInfo = (TextView)findViewById(R.id.txtInfo);
-        txtIterations = (TextView)findViewById(R.id.txtIterations);
+        txtInfo = (TextView) findViewById(R.id.txtInfo);
+        txtIterations = (TextView) findViewById(R.id.txtIterations);
         settingsContainer = findViewById(R.id.settings_container);
         settingsContainer.setVisibility(View.GONE);
 
-        seekBarIterations = (SeekBar)findViewById(R.id.seekBarIterations);
-        seekBarIterations.setMax((int)Math.sqrt(MandelbrotViewBase.MAX_ITERATIONS) + 1);
+        seekBarIterations = (SeekBar) findViewById(R.id.seekBarIterations);
+        seekBarIterations.setMax((int) Math.sqrt(MandelbrotViewBase.MAX_ITERATIONS) + 1);
         seekBarIterations.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if (!fromUser) {
@@ -75,14 +121,16 @@ public class MandelbrotActivity extends AppCompatActivity {
                 }
                 updateIterations(progress * progress);
             }
+
             public void onStartTrackingTouch(SeekBar arg0) {
             }
+
             public void onStopTrackingTouch(SeekBar arg0) {
             }
         });
 
-        juliaView = (JuliaView)findViewById(R.id.julia_view);
-        mandelbrotView = (MandelbrotView)findViewById(R.id.mandelbrot_view);
+        juliaView = (JuliaView) findViewById(R.id.julia_view);
+        mandelbrotView = (MandelbrotView) findViewById(R.id.mandelbrot_view);
         mandelbrotView.setOnPointSelected(new MandelbrotViewBase.OnPointSelected() {
             @Override
             public void pointSelected(double x, double y) {
@@ -133,53 +181,6 @@ public class MandelbrotActivity extends AppCompatActivity {
         updateIterationBar();
     }
 
-    private MandelbrotViewBase.OnCoordinatesChanged coordinatesChangedListener = new MandelbrotViewBase.OnCoordinatesChanged() {
-        @Override
-        public void newCoordinates(double xmin, double xmax, double ymin, double ymax) {
-            if (txtInfo.getVisibility() != View.VISIBLE) {
-                return;
-            }
-            txtIterations.setText(Integer.toString(mandelbrotView.getNumIterations()));
-            StringBuilder sb = new StringBuilder(512);
-            sb.append("Real: ");
-            sb.append(xmin);
-            sb.append(" to ");
-            sb.append(xmax);
-            sb.append("\nImag: ");
-            sb.append(ymin);
-            sb.append(" to ");
-            sb.append(ymax);
-            if (juliaEnabled) {
-                sb.append("\nJulia: ");
-                sb.append(mandelbrotView.getXCenter());
-                sb.append(", ");
-                sb.append(mandelbrotView.getYCenter());
-            }
-            txtInfo.setText(sb.toString());
-        }
-    };
-
-    /**
-     * Helper function to force the Activity to show the three-dot overflow icon in its ActionBar.
-     * @param activity Activity whose overflow icon will be forced.
-     */
-    private static void forceOverflowMenuIcon(Activity activity) {
-        try {
-            ViewConfiguration config = ViewConfiguration.get(activity);
-            // Note: this field doesn't exist in API <11, so those users will need to tap the physical menu button,
-            // unless we figure out another solution.
-            // This field also doesn't exist in 4.4, where the overflow icon is always shown:
-            // https://android.googlesource.com/platform/frameworks/base.git/+/ea04f3cfc6e245fb415fd352ed0048cd940a46fe%5E!/
-            Field menuKeyField = ViewConfiguration.class.getDeclaredField("sHasPermanentMenuKey");
-            if (menuKeyField != null) {
-                menuKeyField.setAccessible(true);
-                menuKeyField.setBoolean(config, false);
-            }
-        } catch (Exception ex) {
-            // multiple exceptions may be thrown above, but it's not super critical if it fails.
-        }
-    }
-
     private void updateIterationBar() {
         seekBarIterations.setProgress((int) Math.sqrt(mandelbrotView.getNumIterations()));
     }
@@ -198,10 +199,12 @@ public class MandelbrotActivity extends AppCompatActivity {
                 @Override
                 public void onAnimationStart(Animation animation) {
                 }
+
                 @Override
                 public void onAnimationEnd(Animation animation) {
                     juliaView.setVisibility(View.VISIBLE);
                 }
+
                 @Override
                 public void onAnimationRepeat(Animation animation) {
                 }
@@ -245,7 +248,7 @@ public class MandelbrotActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onStop(){
+    protected void onStop() {
         super.onStop();
         SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
         SharedPreferences.Editor editor = settings.edit();
@@ -257,9 +260,9 @@ public class MandelbrotActivity extends AppCompatActivity {
         editor.putBoolean("juliaEnabled", juliaEnabled);
         editor.commit();
     }
-    
+
     @Override
-    public void onDestroy(){
+    public void onDestroy() {
         mandelbrotView.terminateThreads();
         juliaView.terminateThreads();
         mandelnative.ReleaseParameters(0);
@@ -268,26 +271,26 @@ public class MandelbrotActivity extends AppCompatActivity {
         mandelnative.ReleaseBitmap(1);
         super.onDestroy();
     }
-    
+
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         int iterationInc = mandelbrotView.getNumIterations() / 16;
         if (iterationInc < 1) {
             iterationInc = 1;
         }
-        if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN){
+        if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
             updateIterations(mandelbrotView.getNumIterations() - iterationInc);
             updateIterationBar();
             return true;
-        } else if (keyCode == KeyEvent.KEYCODE_VOLUME_UP){
+        } else if (keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
             updateIterations(mandelbrotView.getNumIterations() + iterationInc);
             updateIterationBar();
             return true;
         }
         return super.onKeyDown(keyCode, event);
     }
-    
-    public boolean onTouchEvent(MotionEvent event){
+
+    public boolean onTouchEvent(MotionEvent event) {
         return mandelbrotView.onTouchEvent(event);
     }
 
@@ -311,15 +314,10 @@ public class MandelbrotActivity extends AppCompatActivity {
                 toggleJulia();
                 return true;
             case R.id.menu_save_image:
-                try{
-                    String path = Environment.getExternalStorageDirectory().getAbsolutePath();
-                    SimpleDateFormat f = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.US);
-                    path += "/" + f.format(new Date()) + ".png";
-                    mandelbrotView.SavePicture(path);
-                    Toast.makeText(MandelbrotActivity.this, "Picture saved as: " + path, Toast.LENGTH_SHORT).show();
-                }catch(Exception ex){
-                    Toast.makeText(MandelbrotActivity.this, "Error saving file: " + ex.getMessage(), Toast.LENGTH_SHORT).show();
-                }
+                String path = Environment.getExternalStorageDirectory().getAbsolutePath();
+                SimpleDateFormat f = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.US);
+                path += "/" + f.format(new Date()) + ".png";
+                mandelbrotView.savePicture(path);
                 return true;
             case R.id.menu_color_scheme:
                 currentColorScheme++;
@@ -332,9 +330,9 @@ public class MandelbrotActivity extends AppCompatActivity {
                 juliaView.reset();
                 return true;
             case R.id.menu_about:
-                LayoutInflater inflater = (LayoutInflater)MandelbrotActivity.this.getSystemService(LAYOUT_INFLATER_SERVICE);
+                LayoutInflater inflater = (LayoutInflater) MandelbrotActivity.this.getSystemService(LAYOUT_INFLATER_SERVICE);
                 View layout = inflater.inflate(R.layout.about, null);
-                TextView txtAbout = (TextView)layout.findViewById(R.id.txtAbout);
+                TextView txtAbout = (TextView) layout.findViewById(R.id.txtAbout);
                 txtAbout.setText(MandelbrotActivity.this.getString(R.string.str_about));
                 AlertDialog alertDialog = new AlertDialog.Builder(MandelbrotActivity.this).create();
                 alertDialog.setTitle("About...");
@@ -366,10 +364,12 @@ public class MandelbrotActivity extends AppCompatActivity {
                 @Override
                 public void onAnimationStart(Animation animation) {
                 }
+
                 @Override
                 public void onAnimationEnd(Animation animation) {
                     settingsContainer.setVisibility(View.VISIBLE);
                 }
+
                 @Override
                 public void onAnimationRepeat(Animation animation) {
                 }
@@ -381,10 +381,12 @@ public class MandelbrotActivity extends AppCompatActivity {
                 @Override
                 public void onAnimationStart(Animation animation) {
                 }
+
                 @Override
                 public void onAnimationEnd(Animation animation) {
                     settingsContainer.setVisibility(View.GONE);
                 }
+
                 @Override
                 public void onAnimationRepeat(Animation animation) {
                 }
@@ -412,4 +414,5 @@ public class MandelbrotActivity extends AppCompatActivity {
         }
         super.onBackPressed();
     }
+
 }
