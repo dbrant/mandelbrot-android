@@ -6,6 +6,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.text.format.DateUtils;
 import android.util.AttributeSet;
@@ -13,6 +14,7 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
+import android.widget.Toast;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -65,6 +67,7 @@ public abstract class MandelbrotViewBase extends View {
     private float displayDensity;
     private OnPointSelected onPointSelected;
     private OnCoordinatesChanged onCoordinatesChanged;
+
     public MandelbrotViewBase(Context context) {
         super(context);
     }
@@ -72,6 +75,7 @@ public abstract class MandelbrotViewBase extends View {
     public MandelbrotViewBase(Context context, AttributeSet attrs) {
         super(context, attrs);
     }
+
     public MandelbrotViewBase(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
     }
@@ -230,11 +234,8 @@ public abstract class MandelbrotViewBase extends View {
         showCrosshairs = enabled;
     }
 
-    public void SavePicture(String fileName) throws IOException {
-        FileOutputStream fs = new FileOutputStream(fileName);
-        theBitmap.compress(Bitmap.CompressFormat.PNG, 100, fs);
-        fs.flush();
-        fs.close();
+    public void savePicture(String fileName) {
+        new SaveImageTask().execute(fileName);
     }
 
     public void requestCoordinates() {
@@ -324,6 +325,7 @@ public abstract class MandelbrotViewBase extends View {
         private int startX, startY;
         private int startWidth, startHeight;
         private int level;
+
         public MandelThread(int x, int y, int width, int height, int level) {
             startX = x;
             startY = y;
@@ -371,4 +373,24 @@ public abstract class MandelbrotViewBase extends View {
         }
     }
 
+    private class SaveImageTask extends AsyncTask<String, Void, String> {
+        @Override
+        protected String doInBackground(String... fileName) {
+            try {
+                FileOutputStream fs = new FileOutputStream(fileName[0]);
+                theBitmap.compress(Bitmap.CompressFormat.PNG, 100, fs);
+                fs.flush();
+                fs.close();
+                return "Picture saved as: " + fileName[0];
+            } catch (IOException e) {
+                e.printStackTrace();
+                return "Error saving file: " + e.getMessage();
+            }
+        }
+
+        @Override
+        protected void onPostExecute(String message) {
+            Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+        }
+    }
 }

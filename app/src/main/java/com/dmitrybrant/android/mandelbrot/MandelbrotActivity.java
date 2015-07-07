@@ -23,7 +23,6 @@ import android.widget.FrameLayout;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
@@ -315,15 +314,10 @@ public class MandelbrotActivity extends AppCompatActivity {
                 toggleJulia();
                 return true;
             case R.id.menu_save_image:
-                try {
-                    String path = Environment.getExternalStorageDirectory().getAbsolutePath();
-                    SimpleDateFormat f = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.US);
-                    path += "/" + f.format(new Date()) + ".png";
-                    mandelbrotView.SavePicture(path);
-                    Toast.makeText(MandelbrotActivity.this, "Picture saved as: " + path, Toast.LENGTH_SHORT).show();
-                } catch (Exception ex) {
-                    Toast.makeText(MandelbrotActivity.this, "Error saving file: " + ex.getMessage(), Toast.LENGTH_SHORT).show();
-                }
+                String path = Environment.getExternalStorageDirectory().getAbsolutePath();
+                SimpleDateFormat f = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.US);
+                path += "/" + f.format(new Date()) + ".png";
+                mandelbrotView.savePicture(path);
                 return true;
             case R.id.menu_color_scheme:
                 currentColorScheme++;
@@ -420,4 +414,5 @@ public class MandelbrotActivity extends AppCompatActivity {
         }
         super.onBackPressed();
     }
+
 }
