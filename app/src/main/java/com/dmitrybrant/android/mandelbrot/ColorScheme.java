@@ -11,11 +11,11 @@ public final class ColorScheme {
 
     public static void initColorSchemes() {
         colorSchemes = new ArrayList<>();
-        colorSchemes.add(createColorScheme(new int[] { Color.BLUE, Color.GREEN, Color.RED, Color.BLUE }, 256));
-        colorSchemes.add(createColorScheme(new int[] { Color.YELLOW, Color.MAGENTA, Color.BLUE, Color.GREEN, Color.YELLOW }, 256));
-        colorSchemes.add(createColorScheme(new int[] { Color.WHITE, Color.BLACK, Color.WHITE }, 256));
-        colorSchemes.add(createColorScheme(new int[] { Color.BLACK, Color.WHITE, Color.BLACK }, 256));
-        colorSchemes.add(new int[] { Color.BLACK, Color.WHITE });
+        colorSchemes.add(createColorScheme(new int[]{Color.BLUE, Color.GREEN, Color.RED, Color.BLUE}, 256));
+        colorSchemes.add(createColorScheme(new int[]{Color.YELLOW, Color.MAGENTA, Color.BLUE, Color.GREEN, Color.YELLOW}, 256));
+        colorSchemes.add(createColorScheme(new int[]{Color.WHITE, Color.BLACK, Color.WHITE}, 256));
+        colorSchemes.add(createColorScheme(new int[]{Color.BLACK, Color.WHITE, Color.BLACK}, 256));
+        colorSchemes.add(new int[]{Color.BLACK, Color.WHITE});
     }
 
     public static List<int[]> getColorSchemes() {
@@ -52,16 +52,28 @@ public final class ColorScheme {
                 cIndex++;
                 cCounter = elementsPerStep;
             }
-            colors[i] = 0xff000000 | ((int)b << 16) | ((int)g << 8) | ((int)r);
+            colors[i] = 0xff000000 | ((int) b << 16) | ((int) g << 8) | ((int) r);
             b = b + bInc;
             g = g + gInc;
             r = r + rInc;
-            if (b < 0f) { b = 0f; }
-            if (g < 0f) { g = 0f; }
-            if (r < 0f) { r = 0f; }
-            if (b > 255f) { b = 255f; }
-            if (g > 255f) { g = 255f; }
-            if (r > 255f) { r = 255f; }
+            if (b < 0f) {
+                b = 0f;
+            }
+            if (g < 0f) {
+                g = 0f;
+            }
+            if (r < 0f) {
+                r = 0f;
+            }
+            if (b > 255f) {
+                b = 255f;
+            }
+            if (g > 255f) {
+                g = 255f;
+            }
+            if (r > 255f) {
+                r = 255f;
+            }
             cCounter--;
         }
         return colors;
