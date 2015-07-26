@@ -22,8 +22,6 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.WindowManager;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import android.widget.FrameLayout;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
@@ -193,38 +191,9 @@ public class MandelbrotActivity extends AppCompatActivity {
         mandelbrotView.requestCoordinates();
         if (juliaEnabled) {
             juliaView.setVisibility(View.VISIBLE);
-            Animation anim = AnimationUtils.loadAnimation(this, R.anim.slide_in_bottom);
-            anim.setAnimationListener(new Animation.AnimationListener() {
-                @Override
-                public void onAnimationStart(Animation animation) {
-                }
-                @Override
-                public void onAnimationEnd(Animation animation) {
-                    juliaView.setVisibility(View.VISIBLE);
-                }
-                @Override
-                public void onAnimationRepeat(Animation animation) {
-                }
-            });
-            juliaView.startAnimation(anim);
             juliaView.render();
         } else {
-            Animation anim = AnimationUtils.loadAnimation(this, R.anim.slide_out_bottom);
-            anim.setAnimationListener(new Animation.AnimationListener() {
-                @Override
-                public void onAnimationStart(Animation animation) {
-                }
-
-                @Override
-                public void onAnimationEnd(Animation animation) {
-                    juliaView.setVisibility(View.GONE);
-                }
-
-                @Override
-                public void onAnimationRepeat(Animation animation) {
-                }
-            });
-            juliaView.startAnimation(anim);
+            juliaView.setVisibility(View.GONE);
         }
     }
 
@@ -361,35 +330,8 @@ public class MandelbrotActivity extends AppCompatActivity {
         }
         if (settingsContainer.getVisibility() != View.VISIBLE) {
             settingsContainer.setVisibility(View.VISIBLE);
-            Animation anim = AnimationUtils.loadAnimation(this, R.anim.slide_in_bottom);
-            anim.setAnimationListener(new Animation.AnimationListener() {
-                @Override
-                public void onAnimationStart(Animation animation) {
-                }
-                @Override
-                public void onAnimationEnd(Animation animation) {
-                    settingsContainer.setVisibility(View.VISIBLE);
-                }
-                @Override
-                public void onAnimationRepeat(Animation animation) {
-                }
-            });
-            settingsContainer.startAnimation(anim);
         } else {
-            Animation anim = AnimationUtils.loadAnimation(this, R.anim.slide_out_bottom);
-            anim.setAnimationListener(new Animation.AnimationListener() {
-                @Override
-                public void onAnimationStart(Animation animation) {
-                }
-                @Override
-                public void onAnimationEnd(Animation animation) {
-                    settingsContainer.setVisibility(View.GONE);
-                }
-                @Override
-                public void onAnimationRepeat(Animation animation) {
-                }
-            });
-            settingsContainer.startAnimation(anim);
+            settingsContainer.setVisibility(View.GONE);
         }
     }
 

@@ -16,7 +16,7 @@ android {
         applicationId "com.dmitrybrant.android.mandelbrot"
         minSdkVersion 8
         targetSdkVersion 22
-        versionCode 43
+        versionCode 44
         versionName "${versionStart}-${date}"
 
         ndk {
@@ -38,5 +38,5 @@ android {
 }
 
 dependencies {
-    compile 'com.android.support:appcompat-v7:22.2.0'
+    compile 'com.android.support:appcompat-v7:22.2.1'
 }
