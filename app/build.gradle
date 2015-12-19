@@ -9,19 +9,15 @@ def getDate() {
 }
 
 android {
-    compileSdkVersion 22
-    buildToolsVersion "22.0.1"
+    compileSdkVersion 23
+    buildToolsVersion "23.0.2"
 
     defaultConfig {
         applicationId "com.dmitrybrant.android.mandelbrot"
         minSdkVersion 8
-        targetSdkVersion 22
-        versionCode 44
+        targetSdkVersion 23
+        versionCode 45
         versionName "${versionStart}-${date}"
-
-        ndk {
-            moduleName "mandelnative_jni"
-        }
 	}
 
 	sourceSets.main {
@@ -30,13 +26,17 @@ android {
 	}
 
     buildTypes {
+        debug {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
         release {
             minifyEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android.txt')
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
 }
 
 dependencies {
-    compile 'com.android.support:appcompat-v7:22.2.1'
+    compile 'com.android.support:appcompat-v7:23.1.1'
 }

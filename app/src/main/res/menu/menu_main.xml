@@ -3,30 +3,30 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
       xmlns:app="http://schemas.android.com/apk/res-auto">
     <item android:id="@+id/menu_settings"
-        android:title="Settings"
+        android:title="@string/settings"
         android:icon="@drawable/ic_settings"
         app:showAsAction="always"
         />
     <item android:id="@+id/menu_julia_mode"
-        android:title="Julia mode"
+        android:title="@string/julia_toggle"
         android:icon="@drawable/julia_128"
         app:showAsAction="always"
         />
     <item android:id="@+id/menu_color_scheme"
-        android:title="Color scheme"
+        android:title="@string/color_scheme"
         android:icon="@drawable/colors_128"
         app:showAsAction="always"
         />
     <item android:id="@+id/menu_save_image"
-        android:title="Save image"
+        android:title="@string/save_image"
         app:showAsAction="never"
         />
     <item android:id="@+id/menu_reset"
-        android:title="Reset"
+        android:title="@string/reset"
         app:showAsAction="never"
         />
     <item android:id="@+id/menu_about"
-        android:title="About..."
+        android:title="@string/about"
         app:showAsAction="never"
         />
 </menu>

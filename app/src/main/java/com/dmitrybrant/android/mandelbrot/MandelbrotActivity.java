@@ -15,7 +15,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Gravity;
 import android.view.KeyEvent;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -37,8 +36,8 @@ public class MandelbrotActivity extends AppCompatActivity {
 
     private MandelbrotView mandelbrotView;
     private JuliaView juliaView;
-    private boolean juliaEnabled = false;
-    private int currentColorScheme = 0;
+    private boolean juliaEnabled;
+    private int currentColorScheme;
 
     private View settingsContainer;
     private TextView txtInfo;
@@ -55,8 +54,10 @@ public class MandelbrotActivity extends AppCompatActivity {
 
         final Toolbar toolbar = (Toolbar) findViewById(R.id.main_toolbar);
         setSupportActionBar(toolbar);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setTitle("");
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setTitle("");
+        }
         forceOverflowMenuIcon(this);
 
         txtInfo = (TextView)findViewById(R.id.txtInfo);
@@ -110,25 +111,129 @@ public class MandelbrotActivity extends AppCompatActivity {
         juliaView.post(new Runnable() {
             @Override
             public void run() {
-                final int widthOffset = 24;
-                int width = mandelbrotView.getWidth();
-                int height = mandelbrotView.getHeight();
-                FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) juliaView.getLayoutParams();
-                if (width > height) {
-                    params.gravity = Gravity.START;
-                    params.height = FrameLayout.LayoutParams.MATCH_PARENT;
-                    params.width = width / 2 - (int) (widthOffset * getResources().getDisplayMetrics().density);
-                } else {
-                    params.gravity = Gravity.BOTTOM;
-                    params.width = FrameLayout.LayoutParams.MATCH_PARENT;
-                    params.height = height / 2 - (int) (widthOffset * getResources().getDisplayMetrics().density);
-                }
-                juliaView.setLayoutParams(params);
-                updateJulia();
+                initJulia();
             }
         });
 
         updateIterationBar();
+    }
+
+    @Override
+    public void onStop(){
+        super.onStop();
+        SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putString("xcenter", Double.toString(mandelbrotView.getXCenter()));
+        editor.putString("ycenter", Double.toString(mandelbrotView.getYCenter()));
+        editor.putString("xextent", Double.toString(mandelbrotView.getXExtent()));
+        editor.putInt("iterations", mandelbrotView.getNumIterations());
+        editor.putInt("colorscheme", currentColorScheme);
+        editor.putBoolean("juliaEnabled", juliaEnabled);
+        editor.commit();
+    }
+    
+    @Override
+    public void onDestroy(){
+        mandelbrotView.terminateThreads();
+        juliaView.terminateThreads();
+        mandelnative.ReleaseParameters(0);
+        mandelnative.ReleaseBitmap(0);
+        mandelnative.ReleaseParameters(1);
+        mandelnative.ReleaseBitmap(1);
+        super.onDestroy();
+    }
+    
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        int iterationInc = mandelbrotView.getNumIterations() / 16;
+        if (iterationInc < 1) {
+            iterationInc = 1;
+        }
+        if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN){
+            updateIterations(mandelbrotView.getNumIterations() - iterationInc);
+            updateIterationBar();
+            return true;
+        } else if (keyCode == KeyEvent.KEYCODE_VOLUME_UP){
+            updateIterations(mandelbrotView.getNumIterations() + iterationInc);
+            updateIterationBar();
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (isSettingsVisible()) {
+            toggleSettings();
+            return;
+        } else if (juliaEnabled) {
+            toggleJulia();
+            return;
+        }
+        super.onBackPressed();
+    }
+
+    public boolean onTouchEvent(MotionEvent event){
+        return mandelbrotView.onTouchEvent(event);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case android.R.id.home:
+                onBackPressed();
+                return true;
+            case R.id.menu_settings:
+                toggleSettings();
+                mandelbrotView.requestCoordinates();
+                return true;
+            case R.id.menu_julia_mode:
+                toggleJulia();
+                return true;
+            case R.id.menu_save_image:
+                saveImage();
+                return true;
+            case R.id.menu_color_scheme:
+                currentColorScheme++;
+                updateColorScheme();
+                mandelbrotView.render();
+                juliaView.render();
+                return true;
+            case R.id.menu_reset:
+                mandelbrotView.reset();
+                juliaView.reset();
+                return true;
+            case R.id.menu_about:
+                showAboutDialog();
+                return true;
+            default:
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void initJulia() {
+        final int widthOffset = 24;
+        int width = mandelbrotView.getWidth();
+        int height = mandelbrotView.getHeight();
+        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) juliaView.getLayoutParams();
+        if (width > height) {
+            params.gravity = Gravity.START;
+            params.height = FrameLayout.LayoutParams.MATCH_PARENT;
+            params.width = width / 2 - (int) (widthOffset * getResources().getDisplayMetrics().density);
+        } else {
+            params.gravity = Gravity.BOTTOM;
+            params.width = FrameLayout.LayoutParams.MATCH_PARENT;
+            params.height = height / 2 - (int) (widthOffset * getResources().getDisplayMetrics().density);
+        }
+        juliaView.setLayoutParams(params);
+        updateJulia();
     }
 
     private MandelbrotViewBase.OnCoordinatesChanged coordinatesChangedListener = new MandelbrotViewBase.OnCoordinatesChanged() {
@@ -137,23 +242,13 @@ public class MandelbrotActivity extends AppCompatActivity {
             if (txtInfo.getVisibility() != View.VISIBLE) {
                 return;
             }
-            txtIterations.setText(Integer.toString(mandelbrotView.getNumIterations()));
-            StringBuilder sb = new StringBuilder(512);
-            sb.append("Real: ");
-            sb.append(xmin);
-            sb.append(" to ");
-            sb.append(xmax);
-            sb.append("\nImag: ");
-            sb.append(ymin);
-            sb.append(" to ");
-            sb.append(ymax);
+            txtIterations.setText(String.format("%1$s", mandelbrotView.getNumIterations()));
             if (juliaEnabled) {
-                sb.append("\nJulia: ");
-                sb.append(mandelbrotView.getXCenter());
-                sb.append(", ");
-                sb.append(mandelbrotView.getYCenter());
+                txtInfo.setText(String.format(getString(R.string.coordinate_display_julia), xmin,
+                        xmax, ymin, ymax, mandelbrotView.getXCenter(), mandelbrotView.getYCenter()));
+            } else {
+                txtInfo.setText(String.format(getString(R.string.coordinate_display), xmin, xmax, ymin, ymax));
             }
-            txtInfo.setText(sb.toString());
         }
     };
 
@@ -213,113 +308,6 @@ public class MandelbrotActivity extends AppCompatActivity {
         juliaView.render();
     }
 
-    @Override
-    protected void onStop(){
-        super.onStop();
-        SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
-        SharedPreferences.Editor editor = settings.edit();
-        editor.putString("xcenter", Double.toString(mandelbrotView.getXCenter()));
-        editor.putString("ycenter", Double.toString(mandelbrotView.getYCenter()));
-        editor.putString("xextent", Double.toString(mandelbrotView.getXExtent()));
-        editor.putInt("iterations", mandelbrotView.getNumIterations());
-        editor.putInt("colorscheme", currentColorScheme);
-        editor.putBoolean("juliaEnabled", juliaEnabled);
-        editor.commit();
-    }
-    
-    @Override
-    public void onDestroy(){
-        mandelbrotView.terminateThreads();
-        juliaView.terminateThreads();
-        mandelnative.ReleaseParameters(0);
-        mandelnative.ReleaseBitmap(0);
-        mandelnative.ReleaseParameters(1);
-        mandelnative.ReleaseBitmap(1);
-        super.onDestroy();
-    }
-    
-    @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-        int iterationInc = mandelbrotView.getNumIterations() / 16;
-        if (iterationInc < 1) {
-            iterationInc = 1;
-        }
-        if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN){
-            updateIterations(mandelbrotView.getNumIterations() - iterationInc);
-            updateIterationBar();
-            return true;
-        } else if (keyCode == KeyEvent.KEYCODE_VOLUME_UP){
-            updateIterations(mandelbrotView.getNumIterations() + iterationInc);
-            updateIterationBar();
-            return true;
-        }
-        return super.onKeyDown(keyCode, event);
-    }
-    
-    public boolean onTouchEvent(MotionEvent event){
-        return mandelbrotView.onTouchEvent(event);
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case android.R.id.home:
-                onBackPressed();
-                return true;
-            case R.id.menu_settings:
-                toggleSettings();
-                mandelbrotView.requestCoordinates();
-                return true;
-            case R.id.menu_julia_mode:
-                toggleJulia();
-                return true;
-            case R.id.menu_save_image:
-                try{
-                    String path = Environment.getExternalStorageDirectory().getAbsolutePath();
-                    SimpleDateFormat f = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.US);
-                    path += "/" + f.format(new Date()) + ".png";
-                    mandelbrotView.SavePicture(path);
-                    Toast.makeText(MandelbrotActivity.this, "Picture saved as: " + path, Toast.LENGTH_SHORT).show();
-                }catch(Exception ex){
-                    Toast.makeText(MandelbrotActivity.this, "Error saving file: " + ex.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-                return true;
-            case R.id.menu_color_scheme:
-                currentColorScheme++;
-                updateColorScheme();
-                mandelbrotView.render();
-                juliaView.render();
-                return true;
-            case R.id.menu_reset:
-                mandelbrotView.reset();
-                juliaView.reset();
-                return true;
-            case R.id.menu_about:
-                LayoutInflater inflater = (LayoutInflater)MandelbrotActivity.this.getSystemService(LAYOUT_INFLATER_SERVICE);
-                View layout = inflater.inflate(R.layout.about, null);
-                TextView txtAbout = (TextView)layout.findViewById(R.id.txtAbout);
-                txtAbout.setText(MandelbrotActivity.this.getString(R.string.str_about));
-                AlertDialog alertDialog = new AlertDialog.Builder(MandelbrotActivity.this).create();
-                alertDialog.setTitle("About...");
-                alertDialog.setView(layout);
-                alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "OK", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int which) {
-                    }
-                });
-                alertDialog.show();
-                return true;
-            default:
-                break;
-        }
-        return super.onOptionsItemSelected(item);
-    }
-
     private boolean isSettingsVisible() {
         return settingsContainer.getVisibility() == View.VISIBLE;
     }
@@ -343,15 +331,26 @@ public class MandelbrotActivity extends AppCompatActivity {
         updateJulia();
     }
 
-    @Override
-    public void onBackPressed() {
-        if (isSettingsVisible()) {
-            toggleSettings();
-            return;
-        } else if (juliaEnabled) {
-            toggleJulia();
-            return;
+    private void saveImage() {
+        try{
+            String path = Environment.getExternalStorageDirectory().getAbsolutePath();
+            SimpleDateFormat f = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.US);
+            path += "/" + f.format(new Date()) + ".png";
+            mandelbrotView.SavePicture(path);
+            Toast.makeText(MandelbrotActivity.this, String.format(getString(R.string.picture_save_success), path), Toast.LENGTH_SHORT).show();
+        }catch(Exception ex){
+            Toast.makeText(MandelbrotActivity.this, String.format(getString(R.string.picture_save_error), ex.getMessage()), Toast.LENGTH_SHORT).show();
         }
-        super.onBackPressed();
+    }
+
+    private void showAboutDialog() {
+        AlertDialog alertDialog = new AlertDialog.Builder(MandelbrotActivity.this).create();
+        alertDialog.setTitle(getString(R.string.about));
+        alertDialog.setMessage(getString(R.string.str_about));
+        alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.ok), new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int which) {
+            }
+        });
+        alertDialog.show();
     }
 }
