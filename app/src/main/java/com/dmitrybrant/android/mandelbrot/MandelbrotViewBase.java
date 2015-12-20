@@ -40,8 +40,8 @@ public abstract class MandelbrotViewBase extends View {
     private volatile boolean terminateThreads;
 
     private Paint paint;
-    private Bitmap theBitmap;
-    private Rect theRect;
+    private Bitmap viewportBitmap;
+    private Rect viewportRect;
     private boolean showCrosshairs;
 
     private int screenWidth;
@@ -146,9 +146,9 @@ public abstract class MandelbrotViewBase extends View {
             terminateThreads();
             initMinMax();
 
-            theBitmap = Bitmap.createBitmap(screenWidth, screenHeight, Bitmap.Config.ARGB_8888);
-            mandelnative.SetBitmap(paramIndex, theBitmap);
-            theRect = new Rect(0, 0, theBitmap.getWidth() - 1, theBitmap.getHeight() - 1);
+            viewportBitmap = Bitmap.createBitmap(screenWidth, screenHeight, Bitmap.Config.ARGB_8888);
+            mandelnative.SetBitmap(paramIndex, viewportBitmap);
+            viewportRect = new Rect(0, 0, viewportBitmap.getWidth() - 1, viewportBitmap.getHeight() - 1);
 
             render();
             return;
@@ -157,8 +157,8 @@ public abstract class MandelbrotViewBase extends View {
             return;
         }
 
-        mandelnative.UpdateBitmap(paramIndex, theBitmap);
-        canvas.drawBitmap(theBitmap, theRect, theRect, paint);
+        mandelnative.UpdateBitmap(paramIndex, viewportBitmap);
+        canvas.drawBitmap(viewportBitmap, viewportRect, viewportRect, paint);
 
         if (showCrosshairs) {
             canvas.drawLine(screenWidth / 2 - CROSSHAIR_WIDTH * displayDensity, screenHeight / 2, screenWidth / 2 + CROSSHAIR_WIDTH * displayDensity, screenHeight / 2, paint);
@@ -291,7 +291,7 @@ public abstract class MandelbrotViewBase extends View {
     public void SavePicture(String fileName) throws IOException
     {
         FileOutputStream fs = new FileOutputStream(fileName);
-        theBitmap.compress(Bitmap.CompressFormat.PNG, 100, fs);
+        viewportBitmap.compress(Bitmap.CompressFormat.PNG, 100, fs);
         fs.flush();
         fs.close();
     }
