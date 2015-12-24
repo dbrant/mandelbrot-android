@@ -5,7 +5,6 @@
     <style name="NoTitle" parent="AppTheme">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
-        <item name="android:windowActionBar">false</item>
         <item name="android:windowTitleSize">0dp</item>
     </style>
 </resources>
