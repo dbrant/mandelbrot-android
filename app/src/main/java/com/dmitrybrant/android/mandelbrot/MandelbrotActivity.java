@@ -60,6 +60,7 @@ public class MandelbrotActivity extends AppCompatActivity {
         ColorScheme.initColorSchemes();
 
         final Toolbar toolbar = (Toolbar) findViewById(R.id.main_toolbar);
+        toolbar.setBackgroundDrawable(GradientUtil.getCubicGradient(getResources().getColor(R.color.toolbar_gradient), Gravity.TOP));
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
