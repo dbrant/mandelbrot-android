@@ -20,7 +20,7 @@ import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 
 public abstract class MandelbrotViewBase extends View {
-    private static final String TAG = "MandelbrotCanvas";
+    private static final String TAG = "MandelbrotViewBase";
     public static final int DEFAULT_ITERATIONS = 128;
     public static final int MAX_ITERATIONS = 2048;
     public static final int MIN_ITERATIONS = 2;
@@ -249,7 +249,7 @@ public abstract class MandelbrotViewBase extends View {
                     t.join(DateUtils.SECOND_IN_MILLIS);
                 }
                 if (t.isAlive()) {
-                    Log.e(TAG, "Thread is still alive after 1sec...");
+                    Log.w(TAG, "Thread is still alive after 1sec...");
                 }
             }
 
@@ -306,7 +306,7 @@ public abstract class MandelbrotViewBase extends View {
 
     private class MandelThread extends Thread
     {
-        public MandelThread (int x, int y, int width, int height, int level) {
+        MandelThread (int x, int y, int width, int height, int level) {
             startX = x;
             startY = y;
             startWidth = width;
