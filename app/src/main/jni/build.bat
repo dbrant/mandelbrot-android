@@ -1,1 +1,1 @@
-F:\android-ndk-r10c\ndk-build
+f:\android-sdk-windows\ndk-bundle\ndk-build
