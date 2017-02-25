@@ -54,13 +54,16 @@ public class MandelbrotActivity extends AppCompatActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.main);
 
         ColorScheme.initColorSchemes();
 
         final Toolbar toolbar = (Toolbar) findViewById(R.id.main_toolbar);
-        toolbar.setBackgroundDrawable(GradientUtil.getCubicGradient(getResources().getColor(R.color.toolbar_gradient), Gravity.TOP));
+        toolbar.setBackgroundDrawable(GradientUtil
+                .getCubicGradient(ContextCompat
+                        .getColor(this, R.color.toolbar_gradient), Gravity.TOP));
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -274,7 +277,7 @@ public class MandelbrotActivity extends AppCompatActivity {
             if (txtInfo.getVisibility() != View.VISIBLE) {
                 return;
             }
-            txtIterations.setText(String.format("%1$s", mandelbrotView.getNumIterations()));
+            txtIterations.setText(String.format(getString(R.string.iterations), mandelbrotView.getNumIterations()));
             if (juliaEnabled) {
                 txtInfo.setText(String.format(getString(R.string.coordinate_display_julia), xmin,
                         xmax, ymin, ymax, mandelbrotView.getXCenter(), mandelbrotView.getYCenter()));
