@@ -16,6 +16,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.view.ViewCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -60,10 +61,9 @@ public class MandelbrotActivity extends AppCompatActivity {
 
         ColorScheme.initColorSchemes();
 
-        final Toolbar toolbar = (Toolbar) findViewById(R.id.main_toolbar);
-        toolbar.setBackgroundDrawable(GradientUtil
-                .getCubicGradient(ContextCompat
-                        .getColor(this, R.color.toolbar_gradient), Gravity.TOP));
+        final Toolbar toolbar = findViewById(R.id.main_toolbar);
+        ViewCompat.setBackground(toolbar, GradientUtil.getCubicGradient(ContextCompat
+                .getColor(this, R.color.toolbar_gradient), Gravity.TOP));
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -71,12 +71,12 @@ public class MandelbrotActivity extends AppCompatActivity {
         }
         forceOverflowMenuIcon(this);
 
-        txtInfo = (TextView)findViewById(R.id.txtInfo);
-        txtIterations = (TextView)findViewById(R.id.txtIterations);
+        txtInfo = findViewById(R.id.txtInfo);
+        txtIterations = findViewById(R.id.txtIterations);
         settingsContainer = findViewById(R.id.settings_container);
         settingsContainer.setVisibility(View.GONE);
 
-        seekBarIterations = (SeekBar)findViewById(R.id.seekBarIterations);
+        seekBarIterations = findViewById(R.id.seekBarIterations);
         seekBarIterations.setMax((int)Math.sqrt(MandelbrotViewBase.MAX_ITERATIONS) + 1);
         seekBarIterations.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -91,8 +91,8 @@ public class MandelbrotActivity extends AppCompatActivity {
             }
         });
 
-        juliaView = (JuliaView)findViewById(R.id.julia_view);
-        mandelbrotView = (MandelbrotView)findViewById(R.id.mandelbrot_view);
+        juliaView = findViewById(R.id.julia_view);
+        mandelbrotView = findViewById(R.id.mandelbrot_view);
         mandelbrotView.setOnPointSelected(new MandelbrotViewBase.OnPointSelected() {
             @Override
             public void pointSelected(double x, double y) {
@@ -140,7 +140,7 @@ public class MandelbrotActivity extends AppCompatActivity {
         editor.putInt("iterations", mandelbrotView.getNumIterations());
         editor.putInt("colorscheme", currentColorScheme);
         editor.putBoolean("juliaEnabled", juliaEnabled);
-        editor.commit();
+        editor.apply();
     }
     
     @Override

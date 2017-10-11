@@ -29,7 +29,7 @@ public final class GradientUtil {
      * @param gravity Where the gradient should start from. Note: when making horizontal gradients,
      *                remember to use START/END, instead of LEFT/RIGHT.
      */
-    public static void setCubicGradient(PaintDrawable drawable, int baseColor, int gravity) {
+    private static void setCubicGradient(PaintDrawable drawable, int baseColor, int gravity) {
         final int[] stopColors = new int[GRADIENT_NUM_STOPS];
 
         int red = Color.red(baseColor);
