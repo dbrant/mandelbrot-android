@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 
 def versionStart = '1.7'
 
-def getDate() {
+def static getDate() {
     def date = new Date()
     def formattedDate = date.format('yyyy-MM-dd')
     return formattedDate
