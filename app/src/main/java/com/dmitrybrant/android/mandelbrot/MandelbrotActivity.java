@@ -1,6 +1,7 @@
 package com.dmitrybrant.android.mandelbrot;
 
 import java.io.File;
+import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -8,14 +9,20 @@ import java.util.Locale;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.ActivityNotFoundException;
+import android.content.ContentValues;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.provider.DocumentFile;
 import android.support.v4.view.ViewCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -37,6 +44,7 @@ import android.widget.Toast;
 public class MandelbrotActivity extends AppCompatActivity {
     public static final String PREFS_NAME = "MandelbrotActivityPrefs";
     private static final int WRITE_PERMISSION_REQUEST = 50;
+    private static final int OPEN_DOCUMENT_REQUEST = 101;
 
     static {
         System.loadLibrary("mandelnative_jni");
@@ -234,7 +242,7 @@ public class MandelbrotActivity extends AppCompatActivity {
         switch (requestCode) {
             case WRITE_PERMISSION_REQUEST:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    saveImage();
+                    beginChooseFolder();
                 } else {
                     Toast.makeText(this, R.string.picture_save_permissions, Toast.LENGTH_SHORT).show();
                 }
@@ -244,12 +252,22 @@ public class MandelbrotActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent resultData) {
+        if (requestCode == OPEN_DOCUMENT_REQUEST && resultCode == RESULT_OK && resultData.getData() != null) {
+            Uri treeUri = resultData.getData();
+            DocumentFile pickedDir = DocumentFile.fromTreeUri(this, treeUri);
+            grantUriPermission(getPackageName(), treeUri, Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+            saveImage(pickedDir);
+        }
+    }
+
     private void checkWritePermissionThenSaveImage() {
         if ((ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) &&
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             requestPermissions(new String[]{ Manifest.permission.WRITE_EXTERNAL_STORAGE }, WRITE_PERMISSION_REQUEST);
         } else {
-            saveImage();
+            beginChooseFolder();
         }
     }
 
@@ -366,8 +384,36 @@ public class MandelbrotActivity extends AppCompatActivity {
         updateJulia();
     }
 
-    private void saveImage() {
-        try{
+    private void beginChooseFolder() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+            intent.setType("*/*");
+            try {
+                startActivityForResult(intent, OPEN_DOCUMENT_REQUEST);
+            } catch (ActivityNotFoundException e) {
+                saveImageOld();
+            }
+        } else {
+            saveImageOld();
+        }
+    }
+
+    private void saveImage(@NonNull DocumentFile dir) {
+        try {
+            String fileName = (new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.ROOT))
+                    .format(new Date()) + ".png";
+
+            DocumentFile file = dir.createFile("image/png", fileName);
+            String contentResolverPath = file.getUri().toString();
+            mandelbrotView.savePicture(getContentResolver().openOutputStream(file.getUri()));
+            Toast.makeText(MandelbrotActivity.this, getString(R.string.picture_save_success), Toast.LENGTH_SHORT).show();
+        } catch(Exception ex) {
+            Toast.makeText(MandelbrotActivity.this, String.format(getString(R.string.picture_save_error), ex.getMessage()), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void saveImageOld() {
+        try {
             String path = Environment.getExternalStorageDirectory().getAbsolutePath();
             File picsFile = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
             if (picsFile != null) {
@@ -375,9 +421,10 @@ public class MandelbrotActivity extends AppCompatActivity {
             }
             SimpleDateFormat f = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.US);
             path += "/" + f.format(new Date()) + ".png";
-            mandelbrotView.SavePicture(path);
-            Toast.makeText(MandelbrotActivity.this, String.format(getString(R.string.picture_save_success), path), Toast.LENGTH_SHORT).show();
-        }catch(Exception ex){
+            mandelbrotView.savePicture(path);
+            notifyContentResolver(path);
+            Toast.makeText(MandelbrotActivity.this, getString(R.string.picture_save_success), Toast.LENGTH_SHORT).show();
+        } catch(Exception ex) {
             Toast.makeText(MandelbrotActivity.this, String.format(getString(R.string.picture_save_error), ex.getMessage()), Toast.LENGTH_SHORT).show();
         }
     }
@@ -391,5 +438,16 @@ public class MandelbrotActivity extends AppCompatActivity {
             }
         });
         alertDialog.show();
+    }
+
+    private void notifyContentResolver(@NonNull String path) {
+        try {
+            ContentValues values = new ContentValues();
+            values.put(MediaStore.Images.Media.DATA, path);
+            Uri contentUri = MediaStore.Images.Media.INTERNAL_CONTENT_URI;
+            getContentResolver().insert(contentUri, values);
+        } catch (Exception e) {
+            //
+        }
     }
 }

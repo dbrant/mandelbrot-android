@@ -2,6 +2,7 @@ package com.dmitrybrant.android.mandelbrot;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -288,12 +289,16 @@ public abstract class MandelbrotViewBase extends View {
         showCrosshairs = enabled;
     }
 
-    public void SavePicture(String fileName) throws IOException
+    public void savePicture(@NonNull String fileName) throws IOException
     {
-        FileOutputStream fs = new FileOutputStream(fileName);
-        viewportBitmap.compress(Bitmap.CompressFormat.PNG, 100, fs);
-        fs.flush();
-        fs.close();
+        savePicture(new FileOutputStream(fileName));
+    }
+
+    public void savePicture(@NonNull OutputStream stream) throws IOException
+    {
+        viewportBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+        stream.flush();
+        stream.close();
     }
 
     private void initMinMax() {
