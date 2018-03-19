@@ -1,7 +1,6 @@
 package com.dmitrybrant.android.mandelbrot;
 
 import java.io.File;
-import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -404,8 +403,8 @@ public class MandelbrotActivity extends AppCompatActivity {
                     .format(new Date()) + ".png";
 
             DocumentFile file = dir.createFile("image/png", fileName);
-            String contentResolverPath = file.getUri().toString();
             mandelbrotView.savePicture(getContentResolver().openOutputStream(file.getUri()));
+            notifyContentResolver(file.getUri().toString());
             Toast.makeText(MandelbrotActivity.this, getString(R.string.picture_save_success), Toast.LENGTH_SHORT).show();
         } catch(Exception ex) {
             Toast.makeText(MandelbrotActivity.this, String.format(getString(R.string.picture_save_error), ex.getMessage()), Toast.LENGTH_SHORT).show();
