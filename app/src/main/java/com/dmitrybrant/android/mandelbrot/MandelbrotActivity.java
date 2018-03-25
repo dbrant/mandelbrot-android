@@ -386,10 +386,11 @@ public class MandelbrotActivity extends AppCompatActivity {
     private void beginChooseFolder() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
-            intent.setType("*/*");
             try {
                 startActivityForResult(intent, OPEN_DOCUMENT_REQUEST);
+                Toast.makeText(getApplicationContext(), R.string.folder_picker_instruction, Toast.LENGTH_LONG).show();
             } catch (ActivityNotFoundException e) {
+                e.printStackTrace();
                 saveImageOld();
             }
         } else {
@@ -405,9 +406,10 @@ public class MandelbrotActivity extends AppCompatActivity {
             DocumentFile file = dir.createFile("image/png", fileName);
             mandelbrotView.savePicture(getContentResolver().openOutputStream(file.getUri()));
             notifyContentResolver(file.getUri().toString());
-            Toast.makeText(MandelbrotActivity.this, getString(R.string.picture_save_success), Toast.LENGTH_SHORT).show();
+            Toast.makeText(MandelbrotActivity.this, String.format(getString(R.string.picture_save_success), file.getUri().getPath()), Toast.LENGTH_LONG).show();
         } catch(Exception ex) {
-            Toast.makeText(MandelbrotActivity.this, String.format(getString(R.string.picture_save_error), ex.getMessage()), Toast.LENGTH_SHORT).show();
+            ex.printStackTrace();
+            Toast.makeText(MandelbrotActivity.this, String.format(getString(R.string.picture_save_error), ex.getMessage()), Toast.LENGTH_LONG).show();
         }
     }
 
@@ -422,9 +424,10 @@ public class MandelbrotActivity extends AppCompatActivity {
             path += "/" + f.format(new Date()) + ".png";
             mandelbrotView.savePicture(path);
             notifyContentResolver(path);
-            Toast.makeText(MandelbrotActivity.this, getString(R.string.picture_save_success), Toast.LENGTH_SHORT).show();
+            Toast.makeText(MandelbrotActivity.this, String.format(getString(R.string.picture_save_success), path), Toast.LENGTH_LONG).show();
         } catch(Exception ex) {
-            Toast.makeText(MandelbrotActivity.this, String.format(getString(R.string.picture_save_error), ex.getMessage()), Toast.LENGTH_SHORT).show();
+            ex.printStackTrace();
+            Toast.makeText(MandelbrotActivity.this, String.format(getString(R.string.picture_save_error), ex.getMessage()), Toast.LENGTH_LONG).show();
         }
     }
 
