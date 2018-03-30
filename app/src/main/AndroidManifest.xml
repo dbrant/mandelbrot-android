@@ -5,6 +5,7 @@
     <application
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:extractNativeLibs="false"
         android:allowBackup="false">
 
         <uses-library android:required="false" android:name="com.sec.android.app.multiwindow"/>
