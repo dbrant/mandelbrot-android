@@ -7,23 +7,23 @@ public class MandelbrotView extends MandelbrotViewBase {
 
     public MandelbrotView(Context context) {
         super(context);
-        init(context);
+        init();
     }
 
     public MandelbrotView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        init(context);
+        init();
     }
 
     public MandelbrotView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
-        init(context);
+        init();
     }
 
-    protected void init(Context context) {
+    protected void init() {
         if (isInEditMode()) {
             return;
         }
-        super.init(context, false);
+        super.init(false);
     }
 }

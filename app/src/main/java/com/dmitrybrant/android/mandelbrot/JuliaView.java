@@ -7,23 +7,23 @@ public class JuliaView extends MandelbrotViewBase {
 
     public JuliaView(Context context) {
         super(context);
-        init(context);
+        init();
     }
 
     public JuliaView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        init(context);
+        init();
     }
 
     public JuliaView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
-        init(context);
+        init();
     }
 
-    protected void init(Context context) {
+    protected void init() {
         if (isInEditMode()) {
             return;
         }
-        super.init(context, true);
+        super.init(true);
     }
 }
