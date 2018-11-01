@@ -1,13 +1,11 @@
 package com.dmitrybrant.android.mandelbrot;
 
 import java.io.File;
-import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
 import android.Manifest;
-import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.ContentValues;
 import android.content.DialogInterface;
@@ -32,7 +30,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewConfiguration;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.SeekBar;
@@ -76,7 +73,6 @@ public class MandelbrotActivity extends AppCompatActivity {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setTitle("");
         }
-        forceOverflowMenuIcon(this);
 
         txtInfo = findViewById(R.id.txtInfo);
         txtIterations = findViewById(R.id.txtIterations);
@@ -303,27 +299,6 @@ public class MandelbrotActivity extends AppCompatActivity {
             }
         }
     };
-
-    /**
-     * Helper function to force the Activity to show the three-dot overflow icon in its ActionBar.
-     * @param activity Activity whose overflow icon will be forced.
-     */
-    private static void forceOverflowMenuIcon(Activity activity) {
-        try {
-            ViewConfiguration config = ViewConfiguration.get(activity);
-            // Note: this field doesn't exist in API <11, so those users will need to tap the physical menu button,
-            // unless we figure out another solution.
-            // This field also doesn't exist in 4.4, where the overflow icon is always shown:
-            // https://android.googlesource.com/platform/frameworks/base.git/+/ea04f3cfc6e245fb415fd352ed0048cd940a46fe%5E!/
-            Field menuKeyField = ViewConfiguration.class.getDeclaredField("sHasPermanentMenuKey");
-            if (menuKeyField != null) {
-                menuKeyField.setAccessible(true);
-                menuKeyField.setBoolean(config, false);
-            }
-        } catch (Exception ex) {
-            // multiple exceptions may be thrown above, but it's not super critical if it fails.
-        }
-    }
 
     private void updateIterationBar() {
         seekBarIterations.setProgress((int) Math.sqrt(mandelbrotView.getNumIterations()));
