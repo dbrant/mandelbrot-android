@@ -40,29 +40,26 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal">
-            <LinearLayout
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="0"
-                android:orientation="vertical">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_vertical"
-                    tools:text="Lorem ipsum"
-                    android:textColor="@color/info_text"/>
-                <TextView
-                    android:id="@+id/txtIterations"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    tools:text="Lorem ipsum"
-                    android:textColor="@color/info_text"/>
-            </LinearLayout>
+                android:layout_gravity="center_vertical"
+                android:text="@string/iterations"
+                android:textColor="@color/info_text"/>
+            <TextView
+                android:id="@+id/txtIterations"
+                android:layout_width="48dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                tools:text="123"
+                android:gravity="center"
+                android:textColor="@color/info_text"/>
             <SeekBar
                 android:id="@+id/seekBarIterations"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="32dp"
                 android:layout_gravity="center_vertical"
                 android:layout_weight="1" />
         </LinearLayout>

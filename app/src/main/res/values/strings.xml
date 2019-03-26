@@ -9,7 +9,7 @@
     <string name="save_image">Save image</string>
     <string name="reset">Reset</string>
     <string name="about">About…</string>
-    <string name="iterations">Iterations: %1$s</string>
+    <string name="iterations">Iterations:</string>
     <string name="coordinate_display">Real: %1$s to %2$s\nImag: %3$s to %4$s</string>
     <string name="coordinate_display_julia">Real: %1$s to %2$s\nImag: %3$s to %4$s\nJulia: %5$s to %6$s</string>
     <string name="folder_picker_instruction">Select folder where image will be saved.</string>

@@ -290,7 +290,7 @@ public class MandelbrotActivity extends AppCompatActivity {
             if (txtInfo.getVisibility() != View.VISIBLE) {
                 return;
             }
-            txtIterations.setText(String.format(getString(R.string.iterations), mandelbrotView.getNumIterations()));
+            txtIterations.setText(String.format(Locale.ROOT, "%d", mandelbrotView.getNumIterations()));
             if (juliaEnabled) {
                 txtInfo.setText(String.format(getString(R.string.coordinate_display_julia), xmin,
                         xmax, ymin, ymax, mandelbrotView.getXCenter(), mandelbrotView.getYCenter()));
