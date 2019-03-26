@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import android.graphics.PointF;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 import android.text.format.DateUtils;
 import android.util.AttributeSet;
 import android.util.Log;
