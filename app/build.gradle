@@ -9,12 +9,12 @@ def static getDate() {
 }
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion 29
 
     defaultConfig {
         applicationId "com.dmitrybrant.android.mandelbrot"
         minSdkVersion 14
-        targetSdkVersion 28
+        targetSdkVersion 29
         versionCode 58
         versionName "${versionStart}-${date}"
 	}
