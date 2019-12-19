@@ -234,24 +234,24 @@ public class MandelbrotActivity extends AppCompatActivity {
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        switch (requestCode) {
-            case WRITE_PERMISSION_REQUEST:
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    beginChooseFolder();
-                } else {
-                    Toast.makeText(this, R.string.picture_save_permissions, Toast.LENGTH_SHORT).show();
-                }
-                break;
-            default:
-                break;
+        if (requestCode == WRITE_PERMISSION_REQUEST) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                beginChooseFolder();
+            } else {
+                Toast.makeText(this, R.string.picture_save_permissions, Toast.LENGTH_SHORT).show();
+            }
         }
     }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent resultData) {
+        super.onActivityResult(requestCode, resultCode, resultData);
         if (requestCode == OPEN_DOCUMENT_REQUEST && resultCode == RESULT_OK && resultData.getData() != null) {
             Uri treeUri = resultData.getData();
             DocumentFile pickedDir = DocumentFile.fromTreeUri(this, treeUri);
+            if (pickedDir == null) {
+                return;
+            }
             grantUriPermission(getPackageName(), treeUri, Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
             saveImage(pickedDir);
         }
