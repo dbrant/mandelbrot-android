@@ -14,5 +14,5 @@ Simple, high-performance Mandelbrot explorer app for Android.
 
 ## License
 
-    Copyright 2014-2019 Dmitry Brant
+    Copyright 2014-2020 Dmitry Brant
     See LICENSE file in the repository.
