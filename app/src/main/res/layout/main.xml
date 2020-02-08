@@ -24,8 +24,9 @@
         android:id="@+id/settings_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="?attr/actionBarSize"
         android:orientation="vertical"
-        android:layout_gravity="bottom"
+        android:layout_gravity="top"
         android:padding="16dp"
         android:background="@color/info_background">
         <TextView
