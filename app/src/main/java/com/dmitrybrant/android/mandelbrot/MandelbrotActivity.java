@@ -103,6 +103,21 @@ public class MandelbrotActivity extends AppCompatActivity {
         });
         mandelbrotView.setOnCoordinatesChanged(coordinatesChangedListener);
 
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.topLayout), (v, insets) -> {
+            FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) settingsContainer.getLayoutParams();
+            params.topMargin = insets.getSystemWindowInsetTop();
+            params.bottomMargin = insets.getSystemWindowInsetBottom();
+            params.leftMargin = insets.getSystemWindowInsetLeft();
+            params.rightMargin = insets.getSystemWindowInsetRight();
+
+            params = (FrameLayout.LayoutParams) toolbar.getLayoutParams();
+            params.topMargin = insets.getSystemWindowInsetTop();
+            params.bottomMargin = insets.getSystemWindowInsetBottom();
+            params.leftMargin = insets.getSystemWindowInsetLeft();
+            params.rightMargin = insets.getSystemWindowInsetRight();
+            return insets.consumeSystemWindowInsets();
+        });
+
         //restore settings...
         mandelbrotView.reset();
         SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);

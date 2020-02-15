@@ -26,7 +26,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="?attr/actionBarSize"
         android:orientation="vertical"
-        android:layout_gravity="top"
+        android:layout_gravity="bottom"
         android:padding="16dp"
         android:background="@color/info_background">
         <TextView
