@@ -96,13 +96,10 @@ public class MandelbrotActivity extends AppCompatActivity {
 
         juliaView = findViewById(R.id.julia_view);
         mandelbrotView = findViewById(R.id.mandelbrot_view);
-        mandelbrotView.setOnPointSelected(new MandelbrotViewBase.OnPointSelected() {
-            @Override
-            public void pointSelected(double x, double y) {
-                juliaView.terminateThreads();
-                juliaView.setJuliaCoords(mandelbrotView.getXCenter(), mandelbrotView.getYCenter());
-                juliaView.render();
-            }
+        mandelbrotView.setOnPointSelected((x, y) -> {
+            juliaView.terminateThreads();
+            juliaView.setJuliaCoords(mandelbrotView.getXCenter(), mandelbrotView.getYCenter());
+            juliaView.render();
         });
         mandelbrotView.setOnCoordinatesChanged(coordinatesChangedListener);
 
@@ -122,12 +119,7 @@ public class MandelbrotActivity extends AppCompatActivity {
         juliaView.setNumIterations(mandelbrotView.getNumIterations());
 
         // set the position and gravity of the Julia view, based on screen orientation
-        juliaView.post(new Runnable() {
-            @Override
-            public void run() {
-                initJulia();
-            }
-        });
+        juliaView.post(this::initJulia);
 
         updateIterationBar();
     }
@@ -410,10 +402,7 @@ public class MandelbrotActivity extends AppCompatActivity {
         AlertDialog alertDialog = new AlertDialog.Builder(MandelbrotActivity.this).create();
         alertDialog.setTitle(getString(R.string.about));
         alertDialog.setMessage(getString(R.string.str_about));
-        alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.ok), new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int which) {
-            }
-        });
+        alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.ok), (DialogInterface.OnClickListener) null);
         alertDialog.show();
     }
 
