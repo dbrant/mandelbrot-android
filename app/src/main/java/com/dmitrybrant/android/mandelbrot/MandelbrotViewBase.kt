@@ -72,12 +72,12 @@ abstract class MandelbrotViewBase @JvmOverloads constructor(context: Context, at
     private var displayDensity = 0f
 
     private var onPointSelected: OnPointSelected? = null
-    fun setOnPointSelected(listener: OnPointSelected?) {
+    fun setOnPointSelected(listener: OnPointSelected) {
         onPointSelected = listener
     }
 
     private var onCoordinatesChanged: OnCoordinatesChanged? = null
-    fun setOnCoordinatesChanged(listener: OnCoordinatesChanged?) {
+    fun setOnCoordinatesChanged(listener: OnCoordinatesChanged) {
         onCoordinatesChanged = listener
     }
 

@@ -15,7 +15,7 @@ object ColorScheme {
         colorSchemes.add(intArrayOf(Color.BLACK, Color.WHITE))
     }
 
-    fun getColorSchemes(): List<IntArray>? {
+    fun getColorSchemes(): List<IntArray> {
         return colorSchemes
     }
 

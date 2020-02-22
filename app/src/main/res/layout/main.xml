@@ -7,13 +7,13 @@
     android:layout_height="match_parent" >
 
     <com.dmitrybrant.android.mandelbrot.MandelbrotView
-        android:id="@+id/mandelbrot_view"
+        android:id="@+id/mandelbrotView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@android:color/black"/>
 
     <com.dmitrybrant.android.mandelbrot.JuliaView
-        android:id="@+id/julia_view"
+        android:id="@+id/juliaView"
         android:layout_width="match_parent"
         android:layout_height="280dp"
         android:background="@android:color/black"
@@ -21,7 +21,7 @@
         android:layout_gravity="bottom"/>
 
     <LinearLayout
-        android:id="@+id/settings_container"
+        android:id="@+id/settingsContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="?attr/actionBarSize"
@@ -67,7 +67,7 @@
     </LinearLayout>
 
     <androidx.appcompat.widget.Toolbar
-        android:id="@+id/main_toolbar"
+        android:id="@+id/mainToolbar"
         android:layout_width="match_parent"
         android:layout_height="80dp"
         android:layout_gravity="top">
