@@ -63,10 +63,10 @@ public class MandelbrotActivity extends AppCompatActivity {
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.main);
 
-        ColorScheme.initColorSchemes();
+        ColorScheme.INSTANCE.initColorSchemes();
 
         final Toolbar toolbar = findViewById(R.id.main_toolbar);
-        ViewCompat.setBackground(toolbar, GradientUtil.getCubicGradient(ContextCompat
+        ViewCompat.setBackground(toolbar, GradientUtil.INSTANCE.getCubicGradient(ContextCompat
                 .getColor(this, R.color.toolbar_gradient), Gravity.TOP));
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
@@ -327,12 +327,12 @@ public class MandelbrotActivity extends AppCompatActivity {
     }
 
     private void updateColorScheme() {
-        if (currentColorScheme >= ColorScheme.getColorSchemes().size()) {
+        if (currentColorScheme >= ColorScheme.INSTANCE.getColorSchemes().size()) {
             currentColorScheme = 0;
         }
-        mandelbrotView.setColorScheme(ColorScheme.getColorSchemes().get(currentColorScheme));
-        juliaView.setColorScheme(ColorScheme.getShiftedScheme(ColorScheme.getColorSchemes().get(currentColorScheme),
-                ColorScheme.getColorSchemes().get(currentColorScheme).length / 2));
+        mandelbrotView.setColorScheme(ColorScheme.INSTANCE.getColorSchemes().get(currentColorScheme));
+        juliaView.setColorScheme(ColorScheme.INSTANCE.getShiftedScheme(ColorScheme.INSTANCE.getColorSchemes().get(currentColorScheme),
+                ColorScheme.INSTANCE.getColorSchemes().get(currentColorScheme).length / 2));
     }
 
     private void updateIterations(int iterations) {
