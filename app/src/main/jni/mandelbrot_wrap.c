@@ -18,14 +18,14 @@ extern "C" {
 #endif
 
 
-JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_mandelnative_InitParams(JNIEnv *jenv, jclass jcls, jint paramIndex) {
+JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_MandelNative_initParams(JNIEnv *jenv, jclass jcls, jint paramIndex) {
 	params[paramIndex].pixelBuffer = NULL;
 	params[paramIndex].pixelBufferLen = 0;
 	params[paramIndex].x0array = NULL;
 	params[paramIndex].terminateJob = 0;
 }
 
-JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_mandelnative_SetBitmap(JNIEnv *jenv, jclass jcls, jint paramIndex, jobject bitmap) {
+JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_MandelNative_setBitmap(JNIEnv *jenv, jclass jcls, jint paramIndex, jobject bitmap) {
 	AndroidBitmapInfo bitmapInfo;
 	int ret;
 	LOGD("setting bitmap (%d)", paramIndex);
@@ -50,7 +50,7 @@ JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_mandelnative_SetB
 	params[paramIndex].pixelBuffer = malloc(params[paramIndex].pixelBufferLen);
 }
 
-JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_mandelnative_ReleaseBitmap(JNIEnv *jenv, jclass jcls, jint paramIndex) {
+JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_MandelNative_releaseBitmap(JNIEnv *jenv, jclass jcls, jint paramIndex) {
 	LOGD("releasing bitmap (%d)", paramIndex);
 	if(params[paramIndex].pixelBuffer != NULL){
 		LOGD("freeing buffer...");
@@ -60,7 +60,7 @@ JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_mandelnative_Rele
 	params[paramIndex].pixelBufferLen = 0;
 }
 
-JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_mandelnative_UpdateBitmap(JNIEnv *jenv, jclass jcls, jint paramIndex, jobject bitmap) {
+JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_MandelNative_updateBitmap(JNIEnv *jenv, jclass jcls, jint paramIndex, jobject bitmap) {
 	void* bitmapPixels;
 	int ret;
 	AndroidBitmapInfo bitmapInfo;
@@ -83,7 +83,7 @@ JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_mandelnative_Upda
 }
 
 
-JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_mandelnative_SetColorPalette(JNIEnv *jenv, jclass jcls, jint paramIndex, jobject colorArray, jint numColors) {
+JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_MandelNative_setColorPalette(JNIEnv *jenv, jclass jcls, jint paramIndex, jobject colorArray, jint numColors) {
 	jint *c_array;
     int i = 0;
 	LOGD("setting color palette (%d)", paramIndex);
@@ -100,7 +100,7 @@ JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_mandelnative_SetC
 }
 
 
-JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_mandelnative_SetParameters(JNIEnv *jenv, jclass jcls, jint paramIndex,
+JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_MandelNative_setParameters(JNIEnv *jenv, jclass jcls, jint paramIndex,
                        jint numIterations, jdouble xMin, jdouble xMax, jdouble yMin, jdouble yMax,
 					   jint isJulia, jdouble juliaX, jdouble juliaY, jint viewWidth, jint viewHeight) {
 	LOGD("setting parameters (%d)", paramIndex);
@@ -121,7 +121,7 @@ JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_mandelnative_SetP
 	params[paramIndex].terminateJob = 0;
 }
 
-JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_mandelnative_ReleaseParameters(JNIEnv *jenv, jclass jcls, jint paramIndex) {
+JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_MandelNative_releaseParameters(JNIEnv *jenv, jclass jcls, jint paramIndex) {
 	if(params[paramIndex].x0array != NULL){
 		free(params[paramIndex].x0array);
 		params[paramIndex].x0array = NULL;
@@ -233,13 +233,13 @@ void drawPixels(int paramIndex, int startX, int startY, int startWidth, int star
 }
 
 
-JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_mandelnative_DrawFractal(JNIEnv *jenv, jclass jcls, jint paramIndex,
+JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_MandelNative_drawFractal(JNIEnv *jenv, jclass jcls, jint paramIndex,
                                         jint startX, jint startY, jint startWidth, jint startHeight, jint level, jint doAll) {
 	LOGD("drawing (%d)", paramIndex);
 	drawPixels(paramIndex, (int)startX, (int)startY, (int)startWidth, (int)startHeight, (int)level, (int)doAll);
 }
 
-JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_mandelnative_SignalTerminate(JNIEnv *jenv, jclass jcls, jint paramIndex) {
+JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_MandelNative_signalTerminate(JNIEnv *jenv, jclass jcls, jint paramIndex) {
 	LOGD("terminating...");
 	params[paramIndex].terminateJob = 1;
 }
