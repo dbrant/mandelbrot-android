@@ -52,9 +52,9 @@ object ColorScheme {
                 cCounter = elementsPerStep
             }
             colors[i] = -0x1000000 or (b.toInt() shl 16) or (g.toInt() shl 8) or r.toInt()
-            b = b + bInc
-            g = g + gInc
-            r = r + rInc
+            b += bInc
+            g += gInc
+            r += rInc
             if (b < 0f) {
                 b = 0f
             }
