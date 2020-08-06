@@ -3,9 +3,9 @@ package com.dmitrybrant.android.mandelbrot
 import android.graphics.Bitmap
 
 object MandelNative {
-    external fun setParameters(paramIndex: Int, jarg1: Int, jarg2: Double, jarg3: Double, jarg4: Double, jarg5: Double, isJulia: Int, jarg6: Double, jarg7: Double, jarg8: Int, jarg9: Int)
+    external fun setParameters(paramIndex: Int, power: Int, numIterations: Int, xMin: Double, xMax: Double, yMin: Double, yMax: Double, isJulia: Int, juliaX: Double, juliaY: Double, viewWidth: Int, viewHeight: Int)
     external fun releaseParameters(paramIndex: Int)
-    external fun drawFractal(paramIndex: Int, jarg1: Int, jarg2: Int, jarg3: Int, jarg4: Int, jarg5: Int, jarg6: Int)
+    external fun drawFractal(paramIndex: Int, startX: Int, startY: Int, startWidth: Int, startHeight: Int, level: Int, doAll: Int)
     external fun setBitmap(paramIndex: Int, bmp: Bitmap?)
     external fun updateBitmap(paramIndex: Int, bmp: Bitmap?)
     external fun releaseBitmap(paramIndex: Int)

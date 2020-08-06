@@ -46,21 +46,27 @@ abstract class MandelbrotViewBase @JvmOverloads constructor(context: Context, at
     private var jx = 0.0
     private var jy = 0.0
 
-    private var numIterations = DEFAULT_ITERATIONS
-
-    fun getNumIterations(): Int {
-        return numIterations
-    }
-
-    fun setNumIterations(iter: Int) {
-        numIterations = iter
-        if (numIterations < MIN_ITERATIONS) {
-            numIterations = MIN_ITERATIONS
+    var numIterations = DEFAULT_ITERATIONS
+        set(value) {
+            field = value
+            if (field < MIN_ITERATIONS) {
+                field = MIN_ITERATIONS
+            }
+            if (field > MAX_ITERATIONS) {
+                field = MAX_ITERATIONS
+            }
         }
-        if (numIterations > MAX_ITERATIONS) {
-            numIterations = MAX_ITERATIONS
+
+    var power = 2
+        set(value) {
+            field = value
+            if (field < 2) {
+                field = 2
+            }
+            if (field > 4) {
+                field = 4
+            }
         }
-    }
 
     private val startCoarseness = 16
     private var endCoarseness = 1
@@ -214,7 +220,7 @@ abstract class MandelbrotViewBase @JvmOverloads constructor(context: Context, at
         xExtent = xmax - xmin
         xCenter = xmin + xExtent / 2.0
         yCenter = ymin + (ymax - ymin) / 2.0
-        MandelNative.setParameters(paramIndex, numIterations, xmin, xmax, ymin, ymax,
+        MandelNative.setParameters(paramIndex, power, numIterations, xmin, xmax, ymin, ymax,
                 if (isJulia) 1 else 0, jx, jy, screenWidth, screenHeight)
         var t: Thread
         t = MandelThread(0, 0, screenWidth, screenHeight / 2, startCoarseness)
@@ -322,6 +328,7 @@ abstract class MandelbrotViewBase @JvmOverloads constructor(context: Context, at
 
     companion object {
         private const val TAG = "MandelbrotViewBase"
+        const val DEFAULT_POWER = 2
         const val DEFAULT_ITERATIONS = 128
         const val MAX_ITERATIONS = 2048
         const val MIN_ITERATIONS = 2

@@ -64,6 +64,40 @@
                 android:layout_gravity="center_vertical"
                 android:layout_weight="1" />
         </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:text="@string/power"
+                android:textColor="@color/info_text"/>
+            <RadioGroup
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <RadioButton
+                    android:id="@+id/buttonPower2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="2"
+                    android:checked="true"/>
+                <RadioButton
+                    android:id="@+id/buttonPower3"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="3"/>
+                <RadioButton
+                    android:id="@+id/buttonPower4"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="4"/>
+            </RadioGroup>
+        </LinearLayout>
+
     </LinearLayout>
 
     <androidx.appcompat.widget.Toolbar

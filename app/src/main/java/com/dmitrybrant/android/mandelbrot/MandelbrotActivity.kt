@@ -105,16 +105,27 @@ class MandelbrotActivity : AppCompatActivity() {
         mandelbrotView.xCenter = settings.getString("xcenter", MandelbrotViewBase.DEFAULT_X_CENTER.toString())!!.toDouble()
         mandelbrotView.yCenter = settings.getString("ycenter", MandelbrotViewBase.DEFAULT_Y_CENTER.toString())!!.toDouble()
         mandelbrotView.xExtent = settings.getString("xextent", MandelbrotViewBase.DEFAULT_X_EXTENT.toString())!!.toDouble()
-        mandelbrotView.setNumIterations(settings.getInt("iterations", MandelbrotViewBase.DEFAULT_ITERATIONS))
+        mandelbrotView.numIterations = settings.getInt("iterations", MandelbrotViewBase.DEFAULT_ITERATIONS)
+        mandelbrotView.power = settings.getInt("power", MandelbrotViewBase.DEFAULT_POWER)
         currentColorScheme = settings.getInt("colorscheme", 0)
         juliaEnabled = settings.getBoolean("juliaEnabled", false)
         updateColorScheme()
         juliaView.reset()
         juliaView.setJuliaCoords(mandelbrotView.xCenter, mandelbrotView.yCenter)
-        juliaView.setNumIterations(mandelbrotView.getNumIterations())
+        juliaView.numIterations = mandelbrotView.numIterations
+        juliaView.power = mandelbrotView.power
 
         // set the position and gravity of the Julia view, based on screen orientation
         juliaView.post { initJulia() }
+
+        if (mandelbrotView.power == 2) { buttonPower2.isChecked = true }
+        else if (mandelbrotView.power == 3) { buttonPower3.isChecked = true }
+        else if (mandelbrotView.power == 4) { buttonPower4.isChecked = true }
+
+        buttonPower2.setOnClickListener { updatePower(2) }
+        buttonPower3.setOnClickListener { updatePower(3) }
+        buttonPower4.setOnClickListener { updatePower(4) }
+
         updateIterationBar()
     }
 
@@ -125,7 +136,8 @@ class MandelbrotActivity : AppCompatActivity() {
         editor.putString("xcenter", mandelbrotView.xCenter.toString())
         editor.putString("ycenter", mandelbrotView.yCenter.toString())
         editor.putString("xextent", mandelbrotView.xExtent.toString())
-        editor.putInt("iterations", mandelbrotView.getNumIterations())
+        editor.putInt("iterations", mandelbrotView.numIterations)
+        editor.putInt("power", mandelbrotView.power)
         editor.putInt("colorscheme", currentColorScheme)
         editor.putBoolean("juliaEnabled", juliaEnabled)
         editor.apply()
@@ -142,16 +154,16 @@ class MandelbrotActivity : AppCompatActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
-        var iterationInc = mandelbrotView!!.getNumIterations() / 16
+        var iterationInc = mandelbrotView!!.numIterations / 16
         if (iterationInc < 1) {
             iterationInc = 1
         }
         if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
-            updateIterations(mandelbrotView.getNumIterations() - iterationInc)
+            updateIterations(mandelbrotView.numIterations - iterationInc)
             updateIterationBar()
             return true
         } else if (keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
-            updateIterations(mandelbrotView.getNumIterations() + iterationInc)
+            updateIterations(mandelbrotView.numIterations + iterationInc)
             updateIterationBar()
             return true
         }
@@ -271,7 +283,7 @@ class MandelbrotActivity : AppCompatActivity() {
             if (txtInfo.visibility != View.VISIBLE) {
                 return
             }
-            txtIterations.text = String.format(Locale.ROOT, "%d", mandelbrotView.getNumIterations())
+            txtIterations.text = String.format(Locale.ROOT, "%d", mandelbrotView.numIterations)
             if (juliaEnabled) {
                 txtInfo.text = String.format(getString(R.string.coordinate_display_julia), xmin,
                         xmax, ymin, ymax, mandelbrotView.xCenter, mandelbrotView.yCenter)
@@ -282,7 +294,7 @@ class MandelbrotActivity : AppCompatActivity() {
     }
 
     private fun updateIterationBar() {
-        seekBarIterations.progress = sqrt(mandelbrotView.getNumIterations().toDouble()).toInt()
+        seekBarIterations.progress = sqrt(mandelbrotView.numIterations.toDouble()).toInt()
     }
 
     private fun updateJulia() {
@@ -310,9 +322,16 @@ class MandelbrotActivity : AppCompatActivity() {
     }
 
     private fun updateIterations(iterations: Int) {
-        mandelbrotView.setNumIterations(iterations)
+        mandelbrotView.numIterations = iterations
         mandelbrotView.render()
-        juliaView.setNumIterations(iterations)
+        juliaView.numIterations = iterations
+        juliaView.render()
+    }
+
+    private fun updatePower(power: Int) {
+        mandelbrotView.power = power
+        mandelbrotView.render()
+        juliaView.power = power
         juliaView.render()
     }
 
