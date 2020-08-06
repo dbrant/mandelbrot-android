@@ -7,6 +7,7 @@
 #define MAX_PALETTE_COLORS		512
 
 typedef struct {
+    int power;
 	int numIterations;
 	double xmin;
 	double xmax;
