@@ -239,39 +239,41 @@ void drawPixels(int paramIndex, int startX, int startY, int startWidth, int star
 
 			} else if (params[paramIndex].power == 4) {
 
-                  if (params[paramIndex].isJulia) {
-                      x = params[paramIndex].x0array[px];
-                      y = y0;
-                      iteration = 0;
-                      while (iteration++ < numIterations) {
-                          x2 = x*x;
-                          y2 = y*y;
-                          if (x2 + y2 > 4.0) {
-                              break;
-                          }
-                          y = 2*x*y + params[paramIndex].juliaY;
-                          x = x2 - y2 + params[paramIndex].juliaX;
-                      }
-                  } else {
-                      x = y = x2 = y2 = x3 = y3 = 0.0;
-                      iteration = 0;
-                      x0 = params[paramIndex].x0array[px];
-                      while (x2 + y2 < 4.0) {
-
-                          y = (3*x2*y) - y3 + y0;
-                          x = x3 - (3*y2*x) + x0;
-
-                          x2 = x*x;
-                          y2 = y*y;
-                          x3 = x2*x;
-                          y3 = y2*y;
-
-
-                          if (++iteration > numIterations) {
-                              break;
-                          }
-                      }
-                  }
+                if (params[paramIndex].isJulia) {
+                    x = params[paramIndex].x0array[px];
+                    y = y0;
+                    iteration = 0;
+                    while (iteration++ < numIterations) {
+                        x2 = x*x;
+                        y2 = y*y;
+                        x3 = x2*x;
+                        y3 = y2*y;
+                        x4 = x3*x;
+                        y4 = y3*y;
+                        if (x2 + y2 > 4.0) {
+                            break;
+                        }
+                        y = (4*x3*y) - (4*y3*x) + params[paramIndex].juliaY;
+                        x = x4 + y4 - (6*x2*y2) + params[paramIndex].juliaX;
+                    }
+                } else {
+                    x = y = x2 = y2 = x3 = y3 = x4 = y4 = 0.0;
+                    iteration = 0;
+                    x0 = params[paramIndex].x0array[px];
+                    while (x2 + y2 < 4.0) {
+                        y = (4*x3*y) - (4*y3*x) + y0;
+                        x = x4 + y4 - (6*x2*y2) + x0;
+                        x2 = x*x;
+                        y2 = y*y;
+                        x3 = x2*x;
+                        y3 = y2*y;
+                        x4 = x3*x;
+                        y4 = y3*y;
+                        if (++iteration > numIterations) {
+                            break;
+                        }
+                    }
+                }
 
             }
 
