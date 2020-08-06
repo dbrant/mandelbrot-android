@@ -301,7 +301,7 @@ class MandelbrotActivity : AppCompatActivity() {
         if (juliaView.animation != null && !juliaView.animation.hasEnded()) {
             return
         }
-        mandelbrotView.setCrosshairsEnabled(juliaEnabled)
+        mandelbrotView.showCrosshairs = juliaEnabled
         mandelbrotView.invalidate()
         mandelbrotView.requestCoordinates()
         if (juliaEnabled) {

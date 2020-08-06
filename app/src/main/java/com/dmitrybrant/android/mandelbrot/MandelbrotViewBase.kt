@@ -31,9 +31,9 @@ abstract class MandelbrotViewBase @JvmOverloads constructor(context: Context, at
     private var paint: Paint? = null
     private var viewportBitmap: Bitmap? = null
     private var viewportRect: Rect? = null
-    private var showCrosshairs = false
     private var screenWidth = 0
     private var screenHeight = 0
+    var showCrosshairs = false
 
     var xCenter = 0.0
     var yCenter = 0.0
@@ -272,10 +272,6 @@ abstract class MandelbrotViewBase @JvmOverloads constructor(context: Context, at
     fun setJuliaCoords(jx: Double, jy: Double) {
         this.jx = jx
         this.jy = jy
-    }
-
-    fun setCrosshairsEnabled(enabled: Boolean) {
-        showCrosshairs = enabled
     }
 
     @Throws(IOException::class)
