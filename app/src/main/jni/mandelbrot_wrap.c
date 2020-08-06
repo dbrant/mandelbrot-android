@@ -101,9 +101,10 @@ JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_MandelNative_setC
 
 
 JNIEXPORT void JNICALL Java_com_dmitrybrant_android_mandelbrot_MandelNative_setParameters(JNIEnv *jenv, jclass jcls, jint paramIndex,
-                       jint numIterations, jdouble xMin, jdouble xMax, jdouble yMin, jdouble yMax,
+                       jint power, jint numIterations, jdouble xMin, jdouble xMax, jdouble yMin, jdouble yMax,
 					   jint isJulia, jdouble juliaX, jdouble juliaY, jint viewWidth, jint viewHeight) {
 	LOGD("setting parameters (%d)", paramIndex);
+	params[paramIndex].power = power;
 	params[paramIndex].numIterations = numIterations;
 	params[paramIndex].xmin = xMin;
 	params[paramIndex].xmax = xMax;
@@ -133,7 +134,7 @@ void drawPixels(int paramIndex, int startX, int startY, int startWidth, int star
 	int maxY = startY + startHeight;
 	int maxX = startX + startWidth;
 	double x, y, x0, y0;
-	double xsq, ysq;
+	double x2, y2, x3, y3, x4, y4;
 	int ix, iy;
 	double xscale = (params[paramIndex].xmax - params[paramIndex].xmin) / params[paramIndex].viewWidth;
 	double yscale = (params[paramIndex].ymax - params[paramIndex].ymin) / params[paramIndex].viewHeight;
@@ -172,33 +173,107 @@ void drawPixels(int paramIndex, int startX, int startY, int startWidth, int star
 				}
 			}
 
-			if (params[paramIndex].isJulia) {
-				x = params[paramIndex].x0array[px];
-				y = y0;
-				iteration = 0;
-				while (iteration++ < numIterations) {
-					xsq = x*x;
-					ysq = y*y;
-					if (xsq + ysq > 4.0) {
-						break;
-					}
-					y = 2*x*y + params[paramIndex].juliaY;
-					x = xsq - ysq + params[paramIndex].juliaX;
-				}
-			} else {
-				x = y = xsq = ysq = 0.0;
-				iteration = 0;
-				x0 = params[paramIndex].x0array[px];
-				while (xsq + ysq < 4.0) {
-					y = 2*x*y + y0;
-					x = xsq - ysq + x0;
-					xsq = x*x;
-					ysq = y*y;
-					if (++iteration > numIterations) {
-						break;
-					}
-				}
-			}
+            if (params[paramIndex].power == 2) {
+
+                if (params[paramIndex].isJulia) {
+                    x = params[paramIndex].x0array[px];
+                    y = y0;
+                    iteration = 0;
+                    while (iteration++ < numIterations) {
+                        x2 = x*x;
+                        y2 = y*y;
+                        if (x2 + y2 > 4.0) {
+                            break;
+                        }
+                        y = 2*x*y + params[paramIndex].juliaY;
+                        x = x2 - y2 + params[paramIndex].juliaX;
+                    }
+                } else {
+                    x = y = x2 = y2 = 0.0;
+                    iteration = 0;
+                    x0 = params[paramIndex].x0array[px];
+                    while (x2 + y2 < 4.0) {
+                        y = 2*x*y + y0;
+                        x = x2 - y2 + x0;
+                        x2 = x*x;
+                        y2 = y*y;
+                        if (++iteration > numIterations) {
+                            break;
+                        }
+                    }
+                }
+
+            } else if (params[paramIndex].power == 3) {
+
+                if (params[paramIndex].isJulia) {
+                    x = params[paramIndex].x0array[px];
+                    y = y0;
+                    iteration = 0;
+                    while (iteration++ < numIterations) {
+                        x2 = x*x;
+                        y2 = y*y;
+                        x3 = x2*x;
+                        y3 = y2*y;
+                        if (x2 + y2 > 4.0) {
+                            break;
+                        }
+                        y = (3*x2*y) - y3 + params[paramIndex].juliaY;
+                        x = x3 - (3*y2*x) + params[paramIndex].juliaX;
+                    }
+                } else {
+                    x = y = x2 = y2 = x3 = y3 = 0.0;
+                    iteration = 0;
+                    x0 = params[paramIndex].x0array[px];
+                    while (x2 + y2 < 4.0) {
+                        y = (3*x2*y) - y3 + y0;
+                        x = x3 - (3*y2*x) + x0;
+                        x2 = x*x;
+                        y2 = y*y;
+                        x3 = x2*x;
+                        y3 = y2*y;
+                        if (++iteration > numIterations) {
+                            break;
+                        }
+                    }
+                }
+
+			} else if (params[paramIndex].power == 4) {
+
+                  if (params[paramIndex].isJulia) {
+                      x = params[paramIndex].x0array[px];
+                      y = y0;
+                      iteration = 0;
+                      while (iteration++ < numIterations) {
+                          x2 = x*x;
+                          y2 = y*y;
+                          if (x2 + y2 > 4.0) {
+                              break;
+                          }
+                          y = 2*x*y + params[paramIndex].juliaY;
+                          x = x2 - y2 + params[paramIndex].juliaX;
+                      }
+                  } else {
+                      x = y = x2 = y2 = x3 = y3 = 0.0;
+                      iteration = 0;
+                      x0 = params[paramIndex].x0array[px];
+                      while (x2 + y2 < 4.0) {
+
+                          y = (3*x2*y) - y3 + y0;
+                          x = x3 - (3*y2*x) + x0;
+
+                          x2 = x*x;
+                          y2 = y*y;
+                          x3 = x2*x;
+                          y3 = y2*y;
+
+
+                          if (++iteration > numIterations) {
+                              break;
+                          }
+                      }
+                  }
+
+            }
 
 			if (iteration >= numIterations) {
 				color = 0;
