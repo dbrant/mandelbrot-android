@@ -305,7 +305,7 @@ abstract class MandelbrotViewBase @JvmOverloads constructor(context: Context, at
         pt.y = (event.getY(0) + event.getY(1)) * 0.5f
     }
 
-    private inner class MandelThread internal constructor(private val startX: Int, private val startY: Int, private val startWidth: Int, private val startHeight: Int, private val level: Int) : Thread() {
+    private inner class MandelThread constructor(private val startX: Int, private val startY: Int, private val startWidth: Int, private val startHeight: Int, private val level: Int) : Thread() {
         override fun run() {
             var curLevel = level
             while (true) {
