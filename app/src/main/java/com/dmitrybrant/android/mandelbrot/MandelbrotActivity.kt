@@ -22,28 +22,19 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.documentfile.provider.DocumentFile
-import kotlinx.android.synthetic.main.main.*
 import com.dmitrybrant.android.mandelbrot.ColorScheme.getColorSchemes
 import com.dmitrybrant.android.mandelbrot.ColorScheme.getShiftedScheme
 import com.dmitrybrant.android.mandelbrot.ColorScheme.initColorSchemes
 import com.dmitrybrant.android.mandelbrot.GradientUtil.getCubicGradient
 import com.dmitrybrant.android.mandelbrot.MandelbrotViewBase.OnCoordinatesChanged
 import com.dmitrybrant.android.mandelbrot.MandelbrotViewBase.OnPointSelected
+import com.dmitrybrant.android.mandelbrot.databinding.MainBinding
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.sqrt
 
 class MandelbrotActivity : AppCompatActivity() {
-
-    companion object {
-        const val PREFS_NAME = "MandelbrotActivityPrefs"
-        private const val WRITE_PERMISSION_REQUEST = 50
-        private const val OPEN_DOCUMENT_REQUEST = 101
-
-        init {
-            System.loadLibrary("mandelnative_jni")
-        }
-    }
+    private lateinit var binding: MainBinding
 
     private var juliaEnabled = false
     private var currentColorScheme = 0
@@ -51,20 +42,21 @@ class MandelbrotActivity : AppCompatActivity() {
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
-        setContentView(R.layout.main)
+        binding = MainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         initColorSchemes()
-        ViewCompat.setBackground(mainToolbar, getCubicGradient(ContextCompat
+        ViewCompat.setBackground(binding.mainToolbar, getCubicGradient(ContextCompat
                 .getColor(this, R.color.toolbar_gradient), Gravity.TOP))
-        setSupportActionBar(mainToolbar)
+        setSupportActionBar(binding.mainToolbar)
         if (supportActionBar != null) {
             supportActionBar!!.setDisplayHomeAsUpEnabled(true)
             supportActionBar!!.title = ""
         }
 
-        settingsContainer.visibility = View.GONE
-        seekBarIterations.max = sqrt(MandelbrotViewBase.MAX_ITERATIONS.toDouble()).toInt() + 1
-        seekBarIterations.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
+        binding.settingsContainer.visibility = View.GONE
+        binding.seekBarIterations.max = sqrt(MandelbrotViewBase.MAX_ITERATIONS.toDouble()).toInt() + 1
+        binding.seekBarIterations.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
                 if (!fromUser) {
                     return
@@ -76,22 +68,22 @@ class MandelbrotActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(arg0: SeekBar) {}
         })
 
-        mandelbrotView.setOnPointSelected(object : OnPointSelected {
+        binding. mandelbrotView.setOnPointSelected(object : OnPointSelected {
             override fun pointSelected(x: Double, y: Double) {
-                juliaView.terminateThreads()
-                juliaView.setJuliaCoords(mandelbrotView.xCenter, mandelbrotView.yCenter)
-                juliaView.render()
+                binding.juliaView.terminateThreads()
+                binding.juliaView.setJuliaCoords(binding.mandelbrotView.xCenter, binding.mandelbrotView.yCenter)
+                binding.juliaView.render()
             }
         })
-        mandelbrotView.setOnCoordinatesChanged(coordinatesChangedListener)
+        binding.mandelbrotView.setOnCoordinatesChanged(coordinatesChangedListener)
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.topLayout)) { _: View?, insets: WindowInsetsCompat ->
-            var params = settingsContainer.layoutParams as FrameLayout.LayoutParams
+            var params = binding.settingsContainer.layoutParams as FrameLayout.LayoutParams
             params.topMargin = insets.systemWindowInsetTop
             params.bottomMargin = insets.systemWindowInsetBottom
             params.leftMargin = insets.systemWindowInsetLeft
             params.rightMargin = insets.systemWindowInsetRight
-            params = mainToolbar.layoutParams as FrameLayout.LayoutParams
+            params = binding.mainToolbar.layoutParams as FrameLayout.LayoutParams
             params.topMargin = insets.systemWindowInsetTop
             params.bottomMargin = insets.systemWindowInsetBottom
             params.leftMargin = insets.systemWindowInsetLeft
@@ -100,31 +92,35 @@ class MandelbrotActivity : AppCompatActivity() {
         }
 
         //restore settings...
-        mandelbrotView.reset()
+        binding.mandelbrotView.reset()
         val settings = getSharedPreferences(PREFS_NAME, 0)
-        mandelbrotView.xCenter = settings.getString("xcenter", MandelbrotViewBase.DEFAULT_X_CENTER.toString())!!.toDouble()
-        mandelbrotView.yCenter = settings.getString("ycenter", MandelbrotViewBase.DEFAULT_Y_CENTER.toString())!!.toDouble()
-        mandelbrotView.xExtent = settings.getString("xextent", MandelbrotViewBase.DEFAULT_X_EXTENT.toString())!!.toDouble()
-        mandelbrotView.numIterations = settings.getInt("iterations", MandelbrotViewBase.DEFAULT_ITERATIONS)
-        mandelbrotView.power = settings.getInt("power", MandelbrotViewBase.DEFAULT_POWER)
+        binding.mandelbrotView.xCenter = settings.getString("xcenter", MandelbrotViewBase.DEFAULT_X_CENTER.toString())!!.toDouble()
+        binding.mandelbrotView.yCenter = settings.getString("ycenter", MandelbrotViewBase.DEFAULT_Y_CENTER.toString())!!.toDouble()
+        binding.mandelbrotView.xExtent = settings.getString("xextent", MandelbrotViewBase.DEFAULT_X_EXTENT.toString())!!.toDouble()
+        binding.mandelbrotView.numIterations = settings.getInt("iterations", MandelbrotViewBase.DEFAULT_ITERATIONS)
+        binding.mandelbrotView.power = settings.getInt("power", MandelbrotViewBase.DEFAULT_POWER)
         currentColorScheme = settings.getInt("colorscheme", 0)
         juliaEnabled = settings.getBoolean("juliaEnabled", false)
+
         updateColorScheme()
-        juliaView.reset()
-        juliaView.setJuliaCoords(mandelbrotView.xCenter, mandelbrotView.yCenter)
-        juliaView.numIterations = mandelbrotView.numIterations
-        juliaView.power = mandelbrotView.power
+
+        binding.juliaView.reset()
+        binding.juliaView.setJuliaCoords(binding.mandelbrotView.xCenter, binding.mandelbrotView.yCenter)
+        binding.juliaView.numIterations = binding.mandelbrotView.numIterations
+        binding.juliaView.power = binding.mandelbrotView.power
 
         // set the position and gravity of the Julia view, based on screen orientation
-        juliaView.post { initJulia() }
+        binding.juliaView.post { initJulia() }
 
-        if (mandelbrotView.power == 2) { buttonPower2.isChecked = true }
-        else if (mandelbrotView.power == 3) { buttonPower3.isChecked = true }
-        else if (mandelbrotView.power == 4) { buttonPower4.isChecked = true }
+        when (binding.mandelbrotView.power) {
+            2 -> binding.buttonPower2.isChecked = true
+            3 -> binding.buttonPower3.isChecked = true
+            4 -> binding.buttonPower4.isChecked = true
+        }
 
-        buttonPower2.setOnClickListener { updatePower(2) }
-        buttonPower3.setOnClickListener { updatePower(3) }
-        buttonPower4.setOnClickListener { updatePower(4) }
+        binding.buttonPower2.setOnClickListener { updatePower(2) }
+        binding.buttonPower3.setOnClickListener { updatePower(3) }
+        binding.buttonPower4.setOnClickListener { updatePower(4) }
 
         updateIterationBar()
     }
@@ -133,19 +129,19 @@ class MandelbrotActivity : AppCompatActivity() {
         super.onStop()
         val settings = getSharedPreferences(PREFS_NAME, 0)
         val editor = settings.edit()
-        editor.putString("xcenter", mandelbrotView.xCenter.toString())
-        editor.putString("ycenter", mandelbrotView.yCenter.toString())
-        editor.putString("xextent", mandelbrotView.xExtent.toString())
-        editor.putInt("iterations", mandelbrotView.numIterations)
-        editor.putInt("power", mandelbrotView.power)
+        editor.putString("xcenter", binding.mandelbrotView.xCenter.toString())
+        editor.putString("ycenter", binding.mandelbrotView.yCenter.toString())
+        editor.putString("xextent", binding.mandelbrotView.xExtent.toString())
+        editor.putInt("iterations", binding.mandelbrotView.numIterations)
+        editor.putInt("power", binding.mandelbrotView.power)
         editor.putInt("colorscheme", currentColorScheme)
         editor.putBoolean("juliaEnabled", juliaEnabled)
         editor.apply()
     }
 
     public override fun onDestroy() {
-        mandelbrotView.terminateThreads()
-        juliaView.terminateThreads()
+        binding.mandelbrotView.terminateThreads()
+        binding.juliaView.terminateThreads()
         MandelNative.releaseParameters(0)
         MandelNative.releaseBitmap(0)
         MandelNative.releaseParameters(1)
@@ -154,16 +150,16 @@ class MandelbrotActivity : AppCompatActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
-        var iterationInc = mandelbrotView!!.numIterations / 16
+        var iterationInc = binding.mandelbrotView.numIterations / 16
         if (iterationInc < 1) {
             iterationInc = 1
         }
         if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
-            updateIterations(mandelbrotView.numIterations - iterationInc)
+            updateIterations(binding.mandelbrotView.numIterations - iterationInc)
             updateIterationBar()
             return true
         } else if (keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
-            updateIterations(mandelbrotView.numIterations + iterationInc)
+            updateIterations(binding.mandelbrotView.numIterations + iterationInc)
             updateIterationBar()
             return true
         }
@@ -182,7 +178,7 @@ class MandelbrotActivity : AppCompatActivity() {
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        return mandelbrotView.onTouchEvent(event)
+        return binding.mandelbrotView.onTouchEvent(event)
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -198,7 +194,7 @@ class MandelbrotActivity : AppCompatActivity() {
             }
             R.id.menu_settings -> {
                 toggleSettings()
-                mandelbrotView.requestCoordinates()
+                binding.mandelbrotView.requestCoordinates()
                 return true
             }
             R.id.menu_julia_mode -> {
@@ -212,13 +208,13 @@ class MandelbrotActivity : AppCompatActivity() {
             R.id.menu_color_scheme -> {
                 currentColorScheme++
                 updateColorScheme()
-                mandelbrotView.render()
-                juliaView.render()
+                binding.mandelbrotView.render()
+                binding.juliaView.render()
                 return true
             }
             R.id.menu_reset -> {
-                mandelbrotView.reset()
-                juliaView.reset()
+                binding.mandelbrotView.reset()
+                binding.juliaView.reset()
                 return true
             }
             R.id.menu_about -> {
@@ -262,9 +258,9 @@ class MandelbrotActivity : AppCompatActivity() {
 
     private fun initJulia() {
         val widthOffset = 24
-        val width = mandelbrotView.width
-        val height = mandelbrotView.height
-        val params = juliaView.layoutParams as FrameLayout.LayoutParams
+        val width = binding.mandelbrotView.width
+        val height = binding.mandelbrotView.height
+        val params = binding.juliaView.layoutParams as FrameLayout.LayoutParams
         if (width > height) {
             params.gravity = Gravity.START
             params.height = FrameLayout.LayoutParams.MATCH_PARENT
@@ -274,41 +270,41 @@ class MandelbrotActivity : AppCompatActivity() {
             params.width = FrameLayout.LayoutParams.MATCH_PARENT
             params.height = height / 2 - (widthOffset * resources.displayMetrics.density).toInt()
         }
-        juliaView.layoutParams = params
+        binding.juliaView.layoutParams = params
         updateJulia()
     }
 
     private val coordinatesChangedListener: OnCoordinatesChanged = object : OnCoordinatesChanged {
         override fun newCoordinates(xmin: Double, xmax: Double, ymin: Double, ymax: Double) {
-            if (txtInfo.visibility != View.VISIBLE) {
+            if (binding.txtInfo.visibility != View.VISIBLE) {
                 return
             }
-            txtIterations.text = String.format(Locale.ROOT, "%d", mandelbrotView.numIterations)
+            binding.txtIterations.text = String.format(Locale.ROOT, "%d", binding.mandelbrotView.numIterations)
             if (juliaEnabled) {
-                txtInfo.text = String.format(getString(R.string.coordinate_display_julia), xmin,
-                        xmax, ymin, ymax, mandelbrotView.xCenter, mandelbrotView.yCenter)
+                binding.txtInfo.text = String.format(getString(R.string.coordinate_display_julia), xmin,
+                        xmax, ymin, ymax, binding.mandelbrotView.xCenter, binding.mandelbrotView.yCenter)
             } else {
-                txtInfo.text = String.format(getString(R.string.coordinate_display), xmin, xmax, ymin, ymax)
+                binding.txtInfo.text = String.format(getString(R.string.coordinate_display), xmin, xmax, ymin, ymax)
             }
         }
     }
 
     private fun updateIterationBar() {
-        seekBarIterations.progress = sqrt(mandelbrotView.numIterations.toDouble()).toInt()
+        binding.seekBarIterations.progress = sqrt(binding.mandelbrotView.numIterations.toDouble()).toInt()
     }
 
     private fun updateJulia() {
-        if (juliaView.animation != null && !juliaView.animation.hasEnded()) {
+        if (binding.juliaView.animation != null && !binding.juliaView.animation.hasEnded()) {
             return
         }
-        mandelbrotView.showCrosshairs = juliaEnabled
-        mandelbrotView.invalidate()
-        mandelbrotView.requestCoordinates()
+        binding.mandelbrotView.showCrosshairs = juliaEnabled
+        binding.mandelbrotView.invalidate()
+        binding.mandelbrotView.requestCoordinates()
         if (juliaEnabled) {
-            juliaView.visibility = View.VISIBLE
-            juliaView.render()
+            binding.juliaView.visibility = View.VISIBLE
+            binding.juliaView.render()
         } else {
-            juliaView.visibility = View.GONE
+            binding.juliaView.visibility = View.GONE
         }
     }
 
@@ -316,41 +312,41 @@ class MandelbrotActivity : AppCompatActivity() {
         if (currentColorScheme >= getColorSchemes().size) {
             currentColorScheme = 0
         }
-        mandelbrotView.setColorScheme(getColorSchemes()[currentColorScheme])
-        juliaView.setColorScheme(getShiftedScheme(getColorSchemes()[currentColorScheme],
+        binding.mandelbrotView.setColorScheme(getColorSchemes()[currentColorScheme])
+        binding.juliaView.setColorScheme(getShiftedScheme(getColorSchemes()[currentColorScheme],
                 getColorSchemes()[currentColorScheme].size / 2))
     }
 
     private fun updateIterations(iterations: Int) {
-        mandelbrotView.numIterations = iterations
-        mandelbrotView.render()
-        juliaView.numIterations = iterations
-        juliaView.render()
+        binding.mandelbrotView.numIterations = iterations
+        binding.mandelbrotView.render()
+        binding.juliaView.numIterations = iterations
+        binding.juliaView.render()
     }
 
     private fun updatePower(power: Int) {
-        mandelbrotView.power = power
-        mandelbrotView.render()
-        juliaView.power = power
-        juliaView.render()
+        binding.mandelbrotView.power = power
+        binding.mandelbrotView.render()
+        binding.juliaView.power = power
+        binding.juliaView.render()
     }
 
     private val isSettingsVisible: Boolean
-        get() = settingsContainer.visibility == View.VISIBLE
+        get() = binding.settingsContainer.visibility == View.VISIBLE
 
     private fun toggleSettings() {
-        if (settingsContainer.animation != null && !settingsContainer.animation.hasEnded()) {
+        if (binding.settingsContainer.animation != null && !binding.settingsContainer.animation.hasEnded()) {
             return
         }
-        if (settingsContainer.visibility != View.VISIBLE) {
-            settingsContainer.visibility = View.VISIBLE
+        if (binding.settingsContainer.visibility != View.VISIBLE) {
+            binding.settingsContainer.visibility = View.VISIBLE
         } else {
-            settingsContainer.visibility = View.GONE
+            binding.settingsContainer.visibility = View.GONE
         }
     }
 
     private fun toggleJulia() {
-        if (juliaView.animation != null && !juliaView.animation.hasEnded()) {
+        if (binding.juliaView.animation != null && !binding.juliaView.animation.hasEnded()) {
             return
         }
         juliaEnabled = !juliaEnabled
@@ -374,10 +370,10 @@ class MandelbrotActivity : AppCompatActivity() {
 
     private fun saveImage(dir: DocumentFile) {
         try {
-            val fileName = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.ROOT)
-                    .format(Date()) + ".png"
+            val fileName = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.ROOT).format(Date()) + ".png"
             val file = dir.createFile("image/png", fileName)
-            mandelbrotView.savePicture(contentResolver.openOutputStream(file!!.uri)!!)
+
+            binding.mandelbrotView.savePicture(contentResolver.openOutputStream(file!!.uri)!!)
             notifyContentResolver(file.uri.toString())
             Toast.makeText(this@MandelbrotActivity, String.format(getString(R.string.picture_save_success), file.uri.path), Toast.LENGTH_LONG).show()
         } catch (ex: Exception) {
@@ -395,7 +391,7 @@ class MandelbrotActivity : AppCompatActivity() {
             }
             val f = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.US)
             path += "/" + f.format(Date()) + ".png"
-            mandelbrotView!!.savePicture(path)
+            binding.mandelbrotView.savePicture(path)
             notifyContentResolver(path)
             Toast.makeText(this@MandelbrotActivity, String.format(getString(R.string.picture_save_success), path), Toast.LENGTH_LONG).show()
         } catch (ex: Exception) {
@@ -419,6 +415,16 @@ class MandelbrotActivity : AppCompatActivity() {
             val contentUri = MediaStore.Images.Media.INTERNAL_CONTENT_URI
             contentResolver.insert(contentUri, values)
         } catch (e: Exception) {
+        }
+    }
+
+    companion object {
+        const val PREFS_NAME = "MandelbrotActivityPrefs"
+        private const val WRITE_PERMISSION_REQUEST = 50
+        private const val OPEN_DOCUMENT_REQUEST = 101
+
+        init {
+            System.loadLibrary("mandelnative_jni")
         }
     }
 }
