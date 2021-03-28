@@ -16,6 +16,7 @@ import android.widget.FrameLayout
 import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -35,9 +36,7 @@ import kotlin.math.sqrt
 
 class MandelbrotActivity : AppCompatActivity() {
     private lateinit var binding: MainBinding
-
-    private var juliaEnabled = false
-    private var currentColorScheme = 0
+    private val viewModel: MandelbrotActivityViewModel by viewModels()
 
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -91,28 +90,24 @@ class MandelbrotActivity : AppCompatActivity() {
             insets.consumeSystemWindowInsets()
         }
 
-        //restore settings...
         binding.mandelbrotView.reset()
-        val settings = getSharedPreferences(PREFS_NAME, 0)
-        binding.mandelbrotView.xCenter = settings.getString("xcenter", MandelbrotViewBase.DEFAULT_X_CENTER.toString())!!.toDouble()
-        binding.mandelbrotView.yCenter = settings.getString("ycenter", MandelbrotViewBase.DEFAULT_Y_CENTER.toString())!!.toDouble()
-        binding.mandelbrotView.xExtent = settings.getString("xextent", MandelbrotViewBase.DEFAULT_X_EXTENT.toString())!!.toDouble()
-        binding.mandelbrotView.numIterations = settings.getInt("iterations", MandelbrotViewBase.DEFAULT_ITERATIONS)
-        binding.mandelbrotView.power = settings.getInt("power", MandelbrotViewBase.DEFAULT_POWER)
-        currentColorScheme = settings.getInt("colorscheme", 0)
-        juliaEnabled = settings.getBoolean("juliaEnabled", false)
+        binding.mandelbrotView.xCenter = viewModel.xCenter
+        binding.mandelbrotView.yCenter = viewModel.yCenter
+        binding.mandelbrotView.xExtent = viewModel.xExtent
+        binding.mandelbrotView.numIterations = viewModel.numIterations
+        binding.mandelbrotView.power = viewModel.power
 
         updateColorScheme()
 
         binding.juliaView.reset()
         binding.juliaView.setJuliaCoords(binding.mandelbrotView.xCenter, binding.mandelbrotView.yCenter)
-        binding.juliaView.numIterations = binding.mandelbrotView.numIterations
-        binding.juliaView.power = binding.mandelbrotView.power
+        binding.juliaView.numIterations = viewModel.numIterations
+        binding.juliaView.power = viewModel.power
 
         // set the position and gravity of the Julia view, based on screen orientation
         binding.juliaView.post { initJulia() }
 
-        when (binding.mandelbrotView.power) {
+        when (viewModel.power) {
             2 -> binding.buttonPower2.isChecked = true
             3 -> binding.buttonPower3.isChecked = true
             4 -> binding.buttonPower4.isChecked = true
@@ -127,16 +122,10 @@ class MandelbrotActivity : AppCompatActivity() {
 
     public override fun onStop() {
         super.onStop()
-        val settings = getSharedPreferences(PREFS_NAME, 0)
-        val editor = settings.edit()
-        editor.putString("xcenter", binding.mandelbrotView.xCenter.toString())
-        editor.putString("ycenter", binding.mandelbrotView.yCenter.toString())
-        editor.putString("xextent", binding.mandelbrotView.xExtent.toString())
-        editor.putInt("iterations", binding.mandelbrotView.numIterations)
-        editor.putInt("power", binding.mandelbrotView.power)
-        editor.putInt("colorscheme", currentColorScheme)
-        editor.putBoolean("juliaEnabled", juliaEnabled)
-        editor.apply()
+        viewModel.xCenter = binding.mandelbrotView.xCenter
+        viewModel.yCenter = binding.mandelbrotView.yCenter
+        viewModel.xExtent = binding.mandelbrotView.xExtent
+        viewModel.save()
     }
 
     public override fun onDestroy() {
@@ -150,16 +139,16 @@ class MandelbrotActivity : AppCompatActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
-        var iterationInc = binding.mandelbrotView.numIterations / 16
+        var iterationInc = viewModel.numIterations / 16
         if (iterationInc < 1) {
             iterationInc = 1
         }
         if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
-            updateIterations(binding.mandelbrotView.numIterations - iterationInc)
+            updateIterations(viewModel.numIterations - iterationInc)
             updateIterationBar()
             return true
         } else if (keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
-            updateIterations(binding.mandelbrotView.numIterations + iterationInc)
+            updateIterations(viewModel.numIterations + iterationInc)
             updateIterationBar()
             return true
         }
@@ -170,7 +159,7 @@ class MandelbrotActivity : AppCompatActivity() {
         if (isSettingsVisible) {
             toggleSettings()
             return
-        } else if (juliaEnabled) {
+        } else if (viewModel.juliaEnabled) {
             toggleJulia()
             return
         }
@@ -206,7 +195,7 @@ class MandelbrotActivity : AppCompatActivity() {
                 return true
             }
             R.id.menu_color_scheme -> {
-                currentColorScheme++
+                viewModel.currentColorScheme++
                 updateColorScheme()
                 binding.mandelbrotView.render()
                 binding.juliaView.render()
@@ -279,8 +268,8 @@ class MandelbrotActivity : AppCompatActivity() {
             if (binding.txtInfo.visibility != View.VISIBLE) {
                 return
             }
-            binding.txtIterations.text = String.format(Locale.ROOT, "%d", binding.mandelbrotView.numIterations)
-            if (juliaEnabled) {
+            binding.txtIterations.text = String.format(Locale.ROOT, "%d", viewModel.numIterations)
+            if (viewModel.juliaEnabled) {
                 binding.txtInfo.text = String.format(getString(R.string.coordinate_display_julia), xmin,
                         xmax, ymin, ymax, binding.mandelbrotView.xCenter, binding.mandelbrotView.yCenter)
             } else {
@@ -290,17 +279,17 @@ class MandelbrotActivity : AppCompatActivity() {
     }
 
     private fun updateIterationBar() {
-        binding.seekBarIterations.progress = sqrt(binding.mandelbrotView.numIterations.toDouble()).toInt()
+        binding.seekBarIterations.progress = sqrt(viewModel.numIterations.toDouble()).toInt()
     }
 
     private fun updateJulia() {
         if (binding.juliaView.animation != null && !binding.juliaView.animation.hasEnded()) {
             return
         }
-        binding.mandelbrotView.showCrosshairs = juliaEnabled
+        binding.mandelbrotView.showCrosshairs = viewModel.juliaEnabled
         binding.mandelbrotView.invalidate()
         binding.mandelbrotView.requestCoordinates()
-        if (juliaEnabled) {
+        if (viewModel.juliaEnabled) {
             binding.juliaView.visibility = View.VISIBLE
             binding.juliaView.render()
         } else {
@@ -309,25 +298,27 @@ class MandelbrotActivity : AppCompatActivity() {
     }
 
     private fun updateColorScheme() {
-        if (currentColorScheme >= getColorSchemes().size) {
-            currentColorScheme = 0
+        if (viewModel.currentColorScheme >= getColorSchemes().size) {
+            viewModel.currentColorScheme = 0
         }
-        binding.mandelbrotView.setColorScheme(getColorSchemes()[currentColorScheme])
-        binding.juliaView.setColorScheme(getShiftedScheme(getColorSchemes()[currentColorScheme],
-                getColorSchemes()[currentColorScheme].size / 2))
+        binding.mandelbrotView.setColorScheme(getColorSchemes()[viewModel.currentColorScheme])
+        binding.juliaView.setColorScheme(getShiftedScheme(getColorSchemes()[viewModel.currentColorScheme],
+                getColorSchemes()[viewModel.currentColorScheme].size / 2))
     }
 
     private fun updateIterations(iterations: Int) {
-        binding.mandelbrotView.numIterations = iterations
+        viewModel.numIterations = iterations
+        binding.mandelbrotView.numIterations = viewModel.numIterations
         binding.mandelbrotView.render()
-        binding.juliaView.numIterations = iterations
+        binding.juliaView.numIterations = viewModel.numIterations
         binding.juliaView.render()
     }
 
     private fun updatePower(power: Int) {
-        binding.mandelbrotView.power = power
+        viewModel.power = power
+        binding.mandelbrotView.power = viewModel.power
         binding.mandelbrotView.render()
-        binding.juliaView.power = power
+        binding.juliaView.power = viewModel.power
         binding.juliaView.render()
     }
 
@@ -349,7 +340,7 @@ class MandelbrotActivity : AppCompatActivity() {
         if (binding.juliaView.animation != null && !binding.juliaView.animation.hasEnded()) {
             return
         }
-        juliaEnabled = !juliaEnabled
+        viewModel.juliaEnabled = !viewModel.juliaEnabled
         updateJulia()
     }
 
@@ -419,7 +410,6 @@ class MandelbrotActivity : AppCompatActivity() {
     }
 
     companion object {
-        const val PREFS_NAME = "MandelbrotActivityPrefs"
         private const val WRITE_PERMISSION_REQUEST = 50
         private const val OPEN_DOCUMENT_REQUEST = 101
 
