@@ -10,7 +10,6 @@ import android.view.View
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.OutputStream
-import java.util.*
 import kotlin.math.sqrt
 
 abstract class MandelbrotViewBase @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0)
@@ -26,11 +25,11 @@ abstract class MandelbrotViewBase @JvmOverloads constructor(context: Context, at
 
     private var isJulia = false
     private var paramIndex = 0
-    private val currentThreads: MutableList<Thread> = ArrayList()
+    private val currentThreads = mutableListOf<Thread>()
     @Volatile private var terminateThreads = false
-    private var paint: Paint? = null
-    private var viewportBitmap: Bitmap? = null
-    private var viewportRect: Rect? = null
+    private val paint = Paint()
+    private lateinit var viewportBitmap: Bitmap
+    private lateinit var viewportRect: Rect
     private var screenWidth = 0
     private var screenHeight = 0
     var showCrosshairs = false
@@ -77,15 +76,8 @@ abstract class MandelbrotViewBase @JvmOverloads constructor(context: Context, at
     private var touchMode = TOUCH_NONE
     private var displayDensity = 0f
 
-    private var onPointSelected: OnPointSelected? = null
-    fun setOnPointSelected(listener: OnPointSelected) {
-        onPointSelected = listener
-    }
-
-    private var onCoordinatesChanged: OnCoordinatesChanged? = null
-    fun setOnCoordinatesChanged(listener: OnCoordinatesChanged) {
-        onCoordinatesChanged = listener
-    }
+    var onPointSelected: OnPointSelected? = null
+    var onCoordinatesChanged: OnCoordinatesChanged? = null
 
     protected fun setup(isJulia: Boolean) {
         if (isInEditMode) {
@@ -94,10 +86,9 @@ abstract class MandelbrotViewBase @JvmOverloads constructor(context: Context, at
         this.isJulia = isJulia
         paramIndex = if (isJulia) 1 else 0
         displayDensity = resources.displayMetrics.density
-        paint = Paint()
-        paint!!.style = Paint.Style.FILL
-        paint!!.color = Color.WHITE
-        paint!!.strokeWidth = 1.5f * displayDensity
+        paint.style = Paint.Style.FILL
+        paint.color = Color.WHITE
+        paint.strokeWidth = 1.5f * displayDensity
     }
 
     public override fun onDraw(canvas: Canvas) {
@@ -115,7 +106,7 @@ abstract class MandelbrotViewBase @JvmOverloads constructor(context: Context, at
             initMinMax()
             viewportBitmap = Bitmap.createBitmap(screenWidth, screenHeight, Bitmap.Config.ARGB_8888)
             MandelNative.setBitmap(paramIndex, viewportBitmap)
-            viewportRect = Rect(0, 0, viewportBitmap!!.width - 1, viewportBitmap!!.height - 1)
+            viewportRect = Rect(0, 0, viewportBitmap.width - 1, viewportBitmap.height - 1)
             render()
             return
         }
@@ -123,10 +114,12 @@ abstract class MandelbrotViewBase @JvmOverloads constructor(context: Context, at
             return
         }
         MandelNative.updateBitmap(paramIndex, viewportBitmap)
-        canvas.drawBitmap(viewportBitmap!!, viewportRect, viewportRect!!, paint)
+        canvas.drawBitmap(viewportBitmap, viewportRect, viewportRect, paint)
         if (showCrosshairs) {
-            canvas.drawLine(screenWidth / 2 - CROSSHAIR_WIDTH * displayDensity, screenHeight / 2.toFloat(), screenWidth / 2 + CROSSHAIR_WIDTH * displayDensity, screenHeight / 2.toFloat(), paint!!)
-            canvas.drawLine(screenWidth / 2.toFloat(), screenHeight / 2 - CROSSHAIR_WIDTH * displayDensity, screenWidth / 2.toFloat(), screenHeight / 2 + CROSSHAIR_WIDTH * displayDensity, paint!!)
+            canvas.drawLine(screenWidth / 2 - CROSSHAIR_WIDTH * displayDensity, screenHeight / 2.toFloat(),
+                    screenWidth / 2 + CROSSHAIR_WIDTH * displayDensity, screenHeight / 2.toFloat(), paint)
+            canvas.drawLine(screenWidth / 2.toFloat(), screenHeight / 2 - CROSSHAIR_WIDTH * displayDensity,
+                    screenWidth / 2.toFloat(), screenHeight / 2 + CROSSHAIR_WIDTH * displayDensity, paint)
         }
     }
 
@@ -182,10 +175,8 @@ abstract class MandelbrotViewBase @JvmOverloads constructor(context: Context, at
                         }
                     }
                 }
-                if (onPointSelected != null) {
-                    onPointSelected!!.pointSelected(xmin + event.x.toDouble() * (xmax - xmin) / screenWidth,
-                            ymin + event.y.toDouble() * (ymax - ymin) / screenHeight)
-                }
+                onPointSelected?.pointSelected(xmin + event.x.toDouble() * (xmax - xmin) / screenWidth,
+                        ymin + event.y.toDouble() * (ymax - ymin) / screenHeight)
                 endCoarseness = startCoarseness
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
@@ -193,10 +184,8 @@ abstract class MandelbrotViewBase @JvmOverloads constructor(context: Context, at
                 pinchStartPoint.y = 0.0f
                 touchMode = TOUCH_NONE
                 endCoarseness = 1
-                if (onPointSelected != null) {
-                    onPointSelected!!.pointSelected(xmin + event.x.toDouble() * (xmax - xmin) / screenWidth,
-                            ymin + event.y.toDouble() * (ymax - ymin) / screenHeight)
-                }
+                onPointSelected?.pointSelected(xmin + event.x.toDouble() * (xmax - xmin) / screenWidth,
+                        ymin + event.y.toDouble() * (ymax - ymin) / screenHeight)
             }
         }
         render()
@@ -204,9 +193,7 @@ abstract class MandelbrotViewBase @JvmOverloads constructor(context: Context, at
     }
 
     fun requestCoordinates() {
-        if (onCoordinatesChanged != null) {
-            onCoordinatesChanged!!.newCoordinates(xmin, xmax, ymin, ymax)
-        }
+        onCoordinatesChanged?.newCoordinates(xmin, xmax, ymin, ymax)
     }
 
     fun render() {
@@ -214,16 +201,14 @@ abstract class MandelbrotViewBase @JvmOverloads constructor(context: Context, at
         if (visibility != VISIBLE) {
             return
         }
-        if (onCoordinatesChanged != null) {
-            onCoordinatesChanged!!.newCoordinates(xmin, xmax, ymin, ymax)
-        }
+        onCoordinatesChanged?.newCoordinates(xmin, xmax, ymin, ymax)
+
         xExtent = xmax - xmin
         xCenter = xmin + xExtent / 2.0
         yCenter = ymin + (ymax - ymin) / 2.0
         MandelNative.setParameters(paramIndex, power, numIterations, xmin, xmax, ymin, ymax,
                 if (isJulia) 1 else 0, jx, jy, screenWidth, screenHeight)
-        var t: Thread
-        t = MandelThread(0, 0, screenWidth, screenHeight / 2, startCoarseness)
+        var t = MandelThread(0, 0, screenWidth, screenHeight / 2, startCoarseness)
         t.start()
         currentThreads.add(t)
         t = MandelThread(0, screenHeight / 2, screenWidth, screenHeight / 2, startCoarseness)
@@ -281,7 +266,7 @@ abstract class MandelbrotViewBase @JvmOverloads constructor(context: Context, at
 
     @Throws(IOException::class)
     fun savePicture(stream: OutputStream) {
-        viewportBitmap!!.compress(Bitmap.CompressFormat.PNG, 100, stream)
+        viewportBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
         stream.flush()
         stream.close()
     }

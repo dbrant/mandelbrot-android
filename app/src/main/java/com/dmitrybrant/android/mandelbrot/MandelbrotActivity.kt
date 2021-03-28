@@ -68,14 +68,14 @@ class MandelbrotActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(arg0: SeekBar) {}
         })
 
-        binding.mandelbrotView.setOnPointSelected(object : OnPointSelected {
+        binding.mandelbrotView.onPointSelected = object : OnPointSelected {
             override fun pointSelected(x: Double, y: Double) {
                 binding.juliaView.terminateThreads()
                 binding.juliaView.setJuliaCoords(binding.mandelbrotView.xCenter, binding.mandelbrotView.yCenter)
                 binding.juliaView.render()
             }
-        })
-        binding.mandelbrotView.setOnCoordinatesChanged(coordinatesChangedListener)
+        }
+        binding.mandelbrotView.onCoordinatesChanged = coordinatesChangedListener
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.topLayout)) { _: View?, insets: WindowInsetsCompat ->
             var params = binding.settingsContainer.layoutParams as FrameLayout.LayoutParams
@@ -121,12 +121,15 @@ class MandelbrotActivity : AppCompatActivity() {
         updateIterationBar()
     }
 
-    public override fun onDestroy() {
+    override fun onStop() {
+        super.onStop()
         viewModel.xCenter = binding.mandelbrotView.xCenter
         viewModel.yCenter = binding.mandelbrotView.yCenter
         viewModel.xExtent = binding.mandelbrotView.xExtent
         viewModel.save()
+    }
 
+    override fun onDestroy() {
         binding.mandelbrotView.terminateThreads()
         binding.juliaView.terminateThreads()
         MandelNative.releaseParameters(0)
