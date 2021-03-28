@@ -38,6 +38,9 @@ class MandelbrotActivity : AppCompatActivity() {
     private lateinit var binding: MainBinding
     private val viewModel: MandelbrotActivityViewModel by viewModels()
 
+    private val isSettingsVisible: Boolean
+        get() = binding.settingsContainer.visibility == View.VISIBLE
+
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
@@ -48,10 +51,8 @@ class MandelbrotActivity : AppCompatActivity() {
         ViewCompat.setBackground(binding.mainToolbar, getCubicGradient(ContextCompat
                 .getColor(this, R.color.toolbar_gradient), Gravity.TOP))
         setSupportActionBar(binding.mainToolbar)
-        if (supportActionBar != null) {
-            supportActionBar!!.setDisplayHomeAsUpEnabled(true)
-            supportActionBar!!.title = ""
-        }
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.title = ""
 
         binding.settingsContainer.visibility = View.GONE
         binding.seekBarIterations.max = sqrt(MandelbrotViewBase.MAX_ITERATIONS.toDouble()).toInt() + 1
@@ -67,7 +68,7 @@ class MandelbrotActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(arg0: SeekBar) {}
         })
 
-        binding. mandelbrotView.setOnPointSelected(object : OnPointSelected {
+        binding.mandelbrotView.setOnPointSelected(object : OnPointSelected {
             override fun pointSelected(x: Double, y: Double) {
                 binding.juliaView.terminateThreads()
                 binding.juliaView.setJuliaCoords(binding.mandelbrotView.xCenter, binding.mandelbrotView.yCenter)
@@ -120,15 +121,12 @@ class MandelbrotActivity : AppCompatActivity() {
         updateIterationBar()
     }
 
-    public override fun onStop() {
-        super.onStop()
+    public override fun onDestroy() {
         viewModel.xCenter = binding.mandelbrotView.xCenter
         viewModel.yCenter = binding.mandelbrotView.yCenter
         viewModel.xExtent = binding.mandelbrotView.xExtent
         viewModel.save()
-    }
 
-    public override fun onDestroy() {
         binding.mandelbrotView.terminateThreads()
         binding.juliaView.terminateThreads()
         MandelNative.releaseParameters(0)
@@ -209,8 +207,6 @@ class MandelbrotActivity : AppCompatActivity() {
             R.id.menu_about -> {
                 showAboutDialog()
                 return true
-            }
-            else -> {
             }
         }
         return super.onOptionsItemSelected(item)
@@ -323,9 +319,6 @@ class MandelbrotActivity : AppCompatActivity() {
         binding.juliaView.render()
     }
 
-    private val isSettingsVisible: Boolean
-        get() = binding.settingsContainer.visibility == View.VISIBLE
-
     private fun toggleSettings() {
         if (binding.settingsContainer.animation != null && !binding.settingsContainer.animation.hasEnded()) {
             return
@@ -407,6 +400,7 @@ class MandelbrotActivity : AppCompatActivity() {
             val contentUri = MediaStore.Images.Media.INTERNAL_CONTENT_URI
             contentResolver.insert(contentUri, values)
         } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
