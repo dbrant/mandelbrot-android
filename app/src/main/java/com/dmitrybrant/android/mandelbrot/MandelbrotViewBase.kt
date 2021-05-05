@@ -46,26 +46,10 @@ abstract class MandelbrotViewBase @JvmOverloads constructor(context: Context, at
     private var jy = 0.0
 
     var numIterations = DEFAULT_ITERATIONS
-        set(value) {
-            field = value
-            if (field < MIN_ITERATIONS) {
-                field = MIN_ITERATIONS
-            }
-            if (field > MAX_ITERATIONS) {
-                field = MAX_ITERATIONS
-            }
-        }
+        set(value) { field = value.coerceIn(MIN_ITERATIONS, MAX_ITERATIONS) }
 
     var power = 2
-        set(value) {
-            field = value
-            if (field < 2) {
-                field = 2
-            }
-            if (field > 4) {
-                field = 4
-            }
-        }
+        set(value) { field = value.coerceIn(2, 4) }
 
     private val startCoarseness = 16
     private var endCoarseness = 1
