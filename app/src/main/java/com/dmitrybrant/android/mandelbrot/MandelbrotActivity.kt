@@ -363,10 +363,10 @@ class MandelbrotActivity : AppCompatActivity() {
 
             binding.mandelbrotView.savePicture(contentResolver.openOutputStream(file!!.uri)!!)
             notifyContentResolver(file.uri.toString())
-            Toast.makeText(this@MandelbrotActivity, String.format(getString(R.string.picture_save_success), file.uri.path), Toast.LENGTH_LONG).show()
+            Toast.makeText(this, String.format(getString(R.string.picture_save_success), file.uri.path), Toast.LENGTH_LONG).show()
         } catch (ex: Exception) {
             ex.printStackTrace()
-            Toast.makeText(this@MandelbrotActivity, String.format(getString(R.string.picture_save_error), ex.message), Toast.LENGTH_LONG).show()
+            Toast.makeText(this, String.format(getString(R.string.picture_save_error), ex.message), Toast.LENGTH_LONG).show()
         }
     }
 
@@ -381,15 +381,15 @@ class MandelbrotActivity : AppCompatActivity() {
             path += "/" + f.format(Date()) + ".png"
             binding.mandelbrotView.savePicture(path)
             notifyContentResolver(path)
-            Toast.makeText(this@MandelbrotActivity, String.format(getString(R.string.picture_save_success), path), Toast.LENGTH_LONG).show()
+            Toast.makeText(this, String.format(getString(R.string.picture_save_success), path), Toast.LENGTH_LONG).show()
         } catch (ex: Exception) {
             ex.printStackTrace()
-            Toast.makeText(this@MandelbrotActivity, String.format(getString(R.string.picture_save_error), ex.message), Toast.LENGTH_LONG).show()
+            Toast.makeText(this, String.format(getString(R.string.picture_save_error), ex.message), Toast.LENGTH_LONG).show()
         }
     }
 
     private fun showAboutDialog() {
-        val alertDialog = AlertDialog.Builder(this@MandelbrotActivity).create()
+        val alertDialog = AlertDialog.Builder(this).create()
         alertDialog.setTitle(getString(R.string.about))
         alertDialog.setMessage(getString(R.string.str_about))
         alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.ok), null as DialogInterface.OnClickListener?)
