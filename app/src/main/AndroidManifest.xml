@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-      package="com.dmitrybrant.android.mandelbrot">
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.dmitrybrant.android.mandelbrot">
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <application
         android:icon="@mipmap/ic_launcher"
@@ -12,7 +13,7 @@
         <meta-data android:name="com.sec.android.support.multiwindow" android:value="true" />
 
         <activity android:name=".MandelbrotActivity"
-            android:theme="@style/NoTitle"
+            android:theme="@style/AppTheme"
             android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

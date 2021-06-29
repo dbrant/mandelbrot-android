@@ -5,25 +5,12 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-import android.Manifest;
-import android.content.ActivityNotFoundException;
-import android.content.ContentValues;
+import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
-import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.provider.MediaStore;
-import androidx.annotation.NonNull;
-import androidx.core.content.ContextCompat;
-import androidx.documentfile.provider.DocumentFile;
-import androidx.core.view.ViewCompat;
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -37,7 +24,7 @@ import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class MandelbrotActivity extends AppCompatActivity {
+public class MandelbrotActivity extends Activity {
     public static final String PREFS_NAME = "MandelbrotActivityPrefs";
     private static final int WRITE_PERMISSION_REQUEST = 50;
     private static final int OPEN_DOCUMENT_REQUEST = 101;
@@ -65,13 +52,9 @@ public class MandelbrotActivity extends AppCompatActivity {
 
         ColorScheme.initColorSchemes();
 
-        final Toolbar toolbar = findViewById(R.id.main_toolbar);
-        ViewCompat.setBackground(toolbar, GradientUtil.getCubicGradient(ContextCompat
-                .getColor(this, R.color.toolbar_gradient), Gravity.TOP));
-        setSupportActionBar(toolbar);
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setTitle("");
+        if (getActionBar() != null) {
+            getActionBar().setDisplayHomeAsUpEnabled(true);
+            getActionBar().setTitle("");
         }
 
         txtInfo = findViewById(R.id.txtInfo);
@@ -203,7 +186,7 @@ public class MandelbrotActivity extends AppCompatActivity {
                 toggleJulia();
                 return true;
             case R.id.menu_save_image:
-                checkWritePermissionThenSaveImage();
+                saveImageOld();
                 return true;
             case R.id.menu_color_scheme:
                 currentColorScheme++;
@@ -222,40 +205,6 @@ public class MandelbrotActivity extends AppCompatActivity {
                 break;
         }
         return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if (requestCode == WRITE_PERMISSION_REQUEST) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                beginChooseFolder();
-            } else {
-                Toast.makeText(this, R.string.picture_save_permissions, Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
-
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent resultData) {
-        super.onActivityResult(requestCode, resultCode, resultData);
-        if (requestCode == OPEN_DOCUMENT_REQUEST && resultCode == RESULT_OK && resultData.getData() != null) {
-            Uri treeUri = resultData.getData();
-            DocumentFile pickedDir = DocumentFile.fromTreeUri(this, treeUri);
-            if (pickedDir == null) {
-                return;
-            }
-            grantUriPermission(getPackageName(), treeUri, Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-            saveImage(pickedDir);
-        }
-    }
-
-    private void checkWritePermissionThenSaveImage() {
-        if ((ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) &&
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            requestPermissions(new String[]{ Manifest.permission.WRITE_EXTERNAL_STORAGE }, WRITE_PERMISSION_REQUEST);
-        } else {
-            beginChooseFolder();
-        }
     }
 
     private void initJulia() {
@@ -351,33 +300,7 @@ public class MandelbrotActivity extends AppCompatActivity {
     }
 
     private void beginChooseFolder() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
-            try {
-                startActivityForResult(intent, OPEN_DOCUMENT_REQUEST);
-                Toast.makeText(getApplicationContext(), R.string.folder_picker_instruction, Toast.LENGTH_LONG).show();
-            } catch (ActivityNotFoundException e) {
-                e.printStackTrace();
-                saveImageOld();
-            }
-        } else {
-            saveImageOld();
-        }
-    }
-
-    private void saveImage(@NonNull DocumentFile dir) {
-        try {
-            String fileName = (new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.ROOT))
-                    .format(new Date()) + ".png";
-
-            DocumentFile file = dir.createFile("image/png", fileName);
-            mandelbrotView.savePicture(getContentResolver().openOutputStream(file.getUri()));
-            notifyContentResolver(file.getUri().toString());
-            Toast.makeText(MandelbrotActivity.this, String.format(getString(R.string.picture_save_success), file.getUri().getPath()), Toast.LENGTH_LONG).show();
-        } catch(Exception ex) {
-            ex.printStackTrace();
-            Toast.makeText(MandelbrotActivity.this, String.format(getString(R.string.picture_save_error), ex.getMessage()), Toast.LENGTH_LONG).show();
-        }
+        saveImageOld();
     }
 
     private void saveImageOld() {
@@ -390,7 +313,6 @@ public class MandelbrotActivity extends AppCompatActivity {
             SimpleDateFormat f = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.US);
             path += "/" + f.format(new Date()) + ".png";
             mandelbrotView.savePicture(path);
-            notifyContentResolver(path);
             Toast.makeText(MandelbrotActivity.this, String.format(getString(R.string.picture_save_success), path), Toast.LENGTH_LONG).show();
         } catch(Exception ex) {
             ex.printStackTrace();
@@ -404,16 +326,5 @@ public class MandelbrotActivity extends AppCompatActivity {
         alertDialog.setMessage(getString(R.string.str_about));
         alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.ok), (DialogInterface.OnClickListener) null);
         alertDialog.show();
-    }
-
-    private void notifyContentResolver(@NonNull String path) {
-        try {
-            ContentValues values = new ContentValues();
-            values.put(MediaStore.Images.Media.DATA, path);
-            Uri contentUri = MediaStore.Images.Media.INTERNAL_CONTENT_URI;
-            getContentResolver().insert(contentUri, values);
-        } catch (Exception e) {
-            //
-        }
     }
 }

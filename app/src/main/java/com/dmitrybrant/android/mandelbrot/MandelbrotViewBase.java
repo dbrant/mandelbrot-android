@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import android.graphics.PointF;
-import androidx.annotation.NonNull;
 import android.text.format.DateUtils;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -173,7 +172,7 @@ public abstract class MandelbrotViewBase extends View {
     }
 
     @Override
-    public boolean onTouchEvent(@NonNull MotionEvent event){
+    public boolean onTouchEvent(MotionEvent event){
         switch (event.getAction() & MotionEvent.ACTION_MASK) {
             case MotionEvent.ACTION_DOWN:
                 previousX = event.getX();
@@ -331,12 +330,12 @@ public abstract class MandelbrotViewBase extends View {
         showCrosshairs = enabled;
     }
 
-    public void savePicture(@NonNull String fileName) throws IOException
+    public void savePicture(String fileName) throws IOException
     {
         savePicture(new FileOutputStream(fileName));
     }
 
-    public void savePicture(@NonNull OutputStream stream) throws IOException
+    public void savePicture(OutputStream stream) throws IOException
     {
         viewportBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
         stream.flush();

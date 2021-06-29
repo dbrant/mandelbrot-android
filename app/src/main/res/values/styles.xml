@@ -1,11 +1,5 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <style name="AppTheme" parent="Theme.MaterialComponents">
-    </style>
-
-    <style name="NoTitle" parent="AppTheme">
-        <item name="windowActionBar">false</item>
-        <item name="windowNoTitle">true</item>
-        <item name="android:windowTitleSize">0dp</item>
-        <item name="android:windowTranslucentNavigation" tools:targetApi="kitkat">true</item>
+    <style name="AppTheme">
+        <item name="android:windowActionBar">true</item>
     </style>
 </resources>
