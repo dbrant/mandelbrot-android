@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="list_item_highlight">#a033b5e5</color>
-    <color name="list_item_selected">#d033b5e5</color>
     <color name="info_text">#ffffffff</color>
     <color name="info_background">#80000000</color>
-    <color name="toolbar_gradient">#a0000000</color>
 </resources>
