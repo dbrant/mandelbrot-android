@@ -12,7 +12,7 @@ def static getDate() {
 final JavaVersion JAVA_VERSION = JavaVersion.VERSION_1_8
 
 android {
-    compileSdkVersion 30
+    compileSdkVersion 31
 
     compileOptions {
         sourceCompatibility = JAVA_VERSION
@@ -26,7 +26,7 @@ android {
     defaultConfig {
         applicationId "com.dmitrybrant.android.mandelbrot"
         minSdkVersion 14
-        targetSdkVersion 30
+        targetSdkVersion 31
         versionCode 62
         versionName "${versionStart}-${date}"
 	}
