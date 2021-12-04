@@ -1,10 +1,9 @@
 package com.dmitrybrant.android.mandelbrot
 
 import android.graphics.Color
-import java.util.*
 
 object ColorScheme {
-    private var colorSchemes: MutableList<IntArray> = ArrayList()
+    private var colorSchemes = mutableListOf<IntArray>()
 
     fun initColorSchemes() {
         colorSchemes = ArrayList()

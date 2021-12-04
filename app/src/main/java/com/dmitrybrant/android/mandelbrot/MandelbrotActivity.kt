@@ -77,7 +77,7 @@ class MandelbrotActivity : AppCompatActivity() {
         }
         binding.mandelbrotView.onCoordinatesChanged = coordinatesChangedListener
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.topLayout)) { _: View?, insets: WindowInsetsCompat ->
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.topLayout)) { _, insets ->
             var params = binding.settingsContainer.layoutParams as FrameLayout.LayoutParams
             params.topMargin = insets.systemWindowInsetTop
             params.bottomMargin = insets.systemWindowInsetBottom
