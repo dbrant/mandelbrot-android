@@ -17,5 +17,5 @@
     <string name="picture_save_success">Picture saved successfully: %1$s</string>
     <string name="picture_save_error">Error saving picture: %1$s</string>
     <string name="picture_save_permissions">Please grant write permissions to save the image.</string>
-    <string name="str_about">- Hold and drag to move\n- Pinch to zoom in/out\n- Press the Settings button or Volume up/down to change iterations\n- Press the Julia Mode button to enable the Julia window. Drag and zoom within the Julia or Mandelbrot windows to explore.\n\nCopyright © 2015–2021 Dmitry Brant.</string>
+    <string name="str_about">- Hold and drag to move\n- Pinch to zoom in/out\n- Press the Settings button or Volume up/down to change iterations\n- Press the Julia Mode button to enable the Julia window. Drag and zoom within the Julia or Mandelbrot windows to explore.\n\nCopyright © 2015–2022 Dmitry Brant.</string>
 </resources>
