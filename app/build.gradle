@@ -36,8 +36,7 @@ android {
     }
 
     sourceSets.main {
-		jni.srcDirs = []
-		jniLibs.srcDir 'src/main/libs'
+        jniLibs.srcDir 'src/main/libs'
 	}
 
     buildTypes {
@@ -50,10 +49,10 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-
-    lintOptions {
+    lint {
         abortOnError false
     }
+
     compileOptions {
         sourceCompatibility = 1.8
         targetCompatibility = 1.8
