@@ -52,6 +52,7 @@ android {
     lint {
         abortOnError false
     }
+    namespace 'com.dmitrybrant.android.mandelbrot'
 
     compileOptions {
         sourceCompatibility = 1.8
