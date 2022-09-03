@@ -16,12 +16,12 @@ import android.widget.FrameLayout
 import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.documentfile.provider.DocumentFile
 import com.dmitrybrant.android.mandelbrot.ColorScheme.getColorSchemes
 import com.dmitrybrant.android.mandelbrot.ColorScheme.getShiftedScheme
@@ -40,6 +40,16 @@ class MandelbrotActivity : AppCompatActivity() {
 
     private val isSettingsVisible: Boolean
         get() = binding.settingsContainer.visibility == View.VISIBLE
+
+    private val openDocumentLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        if (it.resultCode == Activity.RESULT_OK && it.data?.data != null) {
+            val treeUri = it.data?.data!!
+            DocumentFile.fromTreeUri(this, treeUri)?.let { dir ->
+                grantUriPermission(packageName, treeUri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                saveImage(dir)
+            }
+        }
+    }
 
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -226,16 +236,6 @@ class MandelbrotActivity : AppCompatActivity() {
         }
     }
 
-    public override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
-        super.onActivityResult(requestCode, resultCode, resultData)
-        if (requestCode == OPEN_DOCUMENT_REQUEST && resultCode == Activity.RESULT_OK && resultData!!.data != null) {
-            val treeUri = resultData.data
-            val pickedDir = DocumentFile.fromTreeUri(this, treeUri!!) ?: return
-            grantUriPermission(packageName, treeUri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-            saveImage(pickedDir)
-        }
-    }
-
     private fun checkWritePermissionThenSaveImage() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED &&
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -345,7 +345,7 @@ class MandelbrotActivity : AppCompatActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
             try {
-                startActivityForResult(intent, OPEN_DOCUMENT_REQUEST)
+                openDocumentLauncher.launch(intent)
                 Toast.makeText(applicationContext, R.string.folder_picker_instruction, Toast.LENGTH_LONG).show()
             } catch (e: ActivityNotFoundException) {
                 e.printStackTrace()
@@ -409,7 +409,6 @@ class MandelbrotActivity : AppCompatActivity() {
 
     companion object {
         private const val WRITE_PERMISSION_REQUEST = 50
-        private const val OPEN_DOCUMENT_REQUEST = 101
 
         init {
             System.loadLibrary("mandelnative_jni")
