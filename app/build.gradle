@@ -27,7 +27,7 @@ android {
         applicationId "com.dmitrybrant.android.mandelbrot"
         minSdkVersion 14
         targetSdkVersion 32
-        versionCode 63
+        versionCode 64
         versionName "${versionStart}-${date}"
 	}
 
