@@ -51,6 +51,14 @@ class MandelbrotActivity : AppCompatActivity() {
         }
     }
 
+    private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
+        if (isGranted) {
+            beginChooseFolder()
+        } else {
+            Toast.makeText(this, R.string.picture_save_permissions, Toast.LENGTH_SHORT).show()
+        }
+    }
+
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
@@ -225,21 +233,10 @@ class MandelbrotActivity : AppCompatActivity() {
         return super.onOptionsItemSelected(item)
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == WRITE_PERMISSION_REQUEST) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                beginChooseFolder()
-            } else {
-                Toast.makeText(this, R.string.picture_save_permissions, Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
     private fun checkWritePermissionThenSaveImage() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED &&
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            requestPermissions(arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), WRITE_PERMISSION_REQUEST)
+            requestPermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
         } else {
             beginChooseFolder()
         }
@@ -408,8 +405,6 @@ class MandelbrotActivity : AppCompatActivity() {
     }
 
     companion object {
-        private const val WRITE_PERMISSION_REQUEST = 50
-
         init {
             System.loadLibrary("mandelnative_jni")
         }
