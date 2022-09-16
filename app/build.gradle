@@ -9,7 +9,7 @@ def static getDate() {
     return formattedDate
 }
 
-final JavaVersion JAVA_VERSION = JavaVersion.VERSION_1_8
+def JAVA_VERSION = JavaVersion.VERSION_1_8
 
 android {
     compileSdkVersion 32
