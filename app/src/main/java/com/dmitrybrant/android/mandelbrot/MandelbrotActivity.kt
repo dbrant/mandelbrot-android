@@ -4,7 +4,6 @@ import android.Manifest
 import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.ContentValues
-import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -386,11 +385,12 @@ class MandelbrotActivity : AppCompatActivity() {
     }
 
     private fun showAboutDialog() {
-        val alertDialog = AlertDialog.Builder(this).create()
-        alertDialog.setTitle(getString(R.string.about))
-        alertDialog.setMessage(getString(R.string.str_about))
-        alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.ok), null as DialogInterface.OnClickListener?)
-        alertDialog.show()
+        AlertDialog.Builder(this)
+                .setTitle(R.string.about)
+                .setMessage(R.string.str_about)
+                .setPositiveButton(android.R.string.ok, null)
+                .create()
+                .show()
     }
 
     private fun notifyContentResolver(path: String) {
