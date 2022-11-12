@@ -102,11 +102,11 @@
 
     </LinearLayout>
 
-    <androidx.appcompat.widget.Toolbar
+    <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/mainToolbar"
         android:layout_width="match_parent"
         android:layout_height="80dp"
         android:layout_gravity="top">
-    </androidx.appcompat.widget.Toolbar>
+    </com.google.android.material.appbar.MaterialToolbar>
 
 </FrameLayout>
