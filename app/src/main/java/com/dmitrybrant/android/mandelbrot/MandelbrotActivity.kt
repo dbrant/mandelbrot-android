@@ -173,6 +173,7 @@ class MandelbrotActivity : AppCompatActivity() {
         return super.onKeyDown(keyCode, event)
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
         if (isSettingsVisible) {
             toggleSettings()
