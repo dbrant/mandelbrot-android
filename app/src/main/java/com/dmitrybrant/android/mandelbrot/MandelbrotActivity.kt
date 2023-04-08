@@ -17,7 +17,6 @@ import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
@@ -29,6 +28,7 @@ import com.dmitrybrant.android.mandelbrot.GradientUtil.getCubicGradient
 import com.dmitrybrant.android.mandelbrot.MandelbrotViewBase.OnCoordinatesChanged
 import com.dmitrybrant.android.mandelbrot.MandelbrotViewBase.OnPointSelected
 import com.dmitrybrant.android.mandelbrot.databinding.MainBinding
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.sqrt
@@ -386,11 +386,10 @@ class MandelbrotActivity : AppCompatActivity() {
     }
 
     private fun showAboutDialog() {
-        AlertDialog.Builder(this)
+        MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.about)
                 .setMessage(R.string.str_about)
                 .setPositiveButton(android.R.string.ok, null)
-                .create()
                 .show()
     }
 
