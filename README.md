@@ -1,7 +1,5 @@
 # mandelbrot-android
 
-[![Build Status](https://travis-ci.org/dbrant/mandelbrot-android.svg)](https://travis-ci.org/dbrant/mandelbrot-android)
-
 Simple, high-performance Mandelbrot explorer app for Android.
 
 ## Features
