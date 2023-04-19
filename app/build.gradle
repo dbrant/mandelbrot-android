@@ -55,8 +55,11 @@ android {
     namespace 'com.dmitrybrant.android.mandelbrot'
 
     compileOptions {
-        sourceCompatibility = 1.8
-        targetCompatibility = 1.8
+        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_17
     }
 }
 
