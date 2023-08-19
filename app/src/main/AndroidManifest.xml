@@ -6,7 +6,6 @@
     <application
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:extractNativeLibs="false"
         android:allowBackup="false"
         tools:targetApi="m">
 

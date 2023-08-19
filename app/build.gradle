@@ -9,24 +9,13 @@ def static getDate() {
     return formattedDate
 }
 
-def JAVA_VERSION = JavaVersion.VERSION_1_8
-
 android {
-    compileSdkVersion 33
-
-    compileOptions {
-        sourceCompatibility = JAVA_VERSION
-        targetCompatibility = JAVA_VERSION
-    }
-
-    kotlinOptions {
-        jvmTarget = JAVA_VERSION
-    }
+    compileSdk 34
 
     defaultConfig {
         applicationId "com.dmitrybrant.android.mandelbrot"
-        minSdkVersion 14
-        targetSdkVersion 33
+        minSdk 14
+        targetSdk 34
         versionCode 64
         versionName "${versionStart}-${date}"
 	}
@@ -53,6 +42,11 @@ android {
         abortOnError false
     }
     namespace 'com.dmitrybrant.android.mandelbrot'
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging false
+        }
+    }
 
     compileOptions {
         targetCompatibility JavaVersion.VERSION_17
@@ -65,8 +59,8 @@ android {
 
 dependencies {
     implementation "com.google.android.material:material:1.9.0"
-    implementation "androidx.activity:activity-ktx:1.7.1"
-    implementation "androidx.fragment:fragment-ktx:1.5.7"
+    implementation "androidx.activity:activity-ktx:1.7.2"
+    implementation "androidx.fragment:fragment-ktx:1.6.1"
     implementation "androidx.documentfile:documentfile:1.0.1"
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
