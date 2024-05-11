@@ -65,8 +65,8 @@ class MandelbrotActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         initColorSchemes()
-        ViewCompat.setBackground(binding.mainToolbar, getCubicGradient(ContextCompat
-                .getColor(this, R.color.toolbar_gradient), Gravity.TOP))
+        binding.mainToolbar.background = getCubicGradient(ContextCompat
+                .getColor(this, R.color.toolbar_gradient), Gravity.TOP)
         setSupportActionBar(binding.mainToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = ""
