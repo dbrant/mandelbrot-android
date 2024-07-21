@@ -48,7 +48,7 @@ object GradientUtil {
         val x1: Float
         val y0: Float
         val y1: Float
-        when (gravity and Gravity.HORIZONTAL_GRAVITY_MASK) {
+        when (gravity and Gravity.RELATIVE_HORIZONTAL_GRAVITY_MASK) {
             Gravity.START -> {
                 x0 = 1f
                 x1 = 0f
