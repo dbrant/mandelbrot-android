@@ -20,6 +20,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
+import androidx.core.view.isVisible
 import androidx.documentfile.provider.DocumentFile
 import com.dmitrybrant.android.mandelbrot.ColorScheme.getColorSchemes
 import com.dmitrybrant.android.mandelbrot.ColorScheme.getShiftedScheme
@@ -36,9 +37,6 @@ import kotlin.math.sqrt
 class MandelbrotActivity : AppCompatActivity() {
     private lateinit var binding: MainBinding
     private val viewModel: MandelbrotActivityViewModel by viewModels()
-
-    private val isSettingsVisible: Boolean
-        get() = binding.settingsContainer.visibility == View.VISIBLE
 
     private val openDocumentLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (it.resultCode == Activity.RESULT_OK && it.data?.data != null) {
@@ -175,7 +173,7 @@ class MandelbrotActivity : AppCompatActivity() {
 
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
-        if (isSettingsVisible) {
+        if (binding.settingsContainer.isVisible) {
             toggleSettings()
             return
         } else if (viewModel.juliaEnabled) {

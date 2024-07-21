@@ -9,8 +9,8 @@
     <string name="about">About…</string>
     <string name="power">Power:</string>
     <string name="iterations">Iterations:</string>
-    <string name="coordinate_display">Real: %1$s to %2$s\nImag: %3$s to %4$s</string>
-    <string name="coordinate_display_julia">Real: %1$s to %2$s\nImag: %3$s to %4$s\nJulia: %5$s to %6$s</string>
+    <string name="coordinate_display">Real: %1$f to %2$f\nImag: %3$f to %4$f</string>
+    <string name="coordinate_display_julia">Real: %1$f to %2$f\nImag: %3$f to %4$f\nJulia: %5$f to %6$f</string>
     <string name="folder_picker_instruction">Select folder where image will be saved.</string>
     <string name="picture_save_success">Picture saved successfully: %1$s</string>
     <string name="picture_save_error">Error saving picture: %1$s</string>

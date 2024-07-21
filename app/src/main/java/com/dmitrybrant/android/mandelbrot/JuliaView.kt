@@ -3,11 +3,9 @@ package com.dmitrybrant.android.mandelbrot
 import android.content.Context
 import android.util.AttributeSet
 
-class JuliaView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0) :
-        MandelbrotViewBase(context, attrs, defStyleAttr) {
+class JuliaView(context: Context, attrs: AttributeSet? = null) :
+        MandelbrotViewBase(context, attrs) {
     init {
-        if (!isInEditMode) {
-            super.setup(true)
-        }
+        super.setup(true)
     }
 }

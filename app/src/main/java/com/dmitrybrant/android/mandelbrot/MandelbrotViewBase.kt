@@ -12,8 +12,8 @@ import java.io.IOException
 import java.io.OutputStream
 import kotlin.math.sqrt
 
-abstract class MandelbrotViewBase @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0)
-    : View(context, attrs, defStyleAttr) {
+abstract class MandelbrotViewBase(context: Context, attrs: AttributeSet? = null)
+    : View(context, attrs) {
 
     interface OnPointSelected {
         fun pointSelected(x: Double, y: Double)
@@ -274,7 +274,7 @@ abstract class MandelbrotViewBase @JvmOverloads constructor(context: Context, at
         pt.y = (event.getY(0) + event.getY(1)) * 0.5f
     }
 
-    private inner class MandelThread constructor(private val startX: Int, private val startY: Int, private val startWidth: Int, private val startHeight: Int, private val level: Int) : Thread() {
+    private inner class MandelThread(private val startX: Int, private val startY: Int, private val startWidth: Int, private val startHeight: Int, private val level: Int) : Thread() {
         override fun run() {
             var curLevel = level
             while (true) {

@@ -4,7 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 
 class MandelbrotActivityViewModel(app: Application) : AndroidViewModel(app) {
-    private val sharedPreferences = app.getSharedPreferences(PREFS_NAME, 0)
+    private val sharedPreferences = app.getSharedPreferences("MandelbrotActivityPrefs", 0)
 
     var juliaEnabled = false
     var currentColorScheme = 0
@@ -34,9 +34,5 @@ class MandelbrotActivityViewModel(app: Application) : AndroidViewModel(app) {
         editor.putInt("colorscheme", currentColorScheme)
         editor.putBoolean("juliaEnabled", juliaEnabled)
         editor.apply()
-    }
-
-    companion object {
-        const val PREFS_NAME = "MandelbrotActivityPrefs"
     }
 }
