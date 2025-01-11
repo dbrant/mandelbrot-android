@@ -20,7 +20,10 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
+import androidx.core.view.updateLayoutParams
+import androidx.core.view.updatePadding
 import androidx.documentfile.provider.DocumentFile
 import com.dmitrybrant.android.mandelbrot.ColorScheme.getColorSchemes
 import com.dmitrybrant.android.mandelbrot.ColorScheme.getShiftedScheme
@@ -58,7 +61,6 @@ class MandelbrotActivity : AppCompatActivity() {
 
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
         binding = MainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -92,18 +94,14 @@ class MandelbrotActivity : AppCompatActivity() {
         }
         binding.mandelbrotView.onCoordinatesChanged = coordinatesChangedListener
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.topLayout)) { _, insets ->
-            var params = binding.settingsContainer.layoutParams as FrameLayout.LayoutParams
-            params.topMargin = insets.systemWindowInsetTop
-            params.bottomMargin = insets.systemWindowInsetBottom
-            params.leftMargin = insets.systemWindowInsetLeft
-            params.rightMargin = insets.systemWindowInsetRight
-            params = binding.mainToolbar.layoutParams as FrameLayout.LayoutParams
-            params.topMargin = insets.systemWindowInsetTop
-            params.bottomMargin = insets.systemWindowInsetBottom
-            params.leftMargin = insets.systemWindowInsetLeft
-            params.rightMargin = insets.systemWindowInsetRight
-            insets.consumeSystemWindowInsets()
+        ViewCompat.setOnApplyWindowInsetsListener(binding.topLayout) { view, insets ->
+            val statusBarInsets = insets.getInsets(WindowInsetsCompat.Type.statusBars())
+            val navBarInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
+
+            binding.mainToolbar.updatePadding(top = statusBarInsets.top)
+            binding.settingsContainer.updateLayoutParams<ViewGroup.MarginLayoutParams> { bottomMargin = navBarInsets.bottom }
+
+            WindowInsetsCompat.CONSUMED
         }
 
         binding.mandelbrotView.reset()
