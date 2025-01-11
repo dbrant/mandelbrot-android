@@ -1,7 +1,6 @@
 package com.dmitrybrant.android.mandelbrot
 
 import android.Manifest
-import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.ContentValues
 import android.content.Intent
@@ -42,7 +41,7 @@ class MandelbrotActivity : AppCompatActivity() {
     private val viewModel: MandelbrotActivityViewModel by viewModels()
 
     private val openDocumentLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-        if (it.resultCode == Activity.RESULT_OK && it.data?.data != null) {
+        if (it.resultCode == RESULT_OK && it.data?.data != null) {
             val treeUri = it.data?.data!!
             DocumentFile.fromTreeUri(this, treeUri)?.let { dir ->
                 grantUriPermission(packageName, treeUri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
@@ -335,16 +334,12 @@ class MandelbrotActivity : AppCompatActivity() {
     }
 
     private fun beginChooseFolder() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
-            try {
-                openDocumentLauncher.launch(intent)
-                Toast.makeText(applicationContext, R.string.folder_picker_instruction, Toast.LENGTH_LONG).show()
-            } catch (e: ActivityNotFoundException) {
-                e.printStackTrace()
-                saveImageOld()
-            }
-        } else {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+        try {
+            openDocumentLauncher.launch(intent)
+            Toast.makeText(applicationContext, R.string.folder_picker_instruction, Toast.LENGTH_LONG).show()
+        } catch (e: ActivityNotFoundException) {
+            e.printStackTrace()
             saveImageOld()
         }
     }
