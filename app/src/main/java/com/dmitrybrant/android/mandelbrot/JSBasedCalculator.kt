@@ -209,7 +209,7 @@ class JSBasedCalculator {
         if (orbitLength == 0) orbitLength = i
         
         // Apply drawScene transformations (CRITICAL for correct rendering)
-        applyDrawSceneTransformations()
+        applyDrawSceneTransformations(polylim)
         
         Log.d(TAG, "Reference orbit: $orbitLength iterations, poly limit: $polylim")
         
@@ -258,6 +258,9 @@ class JSBasedCalculator {
         poly2[1] = floaty(polyScaled[5]).toFloat()
         poly2[2] = polylim.toFloat()
         poly2[3] = polyScaleExp.second.toFloat()
+        
+        // Store polylim for later use
+        this.polyLimit = polylim
         
         Log.d(TAG, "Scaled poly1: [${poly1[0]}, ${poly1[1]}, ${poly1[2]}, ${poly1[3]}]")
         Log.d(TAG, "Scaled poly2: [${poly2[0]}, ${poly2[1]}, ${poly2[2]}, ${poly2[3]}]")
@@ -376,6 +379,7 @@ class JSBasedCalculator {
         radius: BigDecimal,
         iterations: Int
     ) {
+        Log.d(TAG, "Setting parameters: center=($centerX, $centerY), radius=$radius, iterations=$iterations")
         this.centerX = centerX
         this.centerY = centerY
         this.radius = radius
