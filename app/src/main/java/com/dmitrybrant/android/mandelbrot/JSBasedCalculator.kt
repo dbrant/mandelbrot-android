@@ -223,7 +223,7 @@ class JSBasedCalculator {
      * Apply the critical transformations from drawScene function in JS
      * This is what was missing and causing solid color rendering!
      */
-    private fun applyDrawSceneTransformations() {
+    private fun applyDrawSceneTransformations(polylim: Int = this.polyLimit) {
         // Get radius in scaled format (like drawScene)
         val rexp = getExp(radius)
         val rMantissa = radius.toDouble() / 2.0.pow(rexp)
@@ -320,7 +320,7 @@ class JSBasedCalculator {
             val os = orbit[3 * (k - 1) + 2].toInt()
             dcx = deltaX * 2.0.pow(-q + cq - os)
             dcy = deltaY * 2.0.pow(-q + cq - os)
-            val unS = 2.0.pow(q - orbit[3 * (k - 1) + 2])
+            val unS = 2.0.pow(q.toDouble() - orbit[3 * (k - 1) + 2])
             
             if (!unS.isFinite()) continue
             
@@ -334,8 +334,8 @@ class JSBasedCalculator {
             q += os
             val S = 2.0.pow(q)
             
-            val fx = x * 2.0.pow(orbit[3 * k + 2]) + S * dx
-            val fy = y * 2.0.pow(orbit[3 * k + 2]) + S * dy
+            val fx = x * 2.0.pow(orbit[3 * k + 2].toDouble()) + S * dx
+            val fy = y * 2.0.pow(orbit[3 * k + 2].toDouble()) + S * dy
             
             if (fx * fx + fy * fy > 400.0) {
                 return i
