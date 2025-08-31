@@ -1,6 +1,7 @@
 package com.dmitrybrant.android.mandelbrot
 
 import android.graphics.Bitmap
+import android.util.Log
 import java.math.BigDecimal
 import kotlin.math.pow
 
@@ -33,8 +34,8 @@ object MandelbrotCalculator {
     private val params = Array(2) { FractalParams() }
     private val optimizedDeepZoom = OptimizedDeepZoom()
     
-    // Lower threshold for better performance testing
-    private const val DEEP_ZOOM_THRESHOLD = 1e6
+    // Use moderate threshold for testing deep zoom
+    private const val DEEP_ZOOM_THRESHOLD = 1e4
 
     fun setParameters(
         paramIndex: Int,
@@ -70,6 +71,8 @@ object MandelbrotCalculator {
             this.centerY = BigDecimal((yMin + yMax) / 2.0)
             this.zoomFactor = 4.0 / (xMax - xMin)
             this.useDeepZoom = this.zoomFactor > DEEP_ZOOM_THRESHOLD
+            
+            Log.d("MandelbrotCalc", "Zoom: ${this.zoomFactor}, DeepZoom: ${this.useDeepZoom}, Bounds: [$xMin, $xMax] x [$yMin, $yMax]")
             
             // Prepare deep zoom if needed
             if (this.useDeepZoom) {
@@ -113,7 +116,7 @@ object MandelbrotCalculator {
             this.centerX = centerX
             this.centerY = centerY
             this.zoomFactor = zoomFactor
-            this.useDeepZoom = zoomFactor > DEEP_ZOOM_THRESHOLD
+            this.useDeepZoom = this.zoomFactor > DEEP_ZOOM_THRESHOLD
             
             // Calculate bounds for legacy compatibility
             val scale = 4.0 / zoomFactor
@@ -247,7 +250,7 @@ object MandelbrotCalculator {
 
                 val iteration = if (param.useDeepZoom) {
                     // Use optimized deep zoom calculation
-                    optimizedDeepZoom.calculateIterations(
+                    val result = optimizedDeepZoom.calculateIterations(
                         px.toDouble(),
                         py.toDouble(),
                         param.centerX,
@@ -257,14 +260,22 @@ object MandelbrotCalculator {
                         param.viewHeight,
                         numIterations
                     )
+                    if (px == startX && py == startY) {
+                        Log.d("MandelbrotCalc", "Deep zoom sample: ($px,$py) -> $result iterations")
+                    }
+                    result
                 } else {
                     // Use standard double precision calculation
-                    when (param.power) {
+                    val result = when (param.power) {
                         2 -> calculateIterations2(param, x0array[px], y0, numIterations)
                         3 -> calculateIterations3(param, x0array[px], y0, numIterations)
                         4 -> calculateIterations4(param, x0array[px], y0, numIterations)
                         else -> calculateIterations2(param, x0array[px], y0, numIterations)
                     }
+                    if (px == startX && py == startY) {
+                        Log.d("MandelbrotCalc", "Standard sample: ($px,$py) coord=(${x0array[px]},$y0) -> $result iterations")
+                    }
+                    result
                 }
 
                 val color = if (iteration >= numIterations) {
