@@ -144,10 +144,10 @@ class MandelbrotActivity : AppCompatActivity() {
     override fun onDestroy() {
         binding.mandelbrotView.terminateThreads()
         binding.juliaView.terminateThreads()
-        MandelNative.releaseParameters(0)
-        MandelNative.releaseBitmap(0)
-        MandelNative.releaseParameters(1)
-        MandelNative.releaseBitmap(1)
+        MandelbrotCalculator.releaseParameters(0)
+        MandelbrotCalculator.releaseBitmap(0)
+        MandelbrotCalculator.releaseParameters(1)
+        MandelbrotCalculator.releaseBitmap(1)
         super.onDestroy()
     }
 

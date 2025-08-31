@@ -1,7 +1,6 @@
 package com.dmitrybrant.android.mandelbrot
 
 import android.graphics.Bitmap
-import kotlin.math.pow
 
 data class FractalParams(
     var power: Int = 2,
@@ -99,18 +98,6 @@ object MandelbrotCalculator {
     }
 
     fun drawFractal(
-        paramIndex: Int,
-        startX: Int,
-        startY: Int,
-        startWidth: Int,
-        startHeight: Int,
-        level: Int,
-        doAll: Int
-    ) {
-        drawPixels(paramIndex, startX, startY, startWidth, startHeight, level, doAll != 0)
-    }
-
-    private fun drawPixels(
         paramIndex: Int,
         startX: Int,
         startY: Int,

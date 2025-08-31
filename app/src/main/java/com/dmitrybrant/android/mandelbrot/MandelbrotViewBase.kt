@@ -89,7 +89,7 @@ abstract class MandelbrotViewBase(context: Context, attrs: AttributeSet? = null)
             terminateThreads()
             initMinMax()
             viewportBitmap = Bitmap.createBitmap(screenWidth, screenHeight, Bitmap.Config.ARGB_8888)
-            MandelNative.setBitmap(paramIndex, viewportBitmap)
+            MandelbrotCalculator.setBitmap(paramIndex, viewportBitmap)
             viewportRect = Rect(0, 0, viewportBitmap.width - 1, viewportBitmap.height - 1)
             render()
             return
@@ -97,7 +97,7 @@ abstract class MandelbrotViewBase(context: Context, attrs: AttributeSet? = null)
         if (screenWidth == 0 || screenHeight == 0) {
             return
         }
-        MandelNative.updateBitmap(paramIndex, viewportBitmap)
+        MandelbrotCalculator.updateBitmap(paramIndex, viewportBitmap)
         canvas.drawBitmap(viewportBitmap, viewportRect, viewportRect, paint)
         if (showCrosshairs) {
             canvas.drawLine(screenWidth / 2 - CROSSHAIR_WIDTH * displayDensity, screenHeight / 2.toFloat(),
@@ -190,7 +190,7 @@ abstract class MandelbrotViewBase(context: Context, attrs: AttributeSet? = null)
         xExtent = xmax - xmin
         xCenter = xmin + xExtent / 2.0
         yCenter = ymin + (ymax - ymin) / 2.0
-        MandelNative.setParameters(paramIndex, power, numIterations, xmin, xmax, ymin, ymax,
+        MandelbrotCalculator.setParameters(paramIndex, power, numIterations, xmin, xmax, ymin, ymax,
                 if (isJulia) 1 else 0, jx, jy, screenWidth, screenHeight)
         var t = MandelThread(0, 0, screenWidth, screenHeight / 2, startCoarseness)
         t.start()
@@ -202,7 +202,7 @@ abstract class MandelbrotViewBase(context: Context, attrs: AttributeSet? = null)
 
     fun terminateThreads() {
         try {
-            MandelNative.signalTerminate(paramIndex)
+            MandelbrotCalculator.signalTerminate(paramIndex)
             terminateThreads = true
             for (t in currentThreads) {
                 if (t.isAlive) {
@@ -235,7 +235,7 @@ abstract class MandelbrotViewBase(context: Context, attrs: AttributeSet? = null)
     }
 
     fun setColorScheme(colors: IntArray) {
-        MandelNative.setColorPalette(paramIndex, colors, colors.size)
+        MandelbrotCalculator.setColorPalette(paramIndex, colors, colors.size)
     }
 
     fun setJuliaCoords(jx: Double, jy: Double) {
@@ -278,7 +278,7 @@ abstract class MandelbrotViewBase(context: Context, attrs: AttributeSet? = null)
         override fun run() {
             var curLevel = level
             while (true) {
-                MandelNative.drawFractal(paramIndex, startX, startY, startWidth, startHeight, curLevel, if (curLevel == level) 1 else 0)
+                MandelbrotCalculator.drawFractal(paramIndex, startX, startY, startWidth, startHeight, curLevel, curLevel == level)
                 postInvalidate()
                 if (terminateThreads) {
                     break
