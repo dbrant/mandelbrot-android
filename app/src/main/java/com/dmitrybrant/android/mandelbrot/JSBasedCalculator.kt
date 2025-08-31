@@ -33,7 +33,13 @@ class JSBasedCalculator {
     
     // Polynomial coefficients (B, C, D from JS)
     private var polyCoeffs = FloatArray(6) // Bx, By, Cx, Cy, Dx, Dy
+    private var rawPolyCoeffs = Array(6) { Pair(0.0, 0) } // Raw coefficients before scaling
     private var polyLimit = 0
+    
+    // Scaled polynomial coefficients (like drawScene function)
+    private var poly1 = FloatArray(4) // poly_scaled[0-3] 
+    private var poly2 = FloatArray(4) // poly_scaled[4-5], polylim, poly_scale_exp[1]
+    private var radiusState = Pair(0.0, 0) // [r, rexp] from drawScene
     
     // Scaled floating-point operations (from JS helper functions)
     private fun sub(a: Pair<Double, Int>, b: Pair<Double, Int>): Pair<Double, Int> {
@@ -175,13 +181,13 @@ class JSBasedCalculator {
                 mul(Pair(1000.0, radiusExp), maxabs(Dx, Dy))
             )) {
                 if (notFailed) {
-                    // Store previous valid polynomial
-                    polyCoeffs[0] = prevBx.first.toFloat()
-                    polyCoeffs[1] = prevBy.first.toFloat() 
-                    polyCoeffs[2] = prevCx.first.toFloat()
-                    polyCoeffs[3] = prevCy.first.toFloat()
-                    polyCoeffs[4] = prevDx.first.toFloat()
-                    polyCoeffs[5] = prevDy.first.toFloat()
+                    // Store raw polynomial coefficients (before scaling)
+                    rawPolyCoeffs[0] = prevBx
+                    rawPolyCoeffs[1] = prevBy 
+                    rawPolyCoeffs[2] = prevCx
+                    rawPolyCoeffs[3] = prevCy
+                    rawPolyCoeffs[4] = prevDx
+                    rawPolyCoeffs[5] = prevDy
                     polylim = i
                 }
             } else {
@@ -202,33 +208,85 @@ class JSBasedCalculator {
         
         if (orbitLength == 0) orbitLength = i
         
+        // Apply drawScene transformations (CRITICAL for correct rendering)
+        applyDrawSceneTransformations()
+        
         Log.d(TAG, "Reference orbit: $orbitLength iterations, poly limit: $polylim")
         return Triple(orbit, polyCoeffs, polylim)
+    }
+    
+    /**
+     * Apply the critical transformations from drawScene function in JS
+     * This is what was missing and causing solid color rendering!
+     */
+    private fun applyDrawSceneTransformations() {
+        // Get radius in scaled format (like drawScene)
+        val rexp = getExp(radius)
+        val rMantissa = radius.toDouble() / 2.0.pow(rexp)
+        val r = Pair(rMantissa, rexp)
+        radiusState = r
+        
+        Log.d(TAG, "Radius state: ${r.first} * 2^${r.second}")
+        
+        // Calculate polynomial scaling (exact port from drawScene)
+        val polyScaleExp = mul(Pair(1.0, 0), maxabs(rawPolyCoeffs[0], rawPolyCoeffs[1]))
+        val polyScale = Pair(1.0, -polyScaleExp.second)
+        
+        Log.d(TAG, "Poly scale: ${polyScale.first} * 2^${polyScale.second}, scale_exp: ${polyScaleExp.second}")
+        
+        // Scale polynomial coefficients (exact port from drawScene lines 566-573)
+        val polyScaled = arrayOf(
+            mul(polyScale, rawPolyCoeffs[0]),                           // Bx
+            mul(polyScale, rawPolyCoeffs[1]),                           // By  
+            mul(polyScale, mul(r, rawPolyCoeffs[2])),                   // r * Cx
+            mul(polyScale, mul(r, rawPolyCoeffs[3])),                   // r * Cy
+            mul(polyScale, mul(r, mul(r, rawPolyCoeffs[4]))),          // r² * Dx
+            mul(polyScale, mul(r, mul(r, rawPolyCoeffs[5])))           // r² * Dy
+        )
+        
+        // Convert to floaty (exact port from JS)
+        poly1[0] = floaty(polyScaled[0]).toFloat()
+        poly1[1] = floaty(polyScaled[1]).toFloat()
+        poly1[2] = floaty(polyScaled[2]).toFloat()
+        poly1[3] = floaty(polyScaled[3]).toFloat()
+        
+        poly2[0] = floaty(polyScaled[4]).toFloat()
+        poly2[1] = floaty(polyScaled[5]).toFloat()
+        poly2[2] = polylim.toFloat()
+        poly2[3] = polyScaleExp.second.toFloat()
+        
+        Log.d(TAG, "Scaled poly1: [${poly1[0]}, ${poly1[1]}, ${poly1[2]}, ${poly1[3]}]")
+        Log.d(TAG, "Scaled poly2: [${poly2[0]}, ${poly2[1]}, ${poly2[2]}, ${poly2[3]}]")
     }
     
     /**
      * Direct port of the shader perturbation logic from main.js
      */
     private fun calculatePixel(deltaX: Float, deltaY: Float): Int {
-        // Get radius exponent
-        val radiusExp = 1 + getExp(radius)
+        // Use the same state setup as shader (lines 553-559 in JS)
+        val uState = FloatArray(4)
+        uState[0] = centerX.toFloat() // mandelbrot_state.center[0] 
+        uState[1] = 20.0f // mandelbrot_state.cmapscale
+        uState[2] = (1 + getExp(radius)).toFloat() // 1 + get_exp(mandelbrot_state.radius)
+        uState[3] = iterations.toFloat() // mandelbrot_state.iterations
         
-        // Shader uniform equivalents
-        var q = radiusExp - 1
+        // Shader variable setup (exact port from shader lines 222-224)
+        var q = uState[2].toInt() - 1
         val cq = q
-        q += polyCoeffs.size // poly2[3] equivalent
+        q += poly2[3].toInt() // poly2[3] contains poly_scale_exp[1]
         
         var dcx = deltaX.toDouble()
         var dcy = deltaY.toDouble()
         
-        // Series approximation (from shader)
+        // Series approximation using SCALED coefficients (shader lines 230-237)
         val sqrx = dcx * dcx - dcy * dcy
         val sqry = 2.0 * dcx * dcy
         
-        var dx = polyCoeffs[0] * dcx - polyCoeffs[1] * dcy + polyCoeffs[2] * sqrx - polyCoeffs[3] * sqry
-        var dy = polyCoeffs[0] * dcy + polyCoeffs[1] * dcx + polyCoeffs[2] * sqry + polyCoeffs[3] * sqrx
+        // Use poly1 (scaled coefficients) instead of raw polyCoeffs
+        var dx = poly1[0] * dcx - poly1[1] * dcy + poly1[2] * sqrx - poly1[3] * sqry
+        var dy = poly1[0] * dcy + poly1[1] * dcx + poly1[2] * sqry + poly1[3] * sqrx
         
-        var k = polyLimit
+        var k = poly2[2].toInt() // polylim from poly2[2]
         var j = k
         
         // Main iteration loop (direct port of shader logic)
@@ -315,9 +373,11 @@ class JSBasedCalculator {
         viewWidth: Int,
         viewHeight: Int
     ): Int {
-        // Convert pixel coordinates to delta (like the JS click handler)
-        val deltaX = (pixelX / (viewWidth / 2.0) - 1.0).toFloat()
-        val deltaY = (pixelY / (viewHeight / 2.0) - 1.0).toFloat()
+        // Convert pixel coordinates to normalized coordinates [-1, 1] 
+        // matching WebGL vertex shader: delta = vec2(aVertexPosition[0], aVertexPosition[1])
+        // where aVertexPosition ranges from [-1, 1] for both x and y
+        val deltaX = (2.0 * pixelX / viewWidth - 1.0).toFloat()
+        val deltaY = (1.0 - 2.0 * pixelY / viewHeight).toFloat() // Flip Y for screen coordinates
         
         return calculatePixel(deltaX, deltaY)
     }
