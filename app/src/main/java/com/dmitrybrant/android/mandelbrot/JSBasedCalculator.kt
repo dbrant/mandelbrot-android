@@ -212,6 +212,10 @@ class JSBasedCalculator {
         applyDrawSceneTransformations()
         
         Log.d(TAG, "Reference orbit: $orbitLength iterations, poly limit: $polylim")
+        
+        // Debug polynomial coefficients
+        Log.d(TAG, "Raw poly coeffs: B=[${rawPolyCoeffs[0]}, ${rawPolyCoeffs[1]}], C=[${rawPolyCoeffs[2]}, ${rawPolyCoeffs[3]}], D=[${rawPolyCoeffs[4]}, ${rawPolyCoeffs[5]}]")
+        
         return Triple(orbit, polyCoeffs, polylim)
     }
     
@@ -263,6 +267,11 @@ class JSBasedCalculator {
      * Direct port of the shader perturbation logic from main.js
      */
     private fun calculatePixel(deltaX: Float, deltaY: Float): Int {
+        // Debug first few pixels
+        if (abs(deltaX) < 0.1f && abs(deltaY) < 0.1f) {
+            Log.d(TAG, "Calculating pixel delta=($deltaX, $deltaY)")
+        }
+        
         // Use the same state setup as shader (lines 553-559 in JS)
         val uState = FloatArray(4)
         uState[0] = centerX.toFloat() // mandelbrot_state.center[0] 
@@ -270,10 +279,18 @@ class JSBasedCalculator {
         uState[2] = (1 + getExp(radius)).toFloat() // 1 + get_exp(mandelbrot_state.radius)
         uState[3] = iterations.toFloat() // mandelbrot_state.iterations
         
+        if (abs(deltaX) < 0.1f && abs(deltaY) < 0.1f) {
+            Log.d(TAG, "uState: [${uState[0]}, ${uState[1]}, ${uState[2]}, ${uState[3]}]")
+        }
+        
         // Shader variable setup (exact port from shader lines 222-224)
         var q = uState[2].toInt() - 1
         val cq = q
         q += poly2[3].toInt() // poly2[3] contains poly_scale_exp[1]
+        
+        if (abs(deltaX) < 0.1f && abs(deltaY) < 0.1f) {
+            Log.d(TAG, "q=$q, cq=$cq, poly2[3]=${poly2[3]}")
+        }
         
         var dcx = deltaX.toDouble()
         var dcy = deltaY.toDouble()
@@ -285,6 +302,10 @@ class JSBasedCalculator {
         // Use poly1 (scaled coefficients) instead of raw polyCoeffs
         var dx = poly1[0] * dcx - poly1[1] * dcy + poly1[2] * sqrx - poly1[3] * sqry
         var dy = poly1[0] * dcy + poly1[1] * dcx + poly1[2] * sqry + poly1[3] * sqrx
+        
+        if (abs(deltaX) < 0.1f && abs(deltaY) < 0.1f) {
+            Log.d(TAG, "Initial dx=$dx, dy=$dy")
+        }
         
         var k = poly2[2].toInt() // polylim from poly2[2]
         var j = k

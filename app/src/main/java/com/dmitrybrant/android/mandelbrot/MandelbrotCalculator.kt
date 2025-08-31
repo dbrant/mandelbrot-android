@@ -35,7 +35,7 @@ object MandelbrotCalculator {
     private val jsBasedCalculator = JSBasedCalculator()
     
     // Use moderate threshold for testing JS-based deep zoom
-    private const val DEEP_ZOOM_THRESHOLD = 1e4
+    private const val DEEP_ZOOM_THRESHOLD = 10.0 // Temporarily lowered for testing
 
     fun setParameters(
         paramIndex: Int,
