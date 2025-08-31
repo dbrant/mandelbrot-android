@@ -119,14 +119,16 @@ class JSBasedCalculator {
         
         var polylim = 0
         
-        // Polynomial variables (like JS)
-        var Bx = Pair(0.0, 0)
+        // Initialize polynomial coefficients (like JS lines 425-430)
+        var Bx = Pair(0.0, 0)  // Will be [1, 0] after first iteration  
         var By = Pair(0.0, 0)
         var Cx = Pair(0.0, 0)
         var Cy = Pair(0.0, 0)
         var Dx = Pair(0.0, 0)
         var Dy = Pair(0.0, 0)
         var notFailed = true
+        
+        Log.d(TAG, "Initial polynomial coeffs: Bx=$Bx, By=$By")
         
         var i = 0
         while (i < iterations) {
@@ -173,6 +175,11 @@ class JSBasedCalculator {
             Cy = add(mul(Pair(2.0, 0), add(mul(fx, Cy), mul(fy, Cx))), mul(mul(Pair(2.0, 0), Bx), By))
             Dx = mul(Pair(2.0, 0), add(sub(mul(fx, Dx), mul(fy, Dy)), sub(mul(Cx, Bx), mul(Cy, By))))
             Dy = mul(Pair(2.0, 0), add(add(add(mul(fx, Dy), mul(fy, Dx)), mul(Cx, By)), mul(Cy, Bx)))
+            
+            // Debug polynomial evolution for first few iterations
+            if (i < 5) {
+                Log.d(TAG, "Iter $i: Bx=$Bx, By=$By, Cx=$Cx, Cy=$Cy")
+            }
             
             // Check polynomial validity (like JS)
             val radiusExp = getExp(radius)
