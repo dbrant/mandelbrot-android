@@ -32,9 +32,9 @@ data class FractalParams(
 object MandelbrotCalculator {
     private const val MAX_PALETTE_COLORS = 512
     private val params = Array(2) { FractalParams() }
-    private val optimizedDeepZoom = OptimizedDeepZoom()
+    private val jsBasedCalculator = JSBasedCalculator()
     
-    // Use moderate threshold for testing deep zoom
+    // Use moderate threshold for testing JS-based deep zoom
     private const val DEEP_ZOOM_THRESHOLD = 1e4
 
     fun setParameters(
@@ -74,11 +74,13 @@ object MandelbrotCalculator {
             
             Log.d("MandelbrotCalc", "Zoom: ${this.zoomFactor}, DeepZoom: ${this.useDeepZoom}, Bounds: [$xMin, $xMax] x [$yMin, $yMax]")
             
-            // Prepare deep zoom if needed
+            // Prepare JS-based deep zoom if needed
             if (this.useDeepZoom) {
-                optimizedDeepZoom.prepareForZoom(
+                val radius = BigDecimal(2.0 / this.zoomFactor)
+                jsBasedCalculator.setParameters(
                     this.centerX,
                     this.centerY,
+                    radius,
                     numIterations
                 )
             }
@@ -134,11 +136,13 @@ object MandelbrotCalculator {
                 this.useDeepZoom = true
             }
             
-            // Prepare deep zoom
+            // Prepare JS-based deep zoom
             if (this.useDeepZoom) {
-                optimizedDeepZoom.prepareForZoom(
+                val radius = BigDecimal(2.0 / this.zoomFactor)
+                jsBasedCalculator.setParameters(
                     this.centerX,
                     this.centerY,
+                    radius,
                     numIterations
                 )
             }
@@ -249,19 +253,15 @@ object MandelbrotCalculator {
                 }
 
                 val iteration = if (param.useDeepZoom) {
-                    // Use optimized deep zoom calculation
-                    val result = optimizedDeepZoom.calculateIterations(
+                    // Use JS-based deep zoom calculation (direct port of main.js logic)
+                    val result = jsBasedCalculator.calculateIterations(
                         px.toDouble(),
                         py.toDouble(),
-                        param.centerX,
-                        param.centerY,
-                        param.zoomFactor,
                         param.viewWidth,
-                        param.viewHeight,
-                        numIterations
+                        param.viewHeight
                     )
                     if (px == startX && py == startY) {
-                        Log.d("MandelbrotCalc", "Deep zoom sample: ($px,$py) -> $result iterations")
+                        Log.d("MandelbrotCalc", "JS-based deep zoom: ($px,$py) -> $result iterations [${jsBasedCalculator.getStateInfo()}]")
                     }
                     result
                 } else {
@@ -450,7 +450,7 @@ object MandelbrotCalculator {
     fun getZoomInfo(paramIndex: Int): String {
         val param = params[paramIndex]
         return if (param.useDeepZoom) {
-            "Deep Zoom: ${String.format("%.2e", param.zoomFactor)}x (Optimized)"
+            "JS-Based Deep Zoom: ${String.format("%.2e", param.zoomFactor)}x - ${jsBasedCalculator.getStateInfo()}"
         } else {
             "Standard Zoom: ${String.format("%.2f", param.zoomFactor)}x"
         }
@@ -548,19 +548,19 @@ object MandelbrotCalculator {
         return try {
             val testCenter = BigDecimal("-0.7269")
             val testCenterY = BigDecimal("0.1889")
-            val testZoom = 1e8
+            val testRadius = BigDecimal("1e-10")
             
-            val result = optimizedDeepZoom.calculateIterations(
+            // Set up JS-based calculator
+            jsBasedCalculator.setParameters(testCenter, testCenterY, testRadius, 500)
+            
+            val result = jsBasedCalculator.calculateIterations(
                 100.0, 100.0, 
-                testCenter, testCenterY, 
-                testZoom,
-                200, 200, 
-                100
+                200, 200
             )
             
-            "Deep zoom test successful: $result iterations at ${String.format("%.0e", testZoom)}x zoom"
+            "JS-based deep zoom test: $result iterations with radius ${testRadius} - ${jsBasedCalculator.getStateInfo()}"
         } catch (e: Exception) {
-            "Deep zoom test failed: ${e.message}"
+            "JS-based deep zoom test failed: ${e.message}"
         }
     }
 }
