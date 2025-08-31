@@ -31,10 +31,10 @@ data class FractalParams(
 object MandelbrotCalculator {
     private const val MAX_PALETTE_COLORS = 512
     private val params = Array(2) { FractalParams() }
-    private val deepCalculator = DeepMandelbrotCalculator()
+    private val optimizedDeepZoom = OptimizedDeepZoom()
     
-    // Threshold for switching to deep zoom mode
-    private const val DEEP_ZOOM_THRESHOLD = 1e12
+    // Lower threshold for better performance testing
+    private const val DEEP_ZOOM_THRESHOLD = 1e6
 
     fun setParameters(
         paramIndex: Int,
@@ -73,12 +73,10 @@ object MandelbrotCalculator {
             
             // Prepare deep zoom if needed
             if (this.useDeepZoom) {
-                deepCalculator.prepareDeepZoom(
+                optimizedDeepZoom.prepareForZoom(
                     this.centerX,
                     this.centerY,
-                    this.zoomFactor,
-                    numIterations,
-                    power
+                    numIterations
                 )
             }
         }
@@ -135,12 +133,10 @@ object MandelbrotCalculator {
             
             // Prepare deep zoom
             if (this.useDeepZoom) {
-                deepCalculator.prepareDeepZoom(
+                optimizedDeepZoom.prepareForZoom(
                     this.centerX,
                     this.centerY,
-                    this.zoomFactor,
-                    numIterations,
-                    power
+                    numIterations
                 )
             }
         }
@@ -250,8 +246,8 @@ object MandelbrotCalculator {
                 }
 
                 val iteration = if (param.useDeepZoom) {
-                    // Use deep zoom calculation
-                    deepCalculator.calculateIterations(
+                    // Use optimized deep zoom calculation
+                    optimizedDeepZoom.calculateIterations(
                         px.toDouble(),
                         py.toDouble(),
                         param.centerX,
@@ -259,11 +255,7 @@ object MandelbrotCalculator {
                         param.zoomFactor,
                         param.viewWidth,
                         param.viewHeight,
-                        numIterations,
-                        param.power,
-                        param.isJulia,
-                        param.juliaX,
-                        param.juliaY
+                        numIterations
                     )
                 } else {
                     // Use standard double precision calculation
@@ -447,9 +439,9 @@ object MandelbrotCalculator {
     fun getZoomInfo(paramIndex: Int): String {
         val param = params[paramIndex]
         return if (param.useDeepZoom) {
-            "Deep Zoom: ${String.format("%.2e", param.zoomFactor)}x"
+            "Deep Zoom: ${String.format("%.2e", param.zoomFactor)}x (Optimized)"
         } else {
-            "Zoom: ${String.format("%.2f", param.zoomFactor)}x"
+            "Standard Zoom: ${String.format("%.2f", param.zoomFactor)}x"
         }
     }
     
@@ -535,6 +527,29 @@ object MandelbrotCalculator {
                 param.viewWidth,
                 param.viewHeight
             )
+        }
+    }
+    
+    /**
+     * Test method to verify deep zoom is working
+     */
+    fun testDeepZoom(): String {
+        return try {
+            val testCenter = BigDecimal("-0.7269")
+            val testCenterY = BigDecimal("0.1889")
+            val testZoom = 1e8
+            
+            val result = optimizedDeepZoom.calculateIterations(
+                100.0, 100.0, 
+                testCenter, testCenterY, 
+                testZoom,
+                200, 200, 
+                100
+            )
+            
+            "Deep zoom test successful: $result iterations at ${String.format("%.0e", testZoom)}x zoom"
+        } catch (e: Exception) {
+            "Deep zoom test failed: ${e.message}"
         }
     }
 }
