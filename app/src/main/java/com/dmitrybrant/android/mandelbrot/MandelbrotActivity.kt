@@ -395,9 +395,4 @@ class MandelbrotActivity : AppCompatActivity() {
         }
     }
 
-    companion object {
-        init {
-            System.loadLibrary("mandelnative_jni")
-        }
-    }
 }
