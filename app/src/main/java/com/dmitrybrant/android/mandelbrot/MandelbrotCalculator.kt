@@ -32,9 +32,9 @@ data class FractalParams(
 object MandelbrotCalculator {
     private const val MAX_PALETTE_COLORS = 512
     private val params = Array(2) { FractalParams() }
-    private val advancedDeepZoom = AdvancedDeepZoom()
+    private val optimizedDeepZoom = OptimizedDeepZoom()
     
-    // Use moderate threshold for testing advanced deep zoom
+    // Use moderate threshold for testing deep zoom
     private const val DEEP_ZOOM_THRESHOLD = 1e4
 
     fun setParameters(
@@ -74,13 +74,11 @@ object MandelbrotCalculator {
             
             Log.d("MandelbrotCalc", "Zoom: ${this.zoomFactor}, DeepZoom: ${this.useDeepZoom}, Bounds: [$xMin, $xMax] x [$yMin, $yMax]")
             
-            // Prepare advanced deep zoom if needed
+            // Prepare deep zoom if needed
             if (this.useDeepZoom) {
-                val radius = BigDecimal(2.0 / this.zoomFactor)
-                advancedDeepZoom.prepareForArea(
+                optimizedDeepZoom.prepareForZoom(
                     this.centerX,
                     this.centerY,
-                    radius,
                     numIterations
                 )
             }
@@ -136,13 +134,11 @@ object MandelbrotCalculator {
                 this.useDeepZoom = true
             }
             
-            // Prepare advanced deep zoom
+            // Prepare deep zoom
             if (this.useDeepZoom) {
-                val radius = BigDecimal(2.0 / this.zoomFactor)
-                advancedDeepZoom.prepareForArea(
+                optimizedDeepZoom.prepareForZoom(
                     this.centerX,
                     this.centerY,
-                    radius,
                     numIterations
                 )
             }
@@ -253,20 +249,19 @@ object MandelbrotCalculator {
                 }
 
                 val iteration = if (param.useDeepZoom) {
-                    // Use advanced deep zoom with scaled floating-point
-                    val radius = BigDecimal(2.0 / param.zoomFactor)
-                    val result = advancedDeepZoom.calculateIterations(
+                    // Use optimized deep zoom calculation
+                    val result = optimizedDeepZoom.calculateIterations(
                         px.toDouble(),
                         py.toDouble(),
                         param.centerX,
                         param.centerY,
-                        radius,
+                        param.zoomFactor,
                         param.viewWidth,
                         param.viewHeight,
                         numIterations
                     )
                     if (px == startX && py == startY) {
-                        Log.d("MandelbrotCalc", "Advanced deep zoom: ($px,$py) -> $result iterations [${advancedDeepZoom.getOptimizationInfo()}]")
+                        Log.d("MandelbrotCalc", "Deep zoom sample: ($px,$py) -> $result iterations")
                     }
                     result
                 } else {
@@ -455,7 +450,7 @@ object MandelbrotCalculator {
     fun getZoomInfo(paramIndex: Int): String {
         val param = params[paramIndex]
         return if (param.useDeepZoom) {
-            "Advanced Deep Zoom: ${String.format("%.2e", param.zoomFactor)}x - ${advancedDeepZoom.getOptimizationInfo()}"
+            "Deep Zoom: ${String.format("%.2e", param.zoomFactor)}x (Optimized)"
         } else {
             "Standard Zoom: ${String.format("%.2f", param.zoomFactor)}x"
         }
@@ -553,22 +548,19 @@ object MandelbrotCalculator {
         return try {
             val testCenter = BigDecimal("-0.7269")
             val testCenterY = BigDecimal("0.1889")
-            val testRadius = BigDecimal("1e-10")
+            val testZoom = 1e8
             
-            // Prepare the area first
-            advancedDeepZoom.prepareForArea(testCenter, testCenterY, testRadius, 500)
-            
-            val result = advancedDeepZoom.calculateIterations(
+            val result = optimizedDeepZoom.calculateIterations(
                 100.0, 100.0, 
                 testCenter, testCenterY, 
-                testRadius,
+                testZoom,
                 200, 200, 
-                500
+                100
             )
             
-            "Advanced deep zoom test: $result iterations with radius ${testRadius} - ${advancedDeepZoom.getOptimizationInfo()}"
+            "Deep zoom test successful: $result iterations at ${String.format("%.0e", testZoom)}x zoom"
         } catch (e: Exception) {
-            "Advanced deep zoom test failed: ${e.message}"
+            "Deep zoom test failed: ${e.message}"
         }
     }
 }
