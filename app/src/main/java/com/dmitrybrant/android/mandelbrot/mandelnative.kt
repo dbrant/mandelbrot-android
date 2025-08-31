@@ -34,4 +34,42 @@ object MandelNative {
     fun signalTerminate(paramIndex: Int) {
         MandelbrotCalculator.signalTerminate(paramIndex)
     }
+    
+    // Deep zoom methods
+    fun setParametersDeepZoom(
+        paramIndex: Int,
+        power: Int,
+        numIterations: Int,
+        centerX: String,
+        centerY: String,
+        zoomFactor: Double,
+        isJulia: Int,
+        juliaX: Double,
+        juliaY: Double,
+        viewWidth: Int,
+        viewHeight: Int
+    ) {
+        val centerXBig = java.math.BigDecimal(centerX)
+        val centerYBig = java.math.BigDecimal(centerY)
+        MandelbrotCalculator.setParametersDeepZoom(
+            paramIndex, power, numIterations, centerXBig, centerYBig, zoomFactor,
+            isJulia, juliaX, juliaY, viewWidth, viewHeight
+        )
+    }
+    
+    fun getZoomInfo(paramIndex: Int): String {
+        return MandelbrotCalculator.getZoomInfo(paramIndex)
+    }
+    
+    fun isUsingDeepZoom(paramIndex: Int): Boolean {
+        return MandelbrotCalculator.isUsingDeepZoom(paramIndex)
+    }
+    
+    fun getCenterCoordinates(paramIndex: Int): Pair<String, String> {
+        return MandelbrotCalculator.getCenterCoordinates(paramIndex)
+    }
+    
+    fun zoomToPoint(paramIndex: Int, screenX: Int, screenY: Int, zoomMultiplier: Double) {
+        MandelbrotCalculator.zoomToPoint(paramIndex, screenX, screenY, zoomMultiplier)
+    }
 }
