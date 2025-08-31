@@ -77,6 +77,12 @@ class JSBasedCalculator {
     private fun maxabs(a: Pair<Double, Int>, b: Pair<Double, Int>): Pair<Double, Int> {
         val (am, ae) = a
         val (bm, be) = b
+        
+        // Handle zero values properly (like JS implementation)
+        if (am == 0.0 && bm == 0.0) return Pair(0.0, 0)
+        if (am == 0.0) return Pair(abs(bm), be)
+        if (bm == 0.0) return Pair(abs(am), ae)
+        
         val retE = maxOf(ae, be)
         val adjustedAm = if (retE > ae) am * 2.0.pow(ae - retE) else am
         val adjustedBm = if (retE > be) bm * 2.0.pow(be - retE) else bm
@@ -247,7 +253,10 @@ class JSBasedCalculator {
         Log.d(TAG, "Radius state: ${r.first} * 2^${r.second}")
         
         // Calculate polynomial scaling (exact port from drawScene)
-        val polyScaleExp = mul(Pair(1.0, 0), maxabs(rawPolyCoeffs[0], rawPolyCoeffs[1]))
+        val maxabsResult = maxabs(rawPolyCoeffs[0], rawPolyCoeffs[1])
+        Log.d(TAG, "maxabs(B0, B1) = maxabs(${rawPolyCoeffs[0]}, ${rawPolyCoeffs[1]}) = $maxabsResult")
+        
+        val polyScaleExp = mul(Pair(1.0, 0), maxabsResult)
         val polyScale = Pair(1.0, -polyScaleExp.second)
         
         Log.d(TAG, "Poly scale: ${polyScale.first} * 2^${polyScale.second}, scale_exp: ${polyScaleExp.second}")
