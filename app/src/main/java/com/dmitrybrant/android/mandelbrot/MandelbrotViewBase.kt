@@ -51,8 +51,8 @@ abstract class MandelbrotViewBase(context: Context, attrs: AttributeSet? = null)
     var power = 2
         set(value) { field = value.coerceIn(2, 4) }
 
-    private val startCoarseness = 16
-    private var endCoarseness = 1
+    private val startCoarseness = 32
+    private var endCoarseness = 4
     private var previousX = 0f
     private var previousY = 0f
     private val pinchStartPoint = PointF()

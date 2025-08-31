@@ -42,9 +42,7 @@ class OptimizedDeepZoom {
             
             val worldX = centerX.add(scale.multiply(pixelOffsetX, mathContext).multiply(aspectRatio, mathContext), mathContext)
             val worldY = centerY.add(scale.multiply(pixelOffsetY, mathContext), mathContext)
-            
-            Log.v(TAG, "Pixel ($pixelX,$pixelY) -> World (${worldX.toDouble()}, ${worldY.toDouble()})")
-            
+
             // For deep zoom, try to use double precision first for speed
             val doubleX = worldX.toDouble()
             val doubleY = worldY.toDouble()
