@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent" >
 
-    <com.dmitrybrant.android.mandelbrot.MandelbrotView
+    <com.dmitrybrant.android.mandelbrot.GLMandelbrotView
         android:id="@+id/mandelbrotView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"

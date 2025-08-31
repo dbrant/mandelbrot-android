@@ -84,15 +84,9 @@ class MandelbrotActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(arg0: SeekBar) {}
         })
 
-        binding.mandelbrotView.onPointSelected = object : OnPointSelected {
-            override fun pointSelected(x: Double, y: Double) {
-                binding.juliaView.terminateThreads()
-                binding.juliaView.setJuliaCoords(binding.mandelbrotView.xCenter, binding.mandelbrotView.yCenter)
-                binding.juliaView.render()
-            }
-        }
-        binding.mandelbrotView.onCoordinatesChanged = coordinatesChangedListener
-
+        // Note: onPointSelected and onCoordinatesChanged removed for now
+        // The new GL view handles touch internally for navigation
+        
         ViewCompat.setOnApplyWindowInsetsListener(binding.topLayout) { view, insets ->
             val statusBarInsets = insets.getInsets(WindowInsetsCompat.Type.statusBars())
             val navBarInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
@@ -103,17 +97,18 @@ class MandelbrotActivity : AppCompatActivity() {
             WindowInsetsCompat.CONSUMED
         }
 
-        binding.mandelbrotView.reset()
-        binding.mandelbrotView.xCenter = viewModel.xCenter
-        binding.mandelbrotView.yCenter = viewModel.yCenter
-        binding.mandelbrotView.xExtent = viewModel.xExtent
-        binding.mandelbrotView.numIterations = viewModel.numIterations
-        binding.mandelbrotView.power = viewModel.power
+        // Initialize GL Mandelbrot view with stored parameters
+        binding.mandelbrotView.navigateToLocation(
+            viewModel.xCenter.toString(),
+            viewModel.yCenter.toString(), 
+            viewModel.xExtent.toString()
+        )
 
         updateColorScheme()
 
         binding.juliaView.reset()
-        binding.juliaView.setJuliaCoords(binding.mandelbrotView.xCenter, binding.mandelbrotView.yCenter)
+        // Note: Julia view integration needs to be updated for GL view
+        // binding.juliaView.setJuliaCoords(binding.mandelbrotView.xCenter, binding.mandelbrotView.yCenter)
         binding.juliaView.numIterations = viewModel.numIterations
         binding.juliaView.power = viewModel.power
 
@@ -135,19 +130,16 @@ class MandelbrotActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
-        viewModel.xCenter = binding.mandelbrotView.xCenter
-        viewModel.yCenter = binding.mandelbrotView.yCenter
-        viewModel.xExtent = binding.mandelbrotView.xExtent
+        // Note: GL view doesn't expose coordinates in the same way
+        // We'll need to add methods to get current state if needed
         viewModel.save()
     }
 
     override fun onDestroy() {
-        binding.mandelbrotView.terminateThreads()
         binding.juliaView.terminateThreads()
-        MandelbrotCalculator.releaseParameters(0)
-        MandelbrotCalculator.releaseBitmap(0)
+        // Note: GL view manages its own resources
         MandelbrotCalculator.releaseParameters(1)
-        MandelbrotCalculator.releaseBitmap(1)
+        MandelbrotCalculator.releaseBitmap(1) 
         super.onDestroy()
     }
 
@@ -181,7 +173,8 @@ class MandelbrotActivity : AppCompatActivity() {
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        return binding.mandelbrotView.onTouchEvent(event)
+        // GL view handles its own touch events
+        return super.onTouchEvent(event)
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -197,7 +190,10 @@ class MandelbrotActivity : AppCompatActivity() {
             }
             R.id.menu_settings -> {
                 toggleSettings()
-                binding.mandelbrotView.requestCoordinates()
+                if (binding.settingsContainer.isVisible) {
+                    // Update info display with current GL view state
+                    binding.txtInfo.text = binding.mandelbrotView.getCurrentInfo()
+                }
                 return true
             }
             R.id.menu_julia_mode -> {
@@ -211,12 +207,12 @@ class MandelbrotActivity : AppCompatActivity() {
             R.id.menu_color_scheme -> {
                 viewModel.currentColorScheme++
                 updateColorScheme()
-                binding.mandelbrotView.render()
+                binding.mandelbrotView.requestRender()
                 binding.juliaView.render()
                 return true
             }
             R.id.menu_reset -> {
-                binding.mandelbrotView.reset()
+                binding.mandelbrotView.resetView()
                 binding.juliaView.reset()
                 return true
             }
@@ -261,12 +257,8 @@ class MandelbrotActivity : AppCompatActivity() {
                 return
             }
             binding.txtIterations.text = String.format(Locale.ROOT, "%d", viewModel.numIterations)
-            if (viewModel.juliaEnabled) {
-                binding.txtInfo.text = String.format(getString(R.string.coordinate_display_julia), xmin,
-                        xmax, ymin, ymax, binding.mandelbrotView.xCenter, binding.mandelbrotView.yCenter)
-            } else {
-                binding.txtInfo.text = String.format(getString(R.string.coordinate_display), xmin, xmax, ymin, ymax)
-            }
+            // Note: Coordinate display needs to be updated for GL view
+            binding.txtInfo.text = binding.mandelbrotView.getCurrentInfo()
         }
     }
 
@@ -278,9 +270,7 @@ class MandelbrotActivity : AppCompatActivity() {
         if (binding.juliaView.animation != null && !binding.juliaView.animation.hasEnded()) {
             return
         }
-        binding.mandelbrotView.showCrosshairs = viewModel.juliaEnabled
-        binding.mandelbrotView.invalidate()
-        binding.mandelbrotView.requestCoordinates()
+        // Note: Crosshairs functionality needs to be updated for GL view
         if (viewModel.juliaEnabled) {
             binding.juliaView.visibility = View.VISIBLE
             binding.juliaView.render()
@@ -293,23 +283,23 @@ class MandelbrotActivity : AppCompatActivity() {
         if (viewModel.currentColorScheme >= getColorSchemes().size) {
             viewModel.currentColorScheme = 0
         }
-        binding.mandelbrotView.setColorScheme(getColorSchemes()[viewModel.currentColorScheme])
+        // Note: Color scheme functionality needs to be implemented in GL renderer
         binding.juliaView.setColorScheme(getShiftedScheme(getColorSchemes()[viewModel.currentColorScheme],
                 getColorSchemes()[viewModel.currentColorScheme].size / 2))
     }
 
     private fun updateIterations(iterations: Int) {
         viewModel.numIterations = iterations
-        binding.mandelbrotView.numIterations = viewModel.numIterations
-        binding.mandelbrotView.render()
+        // Note: Iterations update needs to be implemented in GL renderer
+        binding.mandelbrotView.requestRender()
         binding.juliaView.numIterations = viewModel.numIterations
         binding.juliaView.render()
     }
 
     private fun updatePower(power: Int) {
         viewModel.power = power
-        binding.mandelbrotView.power = viewModel.power
-        binding.mandelbrotView.render()
+        // Note: Power setting needs to be implemented in GL renderer
+        binding.mandelbrotView.requestRender()
         binding.juliaView.power = viewModel.power
         binding.juliaView.render()
     }
@@ -349,9 +339,8 @@ class MandelbrotActivity : AppCompatActivity() {
             val fileName = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.ROOT).format(Date()) + ".png"
             val file = dir.createFile("image/png", fileName)
 
-            binding.mandelbrotView.savePicture(contentResolver.openOutputStream(file!!.uri)!!)
-            notifyContentResolver(file.uri.toString())
-            Toast.makeText(this, String.format(getString(R.string.picture_save_success), file.uri.path), Toast.LENGTH_LONG).show()
+            // Note: Save functionality needs to be implemented for GL renderer
+            Toast.makeText(this, "Save image not yet implemented for GL renderer", Toast.LENGTH_LONG).show()
         } catch (ex: Exception) {
             ex.printStackTrace()
             Toast.makeText(this, String.format(getString(R.string.picture_save_error), ex.message), Toast.LENGTH_LONG).show()
@@ -367,9 +356,8 @@ class MandelbrotActivity : AppCompatActivity() {
             }
             val f = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.US)
             path += "/" + f.format(Date()) + ".png"
-            binding.mandelbrotView.savePicture(path)
-            notifyContentResolver(path)
-            Toast.makeText(this, String.format(getString(R.string.picture_save_success), path), Toast.LENGTH_LONG).show()
+            // Note: Save functionality needs to be implemented for GL renderer
+            Toast.makeText(this, "Save image not yet implemented for GL renderer", Toast.LENGTH_LONG).show()
         } catch (ex: Exception) {
             ex.printStackTrace()
             Toast.makeText(this, String.format(getString(R.string.picture_save_error), ex.message), Toast.LENGTH_LONG).show()
