@@ -167,7 +167,7 @@ class JSBasedCalculator {
             y = txy.add(txy, mathContext).add(cy, mathContext)
             
             // Update polynomial coefficients (exact port from JS)
-            val prevBx = Bx; val prevBy = By; val prevCx = Cx; val prevCy = Cy; val prevDx = Dx; val prevDy = Dy
+            val oldBx = Bx; val oldBy = By; val oldCx = Cx; val oldCy = Cy; val oldDx = Dx; val oldDy = Dy
             
             Bx = add(mul(Pair(2.0, 0), sub(mul(fx, Bx), mul(fy, By))), Pair(1.0, 0))
             By = mul(Pair(2.0, 0), add(mul(fx, By), mul(fy, Bx)))
@@ -181,24 +181,31 @@ class JSBasedCalculator {
                 Log.d(TAG, "Iter $i: Bx=$Bx, By=$By, Cx=$Cx, Cy=$Cy")
             }
             
-            // Check polynomial validity (like JS)
+            // Check polynomial validity (like JS) - use CURRENT coefficients, not previous
             val radiusExp = getExp(radius)
             if (i == 0 || gt(
                 maxabs(Cx, Cy),
                 mul(Pair(1000.0, radiusExp), maxabs(Dx, Dy))
             )) {
                 if (notFailed) {
-                    // Store raw polynomial coefficients (before scaling)
-                    rawPolyCoeffs[0] = prevBx
-                    rawPolyCoeffs[1] = prevBy 
-                    rawPolyCoeffs[2] = prevCx
-                    rawPolyCoeffs[3] = prevCy
-                    rawPolyCoeffs[4] = prevDx
-                    rawPolyCoeffs[5] = prevDy
+                    // Store CURRENT polynomial coefficients (not old ones)
+                    rawPolyCoeffs[0] = Bx
+                    rawPolyCoeffs[1] = By 
+                    rawPolyCoeffs[2] = Cx
+                    rawPolyCoeffs[3] = Cy
+                    rawPolyCoeffs[4] = Dx
+                    rawPolyCoeffs[5] = Dy
                     polylim = i
+                    
+                    if (i < 5) {
+                        Log.d(TAG, "Stored coefficients at iter $i: B=[$Bx, $By], C=[$Cx, $Cy]")
+                    }
                 }
             } else {
                 notFailed = false
+                if (i < 5) {
+                    Log.d(TAG, "Polynomial failed validity check at iter $i")
+                }
             }
             
             // Check escape condition
