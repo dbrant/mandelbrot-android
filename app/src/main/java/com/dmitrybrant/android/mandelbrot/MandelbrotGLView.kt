@@ -21,9 +21,9 @@ class MandelGLView(context: Context, attrs: AttributeSet? = null) : GLSurfaceVie
     }
 
     override fun onTouchEvent(e: MotionEvent): Boolean {
-        // Single-tap “zoom in” to match your click handler (dcx,dcy mapping). :contentReference[oaicite:9]{index=9}
+        // Handle touch to zoom in and pan, matching JavaScript behavior
         if (e.action == MotionEvent.ACTION_UP) {
-            // TODO
+            renderer.handleTouch(e.x, e.y, width, height)
             requestRender()
         }
         return true

@@ -246,22 +246,21 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
             scale_exponent = 0;
         }
 
-        // Store orbit data (ensure we don't overflow the array)
+        // Store orbit data BEFORE Mandelbrot iteration - matching JavaScript exactly
+        // JavaScript: orbit[3 * i] = binding.mpfr_get_d_2exp(_, x, 0) / Math.pow(2, scale_exponent - x_exponent);
         if (3 * i + 2 < orbit.size()) {
-            mpfr_exp_t exp_temp;
-            double x_mantissa = mpfr_get_d_2exp(&exp_temp, x, MPFR_RNDN);
-            double y_mantissa = mpfr_get_d_2exp(&exp_temp, y, MPFR_RNDN);
+            mpfr_exp_t x_exp_temp, y_exp_temp;
+            double x_mantissa = mpfr_get_d_2exp(&x_exp_temp, x, MPFR_RNDN);
+            double y_mantissa = mpfr_get_d_2exp(&y_exp_temp, y, MPFR_RNDN);
 
-            // For the scale exponent, use a more robust calculation
             if (mpfr_zero_p(x) && mpfr_zero_p(y)) {
-                // Both x and y are zero
-                orbit[3 * i] = 0.0f;
-                orbit[3 * i + 1] = 0.0f;
-                orbit[3 * i + 2] = 0.0f;
+                orbit[3 * i] = 0.0;
+                orbit[3 * i + 1] = 0.0;
+                orbit[3 * i + 2] = 0.0;
             } else {
-                // At least one coordinate is non-zero
-                orbit[3 * i] = mpfr_zero_p(x) ? 0.0f : (x_mantissa / std::pow(2, scale_exponent - x_exponent));
-                orbit[3 * i + 1] = mpfr_zero_p(y) ? 0.0f : (y_mantissa / std::pow(2, scale_exponent - y_exponent));
+                // Exactly match JavaScript calculation
+                orbit[3 * i] = mpfr_zero_p(x) ? 0.0 : (x_mantissa / std::pow(2, scale_exponent - x_exponent));
+                orbit[3 * i + 1] = mpfr_zero_p(y) ? 0.0 : (y_mantissa / std::pow(2, scale_exponent - y_exponent));
                 orbit[3 * i + 2] = scale_exponent;
             }
 
@@ -271,19 +270,12 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
             }
         }
 
-        // Create DoubleDouble representations for current point values for orbit storage
-        DoubleDouble fx_orbit(orbit[3 * i], orbit[3 * i + 2]);
-        DoubleDouble fy_orbit(orbit[3 * i + 1], orbit[3 * i + 2]);
+        // Create fx, fy from orbit data like JavaScript: var fx = [orbit[3 * i], orbit[3 * i + 2]];
+        DoubleDouble fx(orbit[3 * i], orbit[3 * i + 2]);
+        DoubleDouble fy(orbit[3 * i + 1], orbit[3 * i + 2]);
 
         // Save previous polynomial state for later decision
         std::vector<DoubleDouble> prev_poly = {Bx, By, Cx, Cy, Dx, Dy};
-
-        // Create DoubleDouble representations for current point for polynomial updates
-        mpfr_exp_t fx_exp, fy_exp;
-        double fx_mantissa = mpfr_get_d_2exp(&fx_exp, x, MPFR_RNDN);
-        double fy_mantissa = mpfr_get_d_2exp(&fy_exp, y, MPFR_RNDN);
-        DoubleDouble fx(fx_mantissa, fx_exp);
-        DoubleDouble fy(fy_mantissa, fy_exp);
         // Now do the Mandelbrot iteration: z = z^2 + c
         mpfr_mul(txx, x, x, MPFR_RNDN);
         mpfr_mul(txy, x, y, MPFR_RNDN);
@@ -309,10 +301,13 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
         // Update the coefficients
         Bx = new_Bx; By = new_By; Cx = new_Cx; Cy = new_Cy; Dx = new_Dx; Dy = new_Dy;
 
-        // Get new point values for escape test and polynomial decision
+        // Reassign fx, fy to NEW values after Mandelbrot iteration - matching JavaScript line 479-480
+        // fx = [binding.mpfr_get_d_2exp(_, x, 0), binding.mpfr_get_exp(x)];
         mpfr_exp_t fx_new_exp, fy_new_exp;
         double fx_new_mantissa = mpfr_get_d_2exp(&fx_new_exp, x, MPFR_RNDN);
         double fy_new_mantissa = mpfr_get_d_2exp(&fy_new_exp, y, MPFR_RNDN);
+        
+        // These are used for polynomial selection and escape test
         DoubleDouble fx_new(fx_new_mantissa, fx_new_exp);
         DoubleDouble fy_new(fy_new_mantissa, fy_new_exp);
 
@@ -441,6 +436,11 @@ Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_setStateFromStrings(JNI
     env->ReleaseStringUTFChars(x_str, x_cstr);
     env->ReleaseStringUTFChars(y_str, y_cstr);
     env->ReleaseStringUTFChars(r_str, r_cstr);
+}
+
+JNIEXPORT void JNICALL
+Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_zoomOut(JNIEnv *env, jclass clazz, jlong statePtr) {
+    reinterpret_cast<MandelbrotState*>(statePtr)->zoomOut();
 }
 
 JNIEXPORT jdoubleArray JNICALL

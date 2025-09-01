@@ -11,6 +11,7 @@ object MandelbrotNative {
     external fun setState(statePtr: Long, x: Double, y: Double, r: Double)
     external fun setStateFromStrings(statePtr: Long, x: String, y: String, r: String)
     external fun updateState(statePtr: Long, dx: Double, dy: Double)
+    external fun zoomOut(statePtr: Long)
     external fun generateOrbit(statePtr: Long): DoubleArray?
     external fun getPolynomialCoefficients(statePtr: Long): DoubleArray?
     external fun getPolynomialLimit(statePtr: Long): Int
@@ -91,15 +92,8 @@ object MandelbrotNative {
         }
 
         fun zoomOut() {
-            // This would need to be implemented in native code
-            // For now, we can approximate by doubling the radius
-            val currentRadius = this.radius
-            try {
-                val r = currentRadius.toDouble()
-                setState(nativePtr, 0.0, 0.0, r * 2)
-            } catch (e: NumberFormatException) {
-                // Handle high precision case - would need native implementation
-            }
+            // Use the native zoomOut implementation
+            MandelbrotNative.zoomOut(nativePtr)
         }
 
         val stateString: String

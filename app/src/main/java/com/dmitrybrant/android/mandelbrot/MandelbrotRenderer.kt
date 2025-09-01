@@ -67,7 +67,13 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
     }
 
     fun handleTouch(x: Float, y: Float, width: Int, height: Int) {
-        //handleTouch(x, y, width, height, mandelbrotState)
+        // Convert screen coordinates to normalized coordinates (-1 to 1)
+        // Matching JavaScript: x = x / (canvasSize / 2) - 1; y = y / (canvasSize / 2) - 1
+        val normalizedX = (x / (width / 2.0f) - 1.0f).toDouble()
+        val normalizedY = (y / (height / 2.0f) - 1.0f).toDouble()
+        
+        // Call the native update method
+        mandelbrotState.update(normalizedX, normalizedY)
     }
 
     fun setIterations(iterations: Int) {
