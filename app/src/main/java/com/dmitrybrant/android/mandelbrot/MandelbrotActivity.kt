@@ -394,10 +394,4 @@ class MandelbrotActivity : AppCompatActivity() {
             e.printStackTrace()
         }
     }
-
-    companion object {
-        init {
-            System.loadLibrary("mandelnative_jni")
-        }
-    }
 }

@@ -6,6 +6,8 @@
 #include <gmp.h>
 #include <android/log.h>
 
+#define ALOGI(...) __android_log_print(ANDROID_LOG_INFO, "MandelNative", __VA_ARGS__)
+
 // If you don’t have MPFR ready yet, keep a double version for first run.
 // Then replace the doubles with mpfr_t and the same sequence as your JS.
 struct JOrbitResult {
@@ -145,12 +147,17 @@ static JOrbitResult computeOrbitMPFR(const std::string& reStr,
 extern "C"
 JNIEXPORT jobject JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelNative_makeReferenceOrbit(
-        JNIEnv* env, jclass,
+        JNIEnv* env, jobject thiz,
         jstring reStr, jstring imStr, jstring radiusStr, jint iterations) {
 
     const char* reC = env->GetStringUTFChars(reStr, 0);
     const char* imC = env->GetStringUTFChars(imStr, 0);
     const char* rC  = env->GetStringUTFChars(radiusStr, 0);
+
+
+    __android_log_print(ANDROID_LOG_INFO,  __FUNCTION__, ">>>>>>>>> %s", reC);
+    __android_log_print(ANDROID_LOG_INFO,  __FUNCTION__, ">>>>>>>>> %s", imC);
+    __android_log_print(ANDROID_LOG_INFO,  __FUNCTION__, ">>>>>>>>> %s", rC);
 
     auto res = computeOrbitMPFR(reC, imC, rC, iterations);
 
@@ -159,8 +166,9 @@ Java_com_dmitrybrant_android_mandelbrot_MandelNative_makeReferenceOrbit(
     env->ReleaseStringUTFChars(radiusStr, rC);
 
     // Build OrbitResult Kotlin data class
-    jclass cls = env->FindClass("com/dmitrybrant/android/mandelbrot/MandelNative$OrbitResult");
-    jmethodID ctor = env->GetMethodID(cls, "<init>", "([F[FI II)V");
+    jclass localClass = env->FindClass("com/dmitrybrant/android/mandelbrot/OrbitResult");
+    //jclass globalClass = reinterpret_cast<jclass>(env->NewGlobalRef(localClass));
+    jmethodID ctor = env->GetMethodID(localClass, "<init>", "([F[FIII)V");
 
     // orbit float[]
     jfloatArray orbitArr = env->NewFloatArray((jsize)res.orbit.size());
@@ -170,7 +178,7 @@ Java_com_dmitrybrant_android_mandelbrot_MandelNative_makeReferenceOrbit(
     jfloatArray polyArr = env->NewFloatArray(6);
     env->SetFloatArrayRegion(polyArr, 0, 6, res.polyScaled);
 
-    jobject obj = env->NewObject(cls, ctor,
+    jobject obj = env->NewObject(localClass, ctor,
                                  orbitArr, polyArr,
                                  (jint)res.polyLim,
                                  (jint)res.polyScaleExp,

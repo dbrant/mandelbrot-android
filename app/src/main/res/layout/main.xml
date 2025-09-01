@@ -10,6 +10,7 @@
         android:id="@+id/mandelbrotView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:visibility="gone"
         android:background="@android:color/black"/>
 
     <com.dmitrybrant.android.mandelbrot.JuliaView
@@ -19,6 +20,11 @@
         android:background="@android:color/black"
         android:visibility="gone"
         android:layout_gravity="bottom"/>
+
+    <com.dmitrybrant.android.mandelbrot.MandelGLView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        />
 
     <LinearLayout
         android:id="@+id/settingsContainer"
