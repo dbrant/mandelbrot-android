@@ -9,6 +9,7 @@ object MandelbrotNative {
     external fun createState(): Long
     external fun destroyState(statePtr: Long)
     external fun setState(statePtr: Long, x: Double, y: Double, r: Double)
+    external fun setStateFromStrings(statePtr: Long, x: String, y: String, r: String)
     external fun updateState(statePtr: Long, dx: Double, dy: Double)
     external fun generateOrbit(statePtr: Long): DoubleArray?
     external fun getPolynomialCoefficients(statePtr: Long): DoubleArray?
@@ -51,6 +52,10 @@ object MandelbrotNative {
             updateState(nativePtr, dx, dy)
         }
 
+        fun setFromStrings(x: String, y: String, r: String) {
+            setStateFromStrings(nativePtr, x, y, r)
+        }
+
         fun generateOrbit(): DoubleArray {
             return generateOrbit(nativePtr)!!
         }
@@ -82,7 +87,7 @@ object MandelbrotNative {
         fun reset() {
             iterations = 1000
             cmapscale = 20.1
-            set(-0.5, 0.0, 2.0)
+            set(0.0, 0.0, 2.0)
         }
 
         fun zoomOut() {

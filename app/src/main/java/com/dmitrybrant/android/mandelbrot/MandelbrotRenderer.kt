@@ -247,13 +247,13 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
 
         // Calculate state parameters
         val radiusExp = mandelbrotState.radiusExponent
-        val centerX = mandelbrotState.centerXasDouble.toFloat()
 
         println("Radius exponent: $radiusExp")
 
-        // Set state uniform (center_x, cmapscale, radius_exp + 1, iterations)
+        // Set state uniform (placeholder, cmapscale, radius_exp + 1, iterations) 
+        // Note: JavaScript sets center[0] here but shader doesn't actually use it for coordinate transformation
         glUniform4f(
-            uState, centerX, mandelbrotState.cmapscale.toFloat(),
+            uState, 0.0f, mandelbrotState.cmapscale.toFloat(),
             (1 + radiusExp).toFloat(), mandelbrotState.iterations.toFloat()
         )
 
@@ -318,18 +318,4 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
 }
 
 
-// Extension function for MandelbrotNative.MandelbrotState
-fun MandelbrotNative.MandelbrotState.setFromStrings(re: String, im: String, r: String) {
-    // This would need to be implemented in the native code
-    // For now, try to parse as doubles for approximate positioning
-    try {
-        val reDouble = re.toDouble()
-        val imDouble = im.toDouble()
-        val rDouble = r.toDouble()
-        set(reDouble, imDouble, rDouble)
-    } catch (e: NumberFormatException) {
-        // For high-precision strings, we'd need a native method
-        // that can handle MPFR string format directly
-        println("Could not parse high-precision coordinates: $e")
-    }
-}
+// Extension function removed - now using native setFromStrings implementation

@@ -25,9 +25,9 @@ public:
         mpfr_init2(radius, 1200);
 
         // Initialize to default values - matching JavaScript
-        mpfr_set_d(center_x, 0.01, MPFR_RNDN);
-        mpfr_set_d(center_y, 0.01, MPFR_RNDN);
-        mpfr_set_d(radius, 1.6, MPFR_RNDN);
+        mpfr_set_d(center_x, 0.0, MPFR_RNDN);
+        mpfr_set_d(center_y, 0.0, MPFR_RNDN);
+        mpfr_set_d(radius, 2.0, MPFR_RNDN);
     }
 
     ~MandelbrotState() {
@@ -43,9 +43,13 @@ public:
     }
 
     void setFromStrings(const std::string& x_str, const std::string& y_str, const std::string& r_str) {
-        mpfr_set_str(center_x, x_str.c_str(), 10, MPFR_RNDN);
-        mpfr_set_str(center_y, y_str.c_str(), 10, MPFR_RNDN);
-        mpfr_set_str(radius, r_str.c_str(), 10, MPFR_RNDN);
+        int result_x = mpfr_set_str(center_x, x_str.c_str(), 10, MPFR_RNDN);
+        int result_y = mpfr_set_str(center_y, y_str.c_str(), 10, MPFR_RNDN);
+        int result_r = mpfr_set_str(radius, r_str.c_str(), 10, MPFR_RNDN);
+        
+        if (result_x != 0 || result_y != 0 || result_r != 0) {
+            LOGI("Warning: Failed to parse some coordinate strings");
+        }
     }
 
     void update(double dx, double dy) {
@@ -267,17 +271,29 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
             }
         }
 
-        // Create DoubleDouble representations for current point BEFORE the Mandelbrot iteration
+        // Create DoubleDouble representations for current point values for orbit storage
+        DoubleDouble fx_orbit(orbit[3 * i], orbit[3 * i + 2]);
+        DoubleDouble fy_orbit(orbit[3 * i + 1], orbit[3 * i + 2]);
+
+        // Save previous polynomial state for later decision
+        std::vector<DoubleDouble> prev_poly = {Bx, By, Cx, Cy, Dx, Dy};
+
+        // Create DoubleDouble representations for current point for polynomial updates
         mpfr_exp_t fx_exp, fy_exp;
         double fx_mantissa = mpfr_get_d_2exp(&fx_exp, x, MPFR_RNDN);
         double fy_mantissa = mpfr_get_d_2exp(&fy_exp, y, MPFR_RNDN);
         DoubleDouble fx(fx_mantissa, fx_exp);
         DoubleDouble fy(fy_mantissa, fy_exp);
+        // Now do the Mandelbrot iteration: z = z^2 + c
+        mpfr_mul(txx, x, x, MPFR_RNDN);
+        mpfr_mul(txy, x, y, MPFR_RNDN);
+        mpfr_mul(tyy, y, y, MPFR_RNDN);
+        mpfr_sub(x, txx, tyy, MPFR_RNDN);
+        mpfr_add(x, x, cx, MPFR_RNDN);
+        mpfr_add(y, txy, txy, MPFR_RNDN);
+        mpfr_add(y, y, cy, MPFR_RNDN);
 
-        // Update polynomial coefficients BEFORE the Mandelbrot iteration
-        // Save previous polynomial state
-        std::vector<DoubleDouble> prev_poly = {Bx, By, Cx, Cy, Dx, Dy};
-
+        // Update polynomial coefficients AFTER the Mandelbrot iteration - matching JavaScript timing
         // B_n+1 = 2 * z_n * B_n + 1
         DoubleDouble new_Bx = add(mul(DoubleDouble(2, 0), sub(mul(fx, Bx), mul(fy, By))), DoubleDouble(1, 0));
         DoubleDouble new_By = mul(DoubleDouble(2, 0), add(mul(fx, By), mul(fy, Bx)));
@@ -292,21 +308,33 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
 
         // Update the coefficients
         Bx = new_Bx; By = new_By; Cx = new_Cx; Cy = new_Cy; Dx = new_Dx; Dy = new_Dy;
-        // Now do the Mandelbrot iteration: z = z^2 + c
-        mpfr_mul(txx, x, x, MPFR_RNDN);
-        mpfr_mul(txy, x, y, MPFR_RNDN);
-        mpfr_mul(tyy, y, y, MPFR_RNDN);
-        mpfr_sub(x, txx, tyy, MPFR_RNDN);
-        mpfr_add(x, x, cx, MPFR_RNDN);
-        mpfr_add(y, txy, txy, MPFR_RNDN);
-        mpfr_add(y, y, cy, MPFR_RNDN);
 
-        // Get new point values for escape test
+        // Get new point values for escape test and polynomial decision
         mpfr_exp_t fx_new_exp, fy_new_exp;
         double fx_new_mantissa = mpfr_get_d_2exp(&fx_new_exp, x, MPFR_RNDN);
         double fy_new_mantissa = mpfr_get_d_2exp(&fy_new_exp, y, MPFR_RNDN);
         DoubleDouble fx_new(fx_new_mantissa, fx_new_exp);
         DoubleDouble fy_new(fy_new_mantissa, fy_new_exp);
+
+        // Implement JavaScript polynomial selection logic
+        // JavaScript logic: if (i == 0 || gt(maxabs(Cx, Cy), mul([1000, radius_exp], maxabs(Dx, Dy))))
+        mpfr_t radius_for_poly;
+        mpfr_init2(radius_for_poly, 1200);
+        mpfr_set(radius_for_poly, *state.getRadius(), MPFR_RNDN);
+        mpfr_exp_t radius_exp = mpfr_get_exp(radius_for_poly);
+        
+        DoubleDouble threshold = mul(DoubleDouble(1000, radius_exp), maxabs(Dx, Dy));
+        
+        if (i == 0 || gt(maxabs(Cx, Cy), threshold)) {
+            if (not_failed) {
+                poly = prev_poly;
+                polylim = i;
+            }
+        } else {
+            not_failed = false;
+        }
+        
+        mpfr_clear(radius_for_poly);
 
         // Debug polynomial updates for first few iterations
         if (i < 5) {
@@ -315,17 +343,9 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
                  Cx.mantissa, Cx.exponent);
         }
 
-        // Simplified polynomial selection - just take the polynomial at a reasonable iteration
-        // The original JS seems to have complex logic, but let's start with something simple
-        if (i < 100) {  // For the first 100 iterations, keep updating the polynomial
-            poly = {Bx, By, Cx, Cy, Dx, Dy};
-            polylim = i;
-            if (i < 5) LOGI("Updating polynomial at iteration %d", i);
-        }
-
-        // Check escape condition |z|^2 > 4
+        // Check escape condition |z|^2 > 400 (matching JavaScript which uses [400, 0])
         DoubleDouble z_squared = add(mul(fx_new, fx_new), mul(fy_new, fy_new));
-        if (gt(z_squared, DoubleDouble(4, 0))) {
+        if (gt(z_squared, DoubleDouble(400, 0))) {
             break;
         }
     }
@@ -406,6 +426,21 @@ Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_setState(JNIEnv *env, j
 JNIEXPORT void JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_updateState(JNIEnv *env, jclass clazz, jlong statePtr, jdouble dx, jdouble dy) {
     reinterpret_cast<MandelbrotState*>(statePtr)->update(dx, dy);
+}
+
+JNIEXPORT void JNICALL
+Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_setStateFromStrings(JNIEnv *env, jclass clazz, jlong statePtr, jstring x_str, jstring y_str, jstring r_str) {
+    const char* x_cstr = env->GetStringUTFChars(x_str, nullptr);
+    const char* y_cstr = env->GetStringUTFChars(y_str, nullptr);
+    const char* r_cstr = env->GetStringUTFChars(r_str, nullptr);
+    
+    reinterpret_cast<MandelbrotState*>(statePtr)->setFromStrings(
+        std::string(x_cstr), std::string(y_cstr), std::string(r_cstr)
+    );
+    
+    env->ReleaseStringUTFChars(x_str, x_cstr);
+    env->ReleaseStringUTFChars(y_str, y_cstr);
+    env->ReleaseStringUTFChars(r_str, r_cstr);
 }
 
 JNIEXPORT jdoubleArray JNICALL
