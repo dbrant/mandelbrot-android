@@ -230,8 +230,8 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
 
     int polylim = 0;
 
-    // Initialize polynomial coefficients
-    DoubleDouble Bx(1, 0), By(0, 0), Cx(0, 0), Cy(0, 0), Dx(0, 0), Dy(0, 0);
+    // Initialize polynomial coefficients - matching JavaScript exactly
+    DoubleDouble Bx(0, 0), By(0, 0), Cx(0, 0), Cy(0, 0), Dx(0, 0), Dy(0, 0);
     std::vector<DoubleDouble> poly = {Bx, By, Cx, Cy, Dx, Dy};
     bool not_failed = true;
 
