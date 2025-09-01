@@ -11,11 +11,14 @@ object MandelbrotNative {
     external fun setState(statePtr: Long, x: Double, y: Double, r: Double)
     external fun updateState(statePtr: Long, dx: Double, dy: Double)
     external fun generateOrbit(statePtr: Long): FloatArray?
-    external fun getCenterX(statePtr: Long): String
+    external fun getPolynomialCoefficients(statePtr: Long): FloatArray?
+    external fun getPolynomialLimit(statePtr: Long): Int
+    external fun getPolynomialScaleExp(statePtr: Long): Int
+    external fun getRadiusExponent(statePtr: Long): Double
+    external fun getCenterX(statePtr: Long): String?
     external fun getCenterY(statePtr: Long): String?
-    external fun getRadius(statePtr: Long): String
+    external fun getRadius(statePtr: Long): String?
 
-    // Wrapper class for easier usage
     class MandelbrotState {
         private var nativePtr: Long
         var iterations: Int = 1000
@@ -32,6 +35,7 @@ object MandelbrotNative {
             }
         }
 
+        @Throws(Throwable::class)
         protected fun finalize() {
             destroy()
         }
@@ -44,18 +48,30 @@ object MandelbrotNative {
             updateState(nativePtr, dx, dy)
         }
 
-        fun generateOrbit(): FloatArray? {
-            return generateOrbit(nativePtr)
+        fun generateOrbit(): FloatArray {
+            return generateOrbit(nativePtr)!!
         }
 
-        val centerX: String
-            get() = getCenterX(nativePtr)
+        val polynomialCoefficients: FloatArray
+            get() = getPolynomialCoefficients(nativePtr)!!
 
-        val centerY: String?
-            get() = getCenterY(nativePtr)
+        val polynomialLimit: Int
+            get() = getPolynomialLimit(nativePtr)
+
+        val polynomialScaleExp: Int
+            get() = getPolynomialScaleExp(nativePtr)
+
+        val radiusExponent: Double
+            get() = getRadiusExponent(nativePtr)
+
+        val centerX: String
+            get() = getCenterX(nativePtr)!!
+
+        val centerY: String
+            get() = getCenterY(nativePtr)!!
 
         val radius: String
-            get() = getRadius(nativePtr)
+            get() = getRadius(nativePtr)!!
 
         fun reset() {
             iterations = 1000

@@ -21,9 +21,9 @@ public:
         mpfr_init2(radius, 1200);
 
         // Initialize to default values
-        mpfr_set_d(center_x, 0.0, MPFR_RNDN);
+        mpfr_set_d(center_x, 2.0, MPFR_RNDN);
         mpfr_set_d(center_y, 0.0, MPFR_RNDN);
-        mpfr_set_d(radius, 2.0, MPFR_RNDN);
+        mpfr_set_d(radius, 1.5, MPFR_RNDN);
     }
 
     ~MandelbrotState() {
@@ -181,14 +181,16 @@ bool gt(const DoubleDouble& a, const DoubleDouble& b) {
     return am > bm;
 }
 
-double floaty(const DoubleDouble& d) {
-    return std::pow(2, d.exponent) * d.mantissa;
+float floaty(const DoubleDouble& d) {
+    return (std::pow(2, d.exponent) * d.mantissa);
 }
 
 struct OrbitData {
     std::vector<float> orbit;
     std::vector<double> poly;
     int polylim;
+    std::vector<float> polyScaled;
+    int polyScaleExp;
 };
 
 OrbitData makeReferenceOrbit(MandelbrotState& state) {
@@ -292,12 +294,35 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
         poly_double.push_back(floaty(p));
     }
 
-    return {orbit, poly_double, polylim};
+    // Calculate scaled polynomial coefficients (matching JS logic)
+    mpfr_t radius_mpfr;
+    mpfr_init2(radius_mpfr, 1200);
+    mpfr_set(radius_mpfr, *state.getRadius(), MPFR_RNDN);
+
+    mpfr_exp_t rexp = mpfr_get_exp(radius_mpfr);
+    mpfr_exp_t exp_temp;
+    double r_mantissa = mpfr_get_d_2exp(&exp_temp, radius_mpfr, MPFR_RNDN);
+    DoubleDouble r(r_mantissa, rexp);
+
+    DoubleDouble poly_scale_exp = mul(DoubleDouble(1, 0), maxabs(poly[0], poly[1]));
+    DoubleDouble poly_scale(1, -poly_scale_exp.exponent);
+
+    std::vector<float> poly_scaled = {
+            floaty(mul(poly_scale, poly[0])),
+            floaty(mul(poly_scale, poly[1])),
+            floaty(mul(poly_scale, mul(r, poly[2]))),
+            floaty(mul(poly_scale, mul(r, poly[3]))),
+            floaty(mul(poly_scale, mul(r, mul(r, poly[4])))),
+            floaty(mul(poly_scale, mul(r, mul(r, poly[5]))))
+    };
+
+    mpfr_clear(radius_mpfr);
+
+    return {orbit, poly_double, polylim, poly_scaled, (int)poly_scale_exp.exponent};
 }
 
 // JNI wrapper functions
 extern "C" {
-
 JNIEXPORT jlong JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_createState(JNIEnv *env, jclass clazz) {
     return reinterpret_cast<jlong>(new MandelbrotState());
@@ -305,24 +330,22 @@ Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_createState(JNIEnv *env
 
 JNIEXPORT void JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_destroyState(JNIEnv *env, jclass clazz, jlong statePtr) {
-    delete reinterpret_cast<MandelbrotState *>(statePtr);
+    delete reinterpret_cast<MandelbrotState*>(statePtr);
 }
 
 JNIEXPORT void JNICALL
-Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_setState(JNIEnv *env, jclass clazz, jlong statePtr, jdouble x,
-                                               jdouble y, jdouble r) {
-    reinterpret_cast<MandelbrotState *>(statePtr)->set(x, y, r);
+Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_setState(JNIEnv *env, jclass clazz, jlong statePtr, jdouble x, jdouble y, jdouble r) {
+    reinterpret_cast<MandelbrotState*>(statePtr)->set(x, y, r);
 }
 
 JNIEXPORT void JNICALL
-Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_updateState(JNIEnv *env, jclass clazz, jlong statePtr,
-                                                  jdouble dx, jdouble dy) {
-    reinterpret_cast<MandelbrotState *>(statePtr)->update(dx, dy);
+Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_updateState(JNIEnv *env, jclass clazz, jlong statePtr, jdouble dx, jdouble dy) {
+    reinterpret_cast<MandelbrotState*>(statePtr)->update(dx, dy);
 }
 
 JNIEXPORT jfloatArray JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_generateOrbit(JNIEnv *env, jclass clazz, jlong statePtr) {
-    MandelbrotState *state = reinterpret_cast<MandelbrotState *>(statePtr);
+    MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
     OrbitData data = makeReferenceOrbit(*state);
 
     jfloatArray result = env->NewFloatArray(data.orbit.size());
@@ -331,21 +354,59 @@ Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_generateOrbit(JNIEnv *e
     return result;
 }
 
+JNIEXPORT jfloatArray JNICALL
+Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getPolynomialCoefficients(JNIEnv *env, jclass clazz, jlong statePtr) {
+    MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
+    OrbitData data = makeReferenceOrbit(*state);
+
+    jfloatArray result = env->NewFloatArray(data.polyScaled.size());
+    env->SetFloatArrayRegion(result, 0, data.polyScaled.size(), data.polyScaled.data());
+
+    return result;
+}
+
+JNIEXPORT jint JNICALL
+Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getPolynomialLimit(JNIEnv *env, jclass clazz, jlong statePtr) {
+    MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
+    OrbitData data = makeReferenceOrbit(*state);
+
+    return data.polylim;
+}
+
+JNIEXPORT jint JNICALL
+Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getPolynomialScaleExp(JNIEnv *env, jclass clazz, jlong statePtr) {
+    MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
+    OrbitData data = makeReferenceOrbit(*state);
+
+    return data.polyScaleExp;
+}
+
+JNIEXPORT jdouble JNICALL
+Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getRadiusExponent(JNIEnv *env, jclass clazz, jlong statePtr) {
+    MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
+    mpfr_t log_val;
+    mpfr_init2(log_val, 1200);
+    mpfr_log2(log_val, *state->getRadius(), MPFR_RNDN);
+    double result = mpfr_get_d(log_val, MPFR_RNDN);
+    mpfr_clear(log_val);
+    return result;
+}
+
 JNIEXPORT jstring JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getCenterX(JNIEnv *env, jclass clazz, jlong statePtr) {
-    std::string str = reinterpret_cast<MandelbrotState *>(statePtr)->getCenterXString();
+    std::string str = reinterpret_cast<MandelbrotState*>(statePtr)->getCenterXString();
     return env->NewStringUTF(str.c_str());
 }
 
 JNIEXPORT jstring JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getCenterY(JNIEnv *env, jclass clazz, jlong statePtr) {
-    std::string str = reinterpret_cast<MandelbrotState *>(statePtr)->getCenterYString();
+    std::string str = reinterpret_cast<MandelbrotState*>(statePtr)->getCenterYString();
     return env->NewStringUTF(str.c_str());
 }
 
 JNIEXPORT jstring JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getRadius(JNIEnv *env, jclass clazz, jlong statePtr) {
-    std::string str = reinterpret_cast<MandelbrotState *>(statePtr)->getRadiusString();
+    std::string str = reinterpret_cast<MandelbrotState*>(statePtr)->getRadiusString();
     return env->NewStringUTF(str.c_str());
 }
 
