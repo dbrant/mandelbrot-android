@@ -5,11 +5,11 @@ import android.opengl.GLES30
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
 import android.util.Log
+import com.dmitrybrant.android.mandelbrot.MandelbrotNative.MandelbrotState
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
-import kotlin.math.min
 
 class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
@@ -104,7 +104,11 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
     fun uploadOrbit() {
 
 
+        val state = MandelbrotState()
+        state.set(-0.5, 0.0, 1.0) // Set center and radius
+        val orbitData = state.generateOrbit() // Generate orbit for shaders
 
+        Log.d("foo", "orbitData = ${orbitData}")
 /*
 
         // create a 1024x1024 float array where R channel = x/1023, G unused, B unused
@@ -133,7 +137,7 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
 
 */
 
-
+/*
 
         val res = MandelNative.makeReferenceOrbit(centerRe, centerIm, radius, iterations)
 
@@ -173,7 +177,7 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
             GLES30.GL_R32F, 1024, 1024, 0,
             GLES30.GL_RED, GLES30.GL_FLOAT, fb
         )
-
+*/
     }
 
     private fun readAsset(name: String) =

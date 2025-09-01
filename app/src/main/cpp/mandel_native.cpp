@@ -2,186 +2,351 @@
 #include <string>
 #include <vector>
 #include <cmath>
+#include <string>
+#include <algorithm>
 #include <mpfr.h>
-#include <gmp.h>
 #include <android/log.h>
 
-#define ALOGI(...) __android_log_print(ANDROID_LOG_INFO, "MandelNative", __VA_ARGS__)
+class MandelbrotState {
+private:
+    mpfr_t center_x, center_y, radius;
 
-// If you don’t have MPFR ready yet, keep a double version for first run.
-// Then replace the doubles with mpfr_t and the same sequence as your JS.
-struct JOrbitResult {
-    std::vector<float> orbit;     // 1024*1024, triplets x,y,scale per step in R channel rows
-    float polyScaled[6];          // matches JS poly_scaled[0..5]
-    int   polyLim;
-    int   polyScaleExp;
-    int   qStart;
+public:
+    int iterations;
+    double cmapscale;
+
+    MandelbrotState() : iterations(1000), cmapscale(20.0) {
+        mpfr_init2(center_x, 1200);
+        mpfr_init2(center_y, 1200);
+        mpfr_init2(radius, 1200);
+
+        // Initialize to default values
+        mpfr_set_d(center_x, 0.0, MPFR_RNDN);
+        mpfr_set_d(center_y, 0.0, MPFR_RNDN);
+        mpfr_set_d(radius, 2.0, MPFR_RNDN);
+    }
+
+    ~MandelbrotState() {
+        mpfr_clear(center_x);
+        mpfr_clear(center_y);
+        mpfr_clear(radius);
+    }
+
+    void set(double x, double y, double r) {
+        mpfr_set_d(center_x, x, MPFR_RNDN);
+        mpfr_set_d(center_y, y, MPFR_RNDN);
+        mpfr_set_d(radius, r, MPFR_RNDN);
+    }
+
+    void setFromStrings(const std::string& x_str, const std::string& y_str, const std::string& r_str) {
+        mpfr_set_str(center_x, x_str.c_str(), 10, MPFR_RNDN);
+        mpfr_set_str(center_y, y_str.c_str(), 10, MPFR_RNDN);
+        mpfr_set_str(radius, r_str.c_str(), 10, MPFR_RNDN);
+    }
+
+    void update(double dx, double dy) {
+        mpfr_t mx, my;
+        mpfr_init2(mx, 1200);
+        mpfr_init2(my, 1200);
+
+        // mx = radius * dx
+        mpfr_mul_d(mx, radius, dx, MPFR_RNDN);
+        // my = radius * (-dy)
+        mpfr_mul_d(my, radius, -dy, MPFR_RNDN);
+
+        // radius = radius * 0.5
+        mpfr_mul_d(radius, radius, 0.5, MPFR_RNDN);
+
+        // center_x += mx
+        mpfr_add(center_x, center_x, mx, MPFR_RNDN);
+        // center_y += my
+        mpfr_add(center_y, center_y, my, MPFR_RNDN);
+
+        mpfr_clear(mx);
+        mpfr_clear(my);
+    }
+
+    void zoomOut() {
+        mpfr_mul_d(radius, radius, 2.0, MPFR_RNDN);
+    }
+
+    void reset() {
+        iterations = 1000;
+        cmapscale = 20.1;
+        mpfr_set_d(center_x, 0.0, MPFR_RNDN);
+        mpfr_set_d(center_y, 0.0, MPFR_RNDN);
+        mpfr_set_d(radius, 2.0, MPFR_RNDN);
+    }
+
+    mpfr_t* getCenterX() { return &center_x; }
+    mpfr_t* getCenterY() { return &center_y; }
+    mpfr_t* getRadius() { return &radius; }
+
+    std::string getCenterXString() const {
+        char* str = mpfr_get_str(nullptr, nullptr, 10, 0, center_x, MPFR_RNDN);
+        std::string result(str);
+        mpfr_free_str(str);
+        return result;
+    }
+
+    std::string getCenterYString() const {
+        char* str = mpfr_get_str(nullptr, nullptr, 10, 0, center_y, MPFR_RNDN);
+        std::string result(str);
+        mpfr_free_str(str);
+        return result;
+    }
+
+    std::string getRadiusString() const {
+        char* str = mpfr_get_str(nullptr, nullptr, 10, 0, radius, MPFR_RNDN);
+        std::string result(str);
+        mpfr_free_str(str);
+        return result;
+    }
 };
 
-// Helper: convert string → mpfr_t
-static void mpfr_set_str_auto(mpfr_t rop, const std::string &s, mpfr_rnd_t rnd) {
-    mpfr_set_str(rop, s.c_str(), 10, rnd);
+// Helper functions for double-double arithmetic (mantissa, exponent pairs)
+struct DoubleDouble {
+    double mantissa;
+    double exponent;
+
+    DoubleDouble(double m = 0.0, double e = 0.0) : mantissa(m), exponent(e) {}
+};
+
+DoubleDouble sub(const DoubleDouble& a, const DoubleDouble& b) {
+    double ret_e = std::max(a.exponent, b.exponent);
+    double am = a.mantissa;
+    double bm = b.mantissa;
+
+    if (ret_e > a.exponent) {
+        am = am * std::pow(2, a.exponent - ret_e);
+    } else {
+        bm = bm * std::pow(2, b.exponent - ret_e);
+    }
+
+    return DoubleDouble(am - bm, ret_e);
 }
 
-static JOrbitResult computeOrbitMPFR(const std::string& reStr,
-                                     const std::string& imStr,
-                                     const std::string& radiusStr,
-                                     int iterations) {
-    JOrbitResult out;
-    out.orbit.resize(1024*1024, -1.0f);
-    for (int k=0;k<6;k++) out.polyScaled[k] = 0.0f;
-    out.polyLim = 0;
-    out.polyScaleExp = 0;
-    out.qStart = 0;
+DoubleDouble add(const DoubleDouble& a, const DoubleDouble& b) {
+    double ret_e = std::max(a.exponent, b.exponent);
+    double am = a.mantissa;
+    double bm = b.mantissa;
 
-    mpfr_prec_t prec = 512; // adjust as needed
-    mpfr_t cx, cy, zx, zy, tx, ty, sqr, texp;
-    mpfr_inits2(prec, cx, cy, zx, zy, tx, ty, sqr, texp, (mpfr_ptr) 0);
+    if (ret_e > a.exponent) {
+        am = am * std::pow(2, a.exponent - ret_e);
+    } else {
+        bm = bm * std::pow(2, b.exponent - ret_e);
+    }
 
-    mpfr_set_str_auto(cx, reStr, MPFR_RNDN);
-    mpfr_set_str_auto(cy, imStr, MPFR_RNDN);
-    mpfr_set_d(zx, 0.0, MPFR_RNDN);
-    mpfr_set_d(zy, 0.0, MPFR_RNDN);
+    return DoubleDouble(am + bm, ret_e);
+}
 
-    // Poly accumulators (mpfr)
-    mpfr_t Bx, By, Cx, Cy, Dx, Dy;
-    mpfr_inits2(prec,Bx,By,Cx,Cy,Dx,Dy,(mpfr_ptr)0);
-    mpfr_set_d(Bx,0,MPFR_RNDN);
-    mpfr_set_d(By,0,MPFR_RNDN);
-    mpfr_set_d(Cx,0,MPFR_RNDN);
-    mpfr_set_d(Cy,0,MPFR_RNDN);
-    mpfr_set_d(Dx,0,MPFR_RNDN);
-    mpfr_set_d(Dy,0,MPFR_RNDN);
+DoubleDouble mul(const DoubleDouble& a, const DoubleDouble& b) {
+    double m = a.mantissa * b.mantissa;
+    double e = a.exponent + b.exponent;
 
-    int k = 0;
-    for (; k < iterations && k < (1024*1024/3); k++) {
-        // Mantissa+exponent
-        long expx = mpfr_get_exp(zx);
-        long expy = mpfr_get_exp(zy);
-        long expmax = (expx>expy)?expx:expy;
-        if (!mpfr_number_p(zx) || !mpfr_number_p(zy)) break;
+    if (m != 0) {
+        double logm = std::round(std::log2(std::abs(m)));
+        m = m / std::pow(2, logm);
+        e = e + logm;
+    }
 
-        // Normalize mantissa = value / 2^expmax
-        mpfr_div_2si(tx, zx, expmax, MPFR_RNDN);
-        mpfr_div_2si(ty, zy, expmax, MPFR_RNDN);
-        out.orbit[3*k+0] = (float)mpfr_get_d(tx, MPFR_RNDN);
-        out.orbit[3*k+1] = (float)mpfr_get_d(ty, MPFR_RNDN);
-        out.orbit[3*k+2] = (float)expmax;
+    return DoubleDouble(m, e);
+}
 
-        // Poly accumulation
-        if (k>0) {
-            // Bx += 2*zx, By += 2*zy
-            mpfr_mul_ui(tx,zx,2,MPFR_RNDN);
-            mpfr_add(Bx,Bx,tx,MPFR_RNDN);
-            mpfr_mul_ui(ty,zy,2,MPFR_RNDN);
-            mpfr_add(By,By,ty,MPFR_RNDN);
+DoubleDouble maxabs(const DoubleDouble& a, const DoubleDouble& b) {
+    double ret_e = std::max(a.exponent, b.exponent);
+    double am = a.mantissa;
+    double bm = b.mantissa;
 
-            // Cx += zx, Cy += zy
-            mpfr_add(Cx,Cx,zx,MPFR_RNDN);
-            mpfr_add(Cy,Cy,zy,MPFR_RNDN);
+    if (ret_e > a.exponent) {
+        am = am * std::pow(2, a.exponent - ret_e);
+    } else {
+        bm = bm * std::pow(2, b.exponent - ret_e);
+    }
 
-            // Dx += zx^2 - zy^2 ; Dy += 2*zx*zy
-            mpfr_sqr(tx,zx,MPFR_RNDN);
-            mpfr_sqr(ty,zy,MPFR_RNDN);
-            mpfr_sub(tx,tx,ty,MPFR_RNDN);
-            mpfr_add(Dx,Dx,tx,MPFR_RNDN);
+    return DoubleDouble(std::max(std::abs(am), std::abs(bm)), ret_e);
+}
 
-            mpfr_mul(tx,zx,zy,MPFR_RNDN);
-            mpfr_mul_ui(tx,tx,2,MPFR_RNDN);
-            mpfr_add(Dy,Dy,tx,MPFR_RNDN);
+bool gt(const DoubleDouble& a, const DoubleDouble& b) {
+    double ret_e = std::max(a.exponent, b.exponent);
+    double am = a.mantissa;
+    double bm = b.mantissa;
+
+    if (ret_e > a.exponent) {
+        am = am * std::pow(2, a.exponent - ret_e);
+    } else {
+        bm = bm * std::pow(2, b.exponent - ret_e);
+    }
+
+    return am > bm;
+}
+
+double floaty(const DoubleDouble& d) {
+    return std::pow(2, d.exponent) * d.mantissa;
+}
+
+struct OrbitData {
+    std::vector<float> orbit;
+    std::vector<double> poly;
+    int polylim;
+};
+
+OrbitData makeReferenceOrbit(MandelbrotState& state) {
+    mpfr_t x, y, cx, cy;
+    mpfr_init2(x, 1200);
+    mpfr_init2(y, 1200);
+    mpfr_init2(cx, 1200);
+    mpfr_init2(cy, 1200);
+
+    mpfr_set_d(x, 0.0, MPFR_RNDN);
+    mpfr_set_d(y, 0.0, MPFR_RNDN);
+    mpfr_set(cx, *state.getCenterX(), MPFR_RNDN);
+    mpfr_set(cy, *state.getCenterY(), MPFR_RNDN);
+
+    std::vector<float> orbit(1024 * 1024, -1.0f);
+
+    mpfr_t txx, txy, tyy;
+    mpfr_init2(txx, 1200);
+    mpfr_init2(txy, 1200);
+    mpfr_init2(tyy, 1200);
+
+    int polylim = 0;
+
+    DoubleDouble Bx(0, 0), By(0, 0), Cx(0, 0), Cy(0, 0), Dx(0, 0), Dy(0, 0);
+    std::vector<DoubleDouble> poly(6);
+    bool not_failed = true;
+
+    int i;
+    for (i = 0; i < state.iterations; i++) {
+        // Get exponents for scaling
+        mpfr_exp_t x_exponent = mpfr_get_exp(x);
+        mpfr_exp_t y_exponent = mpfr_get_exp(y);
+        mpfr_exp_t scale_exponent = std::max(x_exponent, y_exponent);
+
+        if (scale_exponent < -10000) {
+            scale_exponent = 0;
         }
 
-        // z = z^2 + c
-        mpfr_sqr(tx,zx,MPFR_RNDN); // zx^2
-        mpfr_sqr(ty,zy,MPFR_RNDN); // zy^2
-        mpfr_sub(sqr,tx,ty,MPFR_RNDN);
-        mpfr_add(zx,sqr,cx,MPFR_RNDN);
+        // Store orbit data
+        if (3 * i + 2 < orbit.size()) {
+            mpfr_exp_t exp_temp;
+            orbit[3 * i] = mpfr_get_d_2exp(&exp_temp, x, MPFR_RNDN) / std::pow(2, scale_exponent - x_exponent);
+            orbit[3 * i + 1] = mpfr_get_d_2exp(&exp_temp, y, MPFR_RNDN) / std::pow(2, scale_exponent - y_exponent);
+            orbit[3 * i + 2] = scale_exponent;
+        }
 
-        mpfr_mul(tx,zx,zy,MPFR_RNDN); // careful: need old zx
-        mpfr_mul_ui(tx,tx,2,MPFR_RNDN);
-        mpfr_add(zy,tx,cy,MPFR_RNDN);
+        DoubleDouble fx(orbit[3 * i], orbit[3 * i + 2]);
+        DoubleDouble fy(orbit[3 * i + 1], orbit[3 * i + 2]);
 
-        mpfr_sqr(tx,zx,MPFR_RNDN);
-        mpfr_sqr(ty,zy,MPFR_RNDN);
-        mpfr_add(sqr,tx,ty,MPFR_RNDN);
-        if (mpfr_cmp_d(sqr,400.0)>0) break;
+        // Mandelbrot iteration: z = z^2 + c
+        mpfr_mul(txx, x, x, MPFR_RNDN);
+        mpfr_mul(txy, x, y, MPFR_RNDN);
+        mpfr_mul(tyy, y, y, MPFR_RNDN);
+        mpfr_sub(x, txx, tyy, MPFR_RNDN);
+        mpfr_add(x, x, cx, MPFR_RNDN);
+        mpfr_add(y, txy, txy, MPFR_RNDN);
+        mpfr_add(y, y, cy, MPFR_RNDN);
+
+        // Update polynomial coefficients for perturbation theory
+        std::vector<DoubleDouble> prev_poly = {Bx, By, Cx, Cy, Dx, Dy};
+
+        Bx = add(mul(DoubleDouble(2, 0), sub(mul(fx, Bx), mul(fy, By))), DoubleDouble(1, 0));
+        By = mul(DoubleDouble(2, 0), add(mul(fx, By), mul(fy, Bx)));
+        Cx = sub(add(mul(DoubleDouble(2, 0), sub(mul(fx, Cx), mul(fy, Cy))), mul(Bx, Bx)), mul(By, By));
+        Cy = add(mul(DoubleDouble(2, 0), add(mul(fx, Cy), mul(fy, Cx))), mul(mul(DoubleDouble(2, 0), Bx), By));
+        Dx = mul(DoubleDouble(2, 0), add(sub(mul(fx, Dx), mul(fy, Dy)), sub(mul(Cx, Bx), mul(Cy, By))));
+        Dy = mul(DoubleDouble(2, 0), add(add(add(mul(fx, Dy), mul(fy, Dx)), mul(Cx, By)), mul(Cy, Bx)));
+
+        mpfr_exp_t exp_temp;
+        DoubleDouble fx_new(mpfr_get_d_2exp(&exp_temp, x, MPFR_RNDN), mpfr_get_exp(x));
+        DoubleDouble fy_new(mpfr_get_d_2exp(&exp_temp, y, MPFR_RNDN), mpfr_get_exp(y));
+
+        // Check polynomial validity
+        if (i == 0 || gt(maxabs(Cx, Cy), mul(DoubleDouble(1000, mpfr_get_exp(*state.getRadius())), maxabs(Dx, Dy)))) {
+            if (not_failed) {
+                poly = prev_poly;
+                polylim = i;
+            }
+        } else {
+            not_failed = false;
+        }
+
+        // Check escape condition
+        if (gt(add(mul(fx_new, fx_new), mul(fy_new, fy_new)), DoubleDouble(400, 0))) {
+            break;
+        }
     }
 
-    // Select polyLim = i = k (simpler version; you can add heuristics like JS)
-    int polylim = k;
-    out.polyLim = polylim;
+    // Clean up
+    mpfr_clear(x);
+    mpfr_clear(y);
+    mpfr_clear(cx);
+    mpfr_clear(cy);
+    mpfr_clear(txx);
+    mpfr_clear(txy);
+    mpfr_clear(tyy);
 
-    // Evaluate poly accumulators
-    mpfr_t vals[6]; for(int i=0;i<6;i++) mpfr_init2(vals[i],prec);
-    mpfr_set(vals[0],Bx,MPFR_RNDN);
-    mpfr_set(vals[1],By,MPFR_RNDN);
-    mpfr_set(vals[2],Cx,MPFR_RNDN);
-    mpfr_set(vals[3],Cy,MPFR_RNDN);
-    mpfr_set(vals[4],Dx,MPFR_RNDN);
-    mpfr_set(vals[5],Dy,MPFR_RNDN);
-
-    // poly_scale_exp = max exponent of these
-    long poly_scale_exp = -999999;
-    for(int i=0;i<6;i++) {
-        long e = mpfr_get_exp(vals[i]);
-        if (e>poly_scale_exp) poly_scale_exp = e;
-    }
-    out.polyScaleExp = (int)poly_scale_exp;
-
-    // Scale them
-    for(int i=0;i<6;i++) {
-        mpfr_div_2si(vals[i],vals[i],poly_scale_exp,MPFR_RNDN);
-        out.polyScaled[i] = (float)mpfr_get_d(vals[i],MPFR_RNDN);
+    // Convert poly to double vector
+    std::vector<double> poly_double;
+    for (const auto& p : poly) {
+        poly_double.push_back(floaty(p));
     }
 
-    // qStart ~ exponent of last z
-    out.qStart = (int)mpfr_get_exp(zx);
-
-    // clear
-    mpfr_clears(cx,cy,zx,zy,tx,ty,sqr,texp,Bx,By,Cx,Cy,Dx,Dy,(mpfr_ptr)0);
-    for(int i=0;i<6;i++) mpfr_clear(vals[i]);
-
-    return out;
+    return {orbit, poly_double, polylim};
 }
 
-extern "C"
-JNIEXPORT jobject JNICALL
-Java_com_dmitrybrant_android_mandelbrot_MandelNative_makeReferenceOrbit(
-        JNIEnv* env, jobject thiz,
-        jstring reStr, jstring imStr, jstring radiusStr, jint iterations) {
+// JNI wrapper functions
+extern "C" {
 
-    const char* reC = env->GetStringUTFChars(reStr, 0);
-    const char* imC = env->GetStringUTFChars(imStr, 0);
-    const char* rC  = env->GetStringUTFChars(radiusStr, 0);
+JNIEXPORT jlong JNICALL
+Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_createState(JNIEnv *env, jclass clazz) {
+    return reinterpret_cast<jlong>(new MandelbrotState());
+}
 
+JNIEXPORT void JNICALL
+Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_destroyState(JNIEnv *env, jclass clazz, jlong statePtr) {
+    delete reinterpret_cast<MandelbrotState *>(statePtr);
+}
 
-    __android_log_print(ANDROID_LOG_INFO,  __FUNCTION__, ">>>>>>>>> %s", reC);
-    __android_log_print(ANDROID_LOG_INFO,  __FUNCTION__, ">>>>>>>>> %s", imC);
-    __android_log_print(ANDROID_LOG_INFO,  __FUNCTION__, ">>>>>>>>> %s", rC);
+JNIEXPORT void JNICALL
+Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_setState(JNIEnv *env, jclass clazz, jlong statePtr, jdouble x,
+                                               jdouble y, jdouble r) {
+    reinterpret_cast<MandelbrotState *>(statePtr)->set(x, y, r);
+}
 
-    auto res = computeOrbitMPFR(reC, imC, rC, iterations);
+JNIEXPORT void JNICALL
+Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_updateState(JNIEnv *env, jclass clazz, jlong statePtr,
+                                                  jdouble dx, jdouble dy) {
+    reinterpret_cast<MandelbrotState *>(statePtr)->update(dx, dy);
+}
 
-    env->ReleaseStringUTFChars(reStr, reC);
-    env->ReleaseStringUTFChars(imStr, imC);
-    env->ReleaseStringUTFChars(radiusStr, rC);
+JNIEXPORT jfloatArray JNICALL
+Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_generateOrbit(JNIEnv *env, jclass clazz, jlong statePtr) {
+    MandelbrotState *state = reinterpret_cast<MandelbrotState *>(statePtr);
+    OrbitData data = makeReferenceOrbit(*state);
 
-    // Build OrbitResult Kotlin data class
-    jclass localClass = env->FindClass("com/dmitrybrant/android/mandelbrot/OrbitResult");
-    //jclass globalClass = reinterpret_cast<jclass>(env->NewGlobalRef(localClass));
-    jmethodID ctor = env->GetMethodID(localClass, "<init>", "([F[FIII)V");
+    jfloatArray result = env->NewFloatArray(data.orbit.size());
+    env->SetFloatArrayRegion(result, 0, data.orbit.size(), data.orbit.data());
 
-    // orbit float[]
-    jfloatArray orbitArr = env->NewFloatArray((jsize)res.orbit.size());
-    env->SetFloatArrayRegion(orbitArr, 0, (jsize)res.orbit.size(), res.orbit.data());
+    return result;
+}
 
-    // polyScaled float[6]
-    jfloatArray polyArr = env->NewFloatArray(6);
-    env->SetFloatArrayRegion(polyArr, 0, 6, res.polyScaled);
+JNIEXPORT jstring JNICALL
+Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getCenterX(JNIEnv *env, jclass clazz, jlong statePtr) {
+    std::string str = reinterpret_cast<MandelbrotState *>(statePtr)->getCenterXString();
+    return env->NewStringUTF(str.c_str());
+}
 
-    jobject obj = env->NewObject(localClass, ctor,
-                                 orbitArr, polyArr,
-                                 (jint)res.polyLim,
-                                 (jint)res.polyScaleExp,
-                                 (jint)res.qStart);
-    return obj;
+JNIEXPORT jstring JNICALL
+Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getCenterY(JNIEnv *env, jclass clazz, jlong statePtr) {
+    std::string str = reinterpret_cast<MandelbrotState *>(statePtr)->getCenterYString();
+    return env->NewStringUTF(str.c_str());
+}
+
+JNIEXPORT jstring JNICALL
+Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getRadius(JNIEnv *env, jclass clazz, jlong statePtr) {
+    std::string str = reinterpret_cast<MandelbrotState *>(statePtr)->getRadiusString();
+    return env->NewStringUTF(str.c_str());
+}
+
 }
