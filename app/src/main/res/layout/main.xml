@@ -6,21 +6,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent" >
 
-    <com.dmitrybrant.android.mandelbrot.MandelbrotView
-        android:id="@+id/mandelbrotView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="gone"
-        android:background="@android:color/black"/>
-
-    <com.dmitrybrant.android.mandelbrot.JuliaView
-        android:id="@+id/juliaView"
-        android:layout_width="match_parent"
-        android:layout_height="280dp"
-        android:background="@android:color/black"
-        android:visibility="gone"
-        android:layout_gravity="bottom"/>
-
     <com.dmitrybrant.android.mandelbrot.MandelGLView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
