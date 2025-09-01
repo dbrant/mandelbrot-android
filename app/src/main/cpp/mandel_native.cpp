@@ -249,15 +249,16 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
         // Store orbit data BEFORE Mandelbrot iteration - matching JavaScript exactly
         // JavaScript: orbit[3 * i] = binding.mpfr_get_d_2exp(_, x, 0) / Math.pow(2, scale_exponent - x_exponent);
         if (3 * i + 2 < orbit.size()) {
-            mpfr_exp_t x_exp_temp, y_exp_temp;
-            double x_mantissa = mpfr_get_d_2exp(&x_exp_temp, x, MPFR_RNDN);
-            double y_mantissa = mpfr_get_d_2exp(&y_exp_temp, y, MPFR_RNDN);
-
             if (mpfr_zero_p(x) && mpfr_zero_p(y)) {
                 orbit[3 * i] = 0.0;
                 orbit[3 * i + 1] = 0.0;
                 orbit[3 * i + 2] = 0.0;
             } else {
+                // Use the exponents we already calculated for consistency
+                mpfr_exp_t dummy_exp;
+                double x_mantissa = mpfr_get_d_2exp(&dummy_exp, x, MPFR_RNDN);
+                double y_mantissa = mpfr_get_d_2exp(&dummy_exp, y, MPFR_RNDN);
+                
                 // Exactly match JavaScript calculation
                 orbit[3 * i] = mpfr_zero_p(x) ? 0.0 : (x_mantissa / std::pow(2, scale_exponent - x_exponent));
                 orbit[3 * i + 1] = mpfr_zero_p(y) ? 0.0 : (y_mantissa / std::pow(2, scale_exponent - y_exponent));
@@ -375,14 +376,12 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
     double r_mantissa = mpfr_get_d_2exp(&exp_temp, radius_mpfr, MPFR_RNDN);
     DoubleDouble r(r_mantissa, rexp);
 
-    // Calculate polynomial scaling
-    DoubleDouble poly_scale_magnitude = maxabs(poly[0], poly[1]);
-    if (poly_scale_magnitude.mantissa == 0.0) {
-        // Handle case where polynomial coefficients are zero
-        poly_scale_magnitude = DoubleDouble(1, 0);
-    }
-
-    DoubleDouble poly_scale(1, -poly_scale_magnitude.exponent);
+    // Calculate polynomial scaling - exactly matching JavaScript
+    // var poly_scale_exp = mul([1, 0], maxabs(poly[0], poly[1]));
+    DoubleDouble poly_scale_exp = mul(DoubleDouble(1, 0), maxabs(poly[0], poly[1]));
+    
+    // var poly_scale = [1, -poly_scale_exp[1]];
+    DoubleDouble poly_scale(1, -poly_scale_exp.exponent);
 
     std::vector<double> poly_scaled = {
             floaty(mul(poly_scale, poly[0])),
@@ -398,7 +397,7 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
 
     mpfr_clear(radius_mpfr);
 
-    return {orbit, poly_double, polylim, poly_scaled, (int)poly_scale_magnitude.exponent};
+    return {orbit, poly_double, polylim, poly_scaled, (int)poly_scale_exp.exponent};
 }
 
 // JNI wrapper functions
