@@ -19,6 +19,8 @@ object MandelbrotNative {
     external fun getCenterY(statePtr: Long): String?
     external fun getRadius(statePtr: Long): String?
 
+    external fun testBasicFunctionality(): String?
+
     class MandelbrotState {
         private var nativePtr: Long
         var iterations: Int = 1000
@@ -76,7 +78,7 @@ object MandelbrotNative {
         fun reset() {
             iterations = 1000
             cmapscale = 20.1
-            set(0.0, 0.0, 2.0)
+            set(-0.5, 0.0, 2.0)
         }
 
         fun zoomOut() {

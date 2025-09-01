@@ -193,6 +193,12 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
     }
 
     fun drawScene(mandelbrotState: MandelbrotNative.MandelbrotState, width: Int, height: Int) {
+
+
+        //val foo = MandelbrotNative.testBasicFunctionality()
+        //println("Test result: $foo")
+
+
         // Generate reference orbit and polynomial data
         val orbitData = mandelbrotState.generateOrbit()
         val polyCoefficients = mandelbrotState.polynomialCoefficients
