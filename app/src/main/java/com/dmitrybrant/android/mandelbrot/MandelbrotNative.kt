@@ -10,16 +10,17 @@ object MandelbrotNative {
     external fun destroyState(statePtr: Long)
     external fun setState(statePtr: Long, x: Double, y: Double, r: Double)
     external fun updateState(statePtr: Long, dx: Double, dy: Double)
-    external fun generateOrbit(statePtr: Long): FloatArray?
-    external fun getPolynomialCoefficients(statePtr: Long): FloatArray?
+    external fun generateOrbit(statePtr: Long): DoubleArray?
+    external fun getPolynomialCoefficients(statePtr: Long): DoubleArray?
     external fun getPolynomialLimit(statePtr: Long): Int
     external fun getPolynomialScaleExp(statePtr: Long): Int
     external fun getRadiusExponent(statePtr: Long): Double
     external fun getCenterX(statePtr: Long): String?
     external fun getCenterY(statePtr: Long): String?
+    external fun getCenterXAsDouble(statePtr: Long): Double
+    external fun getCenterYAsDouble(statePtr: Long): Double
     external fun getRadius(statePtr: Long): String?
 
-    external fun testBasicFunctionality(): String?
 
     class MandelbrotState {
         private var nativePtr: Long
@@ -50,11 +51,11 @@ object MandelbrotNative {
             updateState(nativePtr, dx, dy)
         }
 
-        fun generateOrbit(): FloatArray {
+        fun generateOrbit(): DoubleArray {
             return generateOrbit(nativePtr)!!
         }
 
-        val polynomialCoefficients: FloatArray
+        val polynomialCoefficients: DoubleArray
             get() = getPolynomialCoefficients(nativePtr)!!
 
         val polynomialLimit: Int
@@ -68,6 +69,9 @@ object MandelbrotNative {
 
         val centerX: String
             get() = getCenterX(nativePtr)!!
+
+        val centerXasDouble: Double
+            get() = getCenterXAsDouble(nativePtr)
 
         val centerY: String
             get() = getCenterY(nativePtr)!!

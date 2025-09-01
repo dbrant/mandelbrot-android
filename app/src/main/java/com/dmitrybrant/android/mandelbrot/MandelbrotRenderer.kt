@@ -193,12 +193,6 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
     }
 
     fun drawScene(mandelbrotState: MandelbrotNative.MandelbrotState, width: Int, height: Int) {
-
-
-        //val foo = MandelbrotNative.testBasicFunctionality()
-        //println("Test result: $foo")
-
-
         // Generate reference orbit and polynomial data
         val orbitData = mandelbrotState.generateOrbit()
         val polyCoefficients = mandelbrotState.polynomialCoefficients
@@ -206,20 +200,21 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
         val polyScaleExp = mandelbrotState.polynomialScaleExp
 
         // Find minimum orbit scale for debugging
-        var minVal = 2.0f
+        var minVal = 2.0
         for (i in 2 until orbitData.size step 3) {
-            if (orbitData[i] != -1.0f) {
+            if (orbitData[i] != -1.0) {
                 minVal = minOf(minVal, abs(orbitData[i]))
             }
         }
         println("Smallest orbit bit: $minVal")
 
         // Upload orbit data to texture
+        val orbitFloatArray = orbitData.map { it.toFloat() }.toFloatArray()
         val orbitBuffer = ByteBuffer.allocateDirect(orbitData.size * 4)
             .order(ByteOrder.nativeOrder())
             .asFloatBuffer()
             .apply {
-                put(orbitData)
+                put(orbitFloatArray)
                 position(0)
             }
 
@@ -252,7 +247,7 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
 
         // Calculate state parameters
         val radiusExp = mandelbrotState.radiusExponent
-        val centerX = 0.0f // This represents the center offset in the shader coordinate system
+        val centerX = mandelbrotState.centerXasDouble.toFloat()
 
         println("Radius exponent: $radiusExp")
 
@@ -265,29 +260,20 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
         println("Polynomial coefficients: ${polyCoefficients.contentToString()}")
         println("Polynomial limit: $polyLimit, Scale exp: $polyScaleExp")
 
-        // Set polynomial uniforms
-        if (polyCoefficients.size >= 6) {
-            glUniform4f(
-                uPoly1, polyCoefficients[0], polyCoefficients[1],
-                polyCoefficients[2], polyCoefficients[3]
-            )
-            glUniform4f(
-                uPoly2, polyCoefficients[4], polyCoefficients[5],
-                polyLimit.toFloat(), polyScaleExp.toFloat()
-            )
-        } else {
-            // Fallback to identity coefficients
-            glUniform4f(uPoly1, 1.0f, 0.0f, 0.0f, 0.0f)
-            glUniform4f(uPoly2, 0.0f, 0.0f, 0.0f, 0.0f)
-        }
+        glUniform4f(
+            uPoly1, polyCoefficients[0].toFloat(), polyCoefficients[1].toFloat(),
+            polyCoefficients[2].toFloat(), polyCoefficients[3].toFloat()
+        )
+        glUniform4f(
+            uPoly2, polyCoefficients[4].toFloat(), polyCoefficients[5].toFloat(),
+            polyLimit.toFloat(), polyScaleExp.toFloat()
+        )
 
         // Bind texture
         glActiveTexture(GL_TEXTURE0)
         glBindTexture(GL_TEXTURE_2D, orbitTexture)
         glUniform1i(glGetUniformLocation(shaderProgram, "sequence"), 0)
 
-        // Draw the quad
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
         // Draw the quad
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
 

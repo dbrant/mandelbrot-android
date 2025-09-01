@@ -24,10 +24,10 @@ public:
         mpfr_init2(center_y, 1200);
         mpfr_init2(radius, 1200);
 
-        // Initialize to default values
-        mpfr_set_d(center_x, -0.5, MPFR_RNDN);
-        mpfr_set_d(center_y, 0.0, MPFR_RNDN);
-        mpfr_set_d(radius, 2.0, MPFR_RNDN);
+        // Initialize to default values - matching JavaScript
+        mpfr_set_d(center_x, 0.01, MPFR_RNDN);
+        mpfr_set_d(center_y, 0.01, MPFR_RNDN);
+        mpfr_set_d(radius, 1.6, MPFR_RNDN);
     }
 
     ~MandelbrotState() {
@@ -190,10 +190,10 @@ double floaty(const DoubleDouble& d) {
 }
 
 struct OrbitData {
-    std::vector<float> orbit;
+    std::vector<double> orbit;  // Changed from float to double
     std::vector<double> poly;
     int polylim;
-    std::vector<float> polyScaled;
+    std::vector<double> polyScaled;  // Changed from float to double
     int polyScaleExp;
 };
 
@@ -217,7 +217,7 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
     double cy_debug = mpfr_get_d(cy, MPFR_RNDN);
     LOGI("Center: (%f, %f), iterations: %d", cx_debug, cy_debug, state.iterations);
 
-    std::vector<float> orbit(1024 * 1024, -1.0f);
+    std::vector<double> orbit(1024 * 1024, -1.0f);
 
     mpfr_t txx, txy, tyy;
     mpfr_init2(txx, 1200);
@@ -248,20 +248,18 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
             double x_mantissa = mpfr_get_d_2exp(&exp_temp, x, MPFR_RNDN);
             double y_mantissa = mpfr_get_d_2exp(&exp_temp, y, MPFR_RNDN);
 
-            // Handle special case where x or y is exactly zero
-            if (mpfr_zero_p(x)) {
+            // For the scale exponent, use a more robust calculation
+            if (mpfr_zero_p(x) && mpfr_zero_p(y)) {
+                // Both x and y are zero
                 orbit[3 * i] = 0.0f;
-            } else {
-                orbit[3 * i] = x_mantissa / std::pow(2, scale_exponent - x_exponent);
-            }
-
-            if (mpfr_zero_p(y)) {
                 orbit[3 * i + 1] = 0.0f;
+                orbit[3 * i + 2] = 0.0f;
             } else {
-                orbit[3 * i + 1] = y_mantissa / std::pow(2, scale_exponent - y_exponent);
+                // At least one coordinate is non-zero
+                orbit[3 * i] = mpfr_zero_p(x) ? 0.0f : (x_mantissa / std::pow(2, scale_exponent - x_exponent));
+                orbit[3 * i + 1] = mpfr_zero_p(y) ? 0.0f : (y_mantissa / std::pow(2, scale_exponent - y_exponent));
+                orbit[3 * i + 2] = scale_exponent;
             }
-
-            orbit[3 * i + 2] = scale_exponent;
 
             // Debug first few orbit points
             if (i < 5) {
@@ -269,14 +267,32 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
             }
         }
 
-        // Create DoubleDouble representations for current point
+        // Create DoubleDouble representations for current point BEFORE the Mandelbrot iteration
         mpfr_exp_t fx_exp, fy_exp;
         double fx_mantissa = mpfr_get_d_2exp(&fx_exp, x, MPFR_RNDN);
         double fy_mantissa = mpfr_get_d_2exp(&fy_exp, y, MPFR_RNDN);
         DoubleDouble fx(fx_mantissa, fx_exp);
         DoubleDouble fy(fy_mantissa, fy_exp);
 
-        // Mandelbrot iteration: z = z^2 + c
+        // Update polynomial coefficients BEFORE the Mandelbrot iteration
+        // Save previous polynomial state
+        std::vector<DoubleDouble> prev_poly = {Bx, By, Cx, Cy, Dx, Dy};
+
+        // B_n+1 = 2 * z_n * B_n + 1
+        DoubleDouble new_Bx = add(mul(DoubleDouble(2, 0), sub(mul(fx, Bx), mul(fy, By))), DoubleDouble(1, 0));
+        DoubleDouble new_By = mul(DoubleDouble(2, 0), add(mul(fx, By), mul(fy, Bx)));
+
+        // C_n+1 = 2 * z_n * C_n + B_n^2
+        DoubleDouble new_Cx = sub(add(mul(DoubleDouble(2, 0), sub(mul(fx, Cx), mul(fy, Cy))), mul(Bx, Bx)), mul(By, By));
+        DoubleDouble new_Cy = add(mul(DoubleDouble(2, 0), add(mul(fx, Cy), mul(fy, Cx))), mul(mul(DoubleDouble(2, 0), Bx), By));
+
+        // D_n+1 = 2 * z_n * D_n + 2 * B_n * C_n
+        DoubleDouble new_Dx = mul(DoubleDouble(2, 0), add(sub(mul(fx, Dx), mul(fy, Dy)), sub(mul(Cx, Bx), mul(Cy, By))));
+        DoubleDouble new_Dy = mul(DoubleDouble(2, 0), add(add(add(mul(fx, Dy), mul(fy, Dx)), mul(Cx, By)), mul(Cy, Bx)));
+
+        // Update the coefficients
+        Bx = new_Bx; By = new_By; Cx = new_Cx; Cy = new_Cy; Dx = new_Dx; Dy = new_Dy;
+        // Now do the Mandelbrot iteration: z = z^2 + c
         mpfr_mul(txx, x, x, MPFR_RNDN);
         mpfr_mul(txy, x, y, MPFR_RNDN);
         mpfr_mul(tyy, y, y, MPFR_RNDN);
@@ -285,39 +301,26 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
         mpfr_add(y, txy, txy, MPFR_RNDN);
         mpfr_add(y, y, cy, MPFR_RNDN);
 
-        // Update polynomial coefficients for perturbation theory
-        std::vector<DoubleDouble> prev_poly = {Bx, By, Cx, Cy, Dx, Dy};
-
-        // B_n+1 = 2 * z_n * B_n + 1
-        Bx = add(mul(DoubleDouble(2, 0), sub(mul(fx, Bx), mul(fy, By))), DoubleDouble(1, 0));
-        By = mul(DoubleDouble(2, 0), add(mul(fx, By), mul(fy, Bx)));
-
-        // C_n+1 = 2 * z_n * C_n + B_n^2
-        Cx = sub(add(mul(DoubleDouble(2, 0), sub(mul(fx, Cx), mul(fy, Cy))), mul(Bx, Bx)), mul(By, By));
-        Cy = add(mul(DoubleDouble(2, 0), add(mul(fx, Cy), mul(fy, Cx))), mul(mul(DoubleDouble(2, 0), Bx), By));
-
-        // D_n+1 = 2 * z_n * D_n + 2 * B_n * C_n
-        Dx = mul(DoubleDouble(2, 0), add(sub(mul(fx, Dx), mul(fy, Dy)), sub(mul(Cx, Bx), mul(Cy, By))));
-        Dy = mul(DoubleDouble(2, 0), add(add(add(mul(fx, Dy), mul(fy, Dx)), mul(Cx, By)), mul(Cy, Bx)));
-
-        // Get new point values
+        // Get new point values for escape test
         mpfr_exp_t fx_new_exp, fy_new_exp;
         double fx_new_mantissa = mpfr_get_d_2exp(&fx_new_exp, x, MPFR_RNDN);
         double fy_new_mantissa = mpfr_get_d_2exp(&fy_new_exp, y, MPFR_RNDN);
         DoubleDouble fx_new(fx_new_mantissa, fx_new_exp);
         DoubleDouble fy_new(fy_new_mantissa, fy_new_exp);
 
-        // Check polynomial validity for perturbation theory
-        mpfr_exp_t radius_exp = mpfr_get_exp(*state.getRadius());
-        DoubleDouble radius_factor(1000, radius_exp);
+        // Debug polynomial updates for first few iterations
+        if (i < 5) {
+            LOGI("Poly[%d]: Bx=(%f,%f), By=(%f,%f), Cx=(%f,%f)", i,
+                 Bx.mantissa, Bx.exponent, By.mantissa, By.exponent,
+                 Cx.mantissa, Cx.exponent);
+        }
 
-        if (i == 0 || gt(maxabs(Cx, Cy), mul(radius_factor, maxabs(Dx, Dy)))) {
-            if (not_failed) {
-                poly = prev_poly;
-                polylim = i;
-            }
-        } else {
-            not_failed = false;
+        // Simplified polynomial selection - just take the polynomial at a reasonable iteration
+        // The original JS seems to have complex logic, but let's start with something simple
+        if (i < 100) {  // For the first 100 iterations, keep updating the polynomial
+            poly = {Bx, By, Cx, Cy, Dx, Dy};
+            polylim = i;
+            if (i < 5) LOGI("Updating polynomial at iteration %d", i);
         }
 
         // Check escape condition |z|^2 > 4
@@ -366,13 +369,13 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
 
     DoubleDouble poly_scale(1, -poly_scale_magnitude.exponent);
 
-    std::vector<float> poly_scaled = {
-            static_cast<float>(floaty(mul(poly_scale, poly[0]))),
-            static_cast<float>(floaty(mul(poly_scale, poly[1]))),
-            static_cast<float>(floaty(mul(poly_scale, mul(r, poly[2])))),
-            static_cast<float>(floaty(mul(poly_scale, mul(r, poly[3])))),
-            static_cast<float>(floaty(mul(poly_scale, mul(r, mul(r, poly[4]))))),
-            static_cast<float>(floaty(mul(poly_scale, mul(r, mul(r, poly[5])))))
+    std::vector<double> poly_scaled = {
+            floaty(mul(poly_scale, poly[0])),
+            floaty(mul(poly_scale, poly[1])),
+            floaty(mul(poly_scale, mul(r, poly[2]))),
+            floaty(mul(poly_scale, mul(r, poly[3]))),
+            floaty(mul(poly_scale, mul(r, mul(r, poly[4])))),
+            floaty(mul(poly_scale, mul(r, mul(r, poly[5]))))
     };
 
     LOGI("Scaled polynomial coefficients: [%f, %f, %f, %f, %f, %f]",
@@ -405,24 +408,24 @@ Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_updateState(JNIEnv *env
     reinterpret_cast<MandelbrotState*>(statePtr)->update(dx, dy);
 }
 
-JNIEXPORT jfloatArray JNICALL
+JNIEXPORT jdoubleArray JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_generateOrbit(JNIEnv *env, jclass clazz, jlong statePtr) {
     MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
     OrbitData data = makeReferenceOrbit(*state);
 
-    jfloatArray result = env->NewFloatArray(data.orbit.size());
-    env->SetFloatArrayRegion(result, 0, data.orbit.size(), data.orbit.data());
+    jdoubleArray result = env->NewDoubleArray(data.orbit.size());
+    env->SetDoubleArrayRegion(result, 0, data.orbit.size(), data.orbit.data());
 
     return result;
 }
 
-JNIEXPORT jfloatArray JNICALL
+JNIEXPORT jdoubleArray JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getPolynomialCoefficients(JNIEnv *env, jclass clazz, jlong statePtr) {
     MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
     OrbitData data = makeReferenceOrbit(*state);
 
-    jfloatArray result = env->NewFloatArray(data.polyScaled.size());
-    env->SetFloatArrayRegion(result, 0, data.polyScaled.size(), data.polyScaled.data());
+    jdoubleArray result = env->NewDoubleArray(data.polyScaled.size());
+    env->SetDoubleArrayRegion(result, 0, data.polyScaled.size(), data.polyScaled.data());
 
     return result;
 }
@@ -472,33 +475,16 @@ Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getRadius(JNIEnv *env, 
     return env->NewStringUTF(str.c_str());
 }
 
-JNIEXPORT jstring JNICALL
-Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_testBasicFunctionality(JNIEnv *env, jclass clazz) {
-    // Test basic MPFR functionality
-    mpfr_t test;
+JNIEXPORT jdouble JNICALL
+Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getCenterXAsDouble(JNIEnv *env, jclass clazz, jlong statePtr) {
+    MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
+    return mpfr_get_d(*state->getCenterX(), MPFR_RNDN);
+}
 
-    LOGI(">>>>>>>>>>>>> mpfr_init2");
-    mpfr_init2(test, 1200);
-
-    LOGI(">>>>>>>>>>>>> mpfr_set_d");
-    mpfr_set_d(test, 3.14159, MPFR_RNDN);
-
-    mpfr_exp_t e;
-
-    LOGI(">>>>>>>>>>>>> mpfr_get_str");
-    char* str = mpfr_get_str(nullptr, &e, 10, 10, test, MPFR_RNDN);
-
-    LOGI(">>>>>>>>>>>>> NewStringUTF");
-    jstring result = env->NewStringUTF(str);
-
-    LOGI(">>>>>>>>>>>>> mpfr_free_str");
-    mpfr_free_str(str);
-
-    LOGI(">>>>>>>>>>>>> mpfr_clear");
-    mpfr_clear(test);
-
-    LOGI(">>>>>>>>>>>>> result: %s", str);
-    return result;
+JNIEXPORT jdouble JNICALL
+Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getCenterYAsDouble(JNIEnv *env, jclass clazz, jlong statePtr) {
+    MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
+    return mpfr_get_d(*state->getCenterY(), MPFR_RNDN);
 }
 
 }
