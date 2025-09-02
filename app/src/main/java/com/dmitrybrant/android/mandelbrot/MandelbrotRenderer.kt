@@ -199,27 +199,14 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
     }
 
     fun drawScene(mandelbrotState: MandelbrotNative.MandelbrotState, width: Int, height: Int) {
-        // Generate reference orbit and polynomial data
-        val orbitData = mandelbrotState.generateOrbit()
-        val polyCoefficients = mandelbrotState.polynomialCoefficients
-        val polyLimit = mandelbrotState.polynomialLimit
-        val polyScaleExp = mandelbrotState.polynomialScaleExp
-
-        // Find minimum orbit scale for debugging
-        var minVal = 2.0f
-        for (i in 2 until orbitData.size step 3) {
-            if (orbitData[i] != -1.0f) {
-                minVal = minOf(minVal, abs(orbitData[i]))
-            }
-        }
-        println("Smallest orbit bit: $minVal")
+        val orbitResult = mandelbrotState.generateOrbit()
 
         // Upload orbit data to texture
-        val orbitBuffer = ByteBuffer.allocateDirect(orbitData.size * 4)
+        val orbitBuffer = ByteBuffer.allocateDirect(orbitResult.orbit.size * 4)
             .order(ByteOrder.nativeOrder())
             .asFloatBuffer()
             .apply {
-                put(orbitData)
+                put(orbitResult.orbit)
                 position(0)
             }
 
@@ -262,16 +249,16 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
             (1 + radiusExp).toFloat(), mandelbrotState.iterations.toFloat()
         )
 
-        println("Polynomial coefficients: ${polyCoefficients.contentToString()}")
-        println("Polynomial limit: $polyLimit, Scale exp: $polyScaleExp")
+        println("Polynomial coefficients: ${orbitResult.polyScaled.contentToString()}")
+        println("Polynomial limit: ${orbitResult.polyLim}, Scale exp: ${orbitResult.polyScaleExp}")
 
         glUniform4f(
-            uPoly1, polyCoefficients[0].toFloat(), polyCoefficients[1].toFloat(),
-            polyCoefficients[2].toFloat(), polyCoefficients[3].toFloat()
+            uPoly1, orbitResult.polyScaled[0].toFloat(), orbitResult.polyScaled[1].toFloat(),
+            orbitResult.polyScaled[2].toFloat(), orbitResult.polyScaled[3].toFloat()
         )
         glUniform4f(
-            uPoly2, polyCoefficients[4].toFloat(), polyCoefficients[5].toFloat(),
-            polyLimit.toFloat(), polyScaleExp.toFloat()
+            uPoly2, orbitResult.polyScaled[4].toFloat(), orbitResult.polyScaled[5].toFloat(),
+            orbitResult.polyLim.toFloat(), orbitResult.polyScaleExp.toFloat()
         )
 
         // Bind texture

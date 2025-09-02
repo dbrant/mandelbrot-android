@@ -1,5 +1,13 @@
 package com.dmitrybrant.android.mandelbrot
 
+class OrbitResult(
+    val orbit: FloatArray,
+    val polyScaled: DoubleArray,
+    val polyLim: Int,
+    val polyScaleExp: Int,
+    val radiusExp: Double
+)
+
 object MandelbrotNative {
     init {
         System.loadLibrary("mandel_native") // Load the native library
@@ -12,7 +20,7 @@ object MandelbrotNative {
     external fun setStateFromStrings(statePtr: Long, x: String, y: String, r: String)
     external fun updateState(statePtr: Long, dx: Double, dy: Double)
     external fun zoomOut(statePtr: Long)
-    external fun generateOrbit(statePtr: Long): FloatArray?
+    external fun generateOrbit(statePtr: Long): OrbitResult?
     external fun getPolynomialCoefficients(statePtr: Long): DoubleArray?
     external fun getPolynomialLimit(statePtr: Long): Int
     external fun getPolynomialScaleExp(statePtr: Long): Int
@@ -57,7 +65,7 @@ object MandelbrotNative {
             setStateFromStrings(nativePtr, x, y, r)
         }
 
-        fun generateOrbit(): FloatArray {
+        fun generateOrbit(): OrbitResult {
             return generateOrbit(nativePtr)!!
         }
 

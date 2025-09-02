@@ -432,25 +432,40 @@ Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_zoomOut(JNIEnv *env, jc
     reinterpret_cast<MandelbrotState*>(statePtr)->zoomOut();
 }
 
-JNIEXPORT jfloatArray JNICALL
+JNIEXPORT jobject JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_generateOrbit(JNIEnv *env, jclass clazz, jlong statePtr) {
     MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
     OrbitData data = makeReferenceOrbit(*state);
 
-    jfloatArray result = env->NewFloatArray(data.orbit.size());
-    env->SetFloatArrayRegion(result, 0, data.orbit.size(), data.orbit.data());
+    jclass localClass = env->FindClass("com/dmitrybrant/android/mandelbrot/OrbitResult");
+    jmethodID ctor = env->GetMethodID(localClass, "<init>", "([F[DIID)V");
 
-    return result;
+    jfloatArray orbitArr = env->NewFloatArray(data.orbit.size());
+    env->SetFloatArrayRegion(orbitArr, 0, data.orbit.size(), data.orbit.data());
+
+    jdoubleArray polyArr = env->NewDoubleArray(data.polyScaled.size());
+    env->SetDoubleArrayRegion(polyArr, 0, data.polyScaled.size(), data.polyScaled.data());
+
+    mpfr_t log_val;
+    mpfr_init2(log_val, MPFR_DIGITS);
+    mpfr_log2(log_val, *state->getRadius(), MPFR_RNDN);
+    double radiusExp = mpfr_get_d(log_val, MPFR_RNDN);
+    mpfr_clear(log_val);
+
+    jobject obj = env->NewObject(localClass, ctor,
+                                 orbitArr, polyArr,
+                                 (jint)data.polylim,
+                                 (jint)data.polyScaleExp,
+                                 (jdouble)radiusExp);
+    return obj;
 }
 
 JNIEXPORT jdoubleArray JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getPolynomialCoefficients(JNIEnv *env, jclass clazz, jlong statePtr) {
     MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
     OrbitData data = makeReferenceOrbit(*state);
-
     jdoubleArray result = env->NewDoubleArray(data.polyScaled.size());
     env->SetDoubleArrayRegion(result, 0, data.polyScaled.size(), data.polyScaled.data());
-
     return result;
 }
 
@@ -458,7 +473,6 @@ JNIEXPORT jint JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getPolynomialLimit(JNIEnv *env, jclass clazz, jlong statePtr) {
     MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
     OrbitData data = makeReferenceOrbit(*state);
-
     return data.polylim;
 }
 
