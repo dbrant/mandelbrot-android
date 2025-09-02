@@ -1,7 +1,9 @@
 package com.dmitrybrant.android.mandelbrot
 
+import java.nio.ByteBuffer
+
 class OrbitResult(
-    val orbit: FloatArray,
+    val orbit: ByteBuffer,
     val polyScaled: FloatArray,
     val polyLim: Int,
     val polyScaleExp: Int,

@@ -138,13 +138,9 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
     override fun onDrawFrame(gl: GL10?) {
         val orbitResult = mandelbrotState.generateOrbit()
 
-        val orbitBuffer = ByteBuffer.allocateDirect(orbitResult.orbit.size * 4)
+        val orbitBuffer = orbitResult.orbit
             .order(ByteOrder.nativeOrder())
             .asFloatBuffer()
-            .apply {
-                put(orbitResult.orbit)
-                position(0)
-            }
 
         glBindTexture(GL_TEXTURE_2D, orbitTexture)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, 1024, 1024, 0, GL_RED, GL_FLOAT, orbitBuffer)

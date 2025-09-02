@@ -20,6 +20,8 @@ public:
     int iterations;
     double cmapscale;
 
+    std::shared_ptr<std::vector<float>> orbitPtr = std::make_shared<std::vector<float>>(1024 * 1024);
+
     MandelbrotState() : iterations(1000), cmapscale(20.0) {
         mpfr_init2(center_x, MPFR_DIGITS);
         mpfr_init2(center_y, MPFR_DIGITS);
@@ -184,7 +186,6 @@ float floaty(const DoubleDouble& d) {
 }
 
 struct OrbitData {
-    std::vector<float> orbit;
     std::vector<double> poly;
     int polylim;
     std::vector<float> polyScaled;
@@ -206,7 +207,8 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
     mpfr_set(cx, *state.getCenterX(), MPFR_RNDN);
     mpfr_set(cy, *state.getCenterY(), MPFR_RNDN);
 
-    std::vector<float> orbit(1024 * 1024, -1.0f);
+    std::vector<float>& orbit = *state.orbitPtr;
+    std::fill(orbit.begin(), orbit.end(), -1.0);
 
     mpfr_t txx, txy, tyy;
     mpfr_init2(txx, MPFR_DIGITS);
@@ -317,7 +319,6 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
 
     LOGI("Orbit generation completed: %d iterations, polylim: %d", i, polylim);
 
-    // Convert poly to double vector
     std::vector<double> poly_double;
     for (const auto& p : poly) {
         poly_double.push_back(floaty(p));
@@ -326,7 +327,6 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
     LOGI("Polynomial coefficients: [%f, %f, %f, %f, %f, %f]",
          poly_double[0], poly_double[1], poly_double[2], poly_double[3], poly_double[4], poly_double[5]);
 
-    // Calculate scaled polynomial coefficients (matching JS logic)
     mpfr_t radius_mpfr;
     mpfr_init2(radius_mpfr, MPFR_DIGITS);
     mpfr_set(radius_mpfr, *state.getRadius(), MPFR_RNDN);
@@ -353,7 +353,7 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
 
     mpfr_clear(radius_mpfr);
 
-    return {orbit, poly_double, polylim, poly_scaled, (int)poly_scale_exp.exponent};
+    return { poly_double, polylim, poly_scaled, (int)poly_scale_exp.exponent };
 }
 
 // JNI wrapper functions
@@ -405,10 +405,10 @@ Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_generateOrbit(JNIEnv *e
     OrbitData data = makeReferenceOrbit(*state);
 
     jclass localClass = env->FindClass("com/dmitrybrant/android/mandelbrot/OrbitResult");
-    jmethodID ctor = env->GetMethodID(localClass, "<init>", "([F[FIID)V");
+    jmethodID ctor = env->GetMethodID(localClass, "<init>", "(Ljava/nio/ByteBuffer;[FIID)V");
 
-    jfloatArray orbitArr = env->NewFloatArray(data.orbit.size());
-    env->SetFloatArrayRegion(orbitArr, 0, data.orbit.size(), data.orbit.data());
+    void* dataPtr = state->orbitPtr->data();
+    jobject orbitBuffer = env->NewDirectByteBuffer(dataPtr, state->orbitPtr->size() * sizeof(float));
 
     jfloatArray polyArr = env->NewFloatArray(data.polyScaled.size());
     env->SetFloatArrayRegion(polyArr, 0, data.polyScaled.size(), data.polyScaled.data());
@@ -420,7 +420,7 @@ Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_generateOrbit(JNIEnv *e
     mpfr_clear(log_val);
 
     jobject obj = env->NewObject(localClass, ctor,
-                                 orbitArr, polyArr,
+                                 orbitBuffer, polyArr,
                                  (jint)data.polylim,
                                  (jint)data.polyScaleExp,
                                  (jdouble)radiusExp);
