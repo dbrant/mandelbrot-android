@@ -2,7 +2,7 @@ package com.dmitrybrant.android.mandelbrot
 
 class OrbitResult(
     val orbit: FloatArray,
-    val polyScaled: DoubleArray,
+    val polyScaled: FloatArray,
     val polyLim: Int,
     val polyScaleExp: Int,
     val radiusExp: Double

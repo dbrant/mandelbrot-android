@@ -179,7 +179,7 @@ bool gt(const DoubleDouble& a, const DoubleDouble& b) {
     return am > bm;
 }
 
-double floaty(const DoubleDouble& d) {
+float floaty(const DoubleDouble& d) {
     return std::pow(2, d.exponent) * d.mantissa;
 }
 
@@ -187,7 +187,7 @@ struct OrbitData {
     std::vector<float> orbit;
     std::vector<double> poly;
     int polylim;
-    std::vector<double> polyScaled;
+    std::vector<float> polyScaled;
     int polyScaleExp;
 };
 
@@ -339,7 +339,7 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
     DoubleDouble poly_scale_exp = mul(DoubleDouble(1, 0), maxabs(poly[0], poly[1]));
     DoubleDouble poly_scale(1, -poly_scale_exp.exponent);
 
-    std::vector<double> poly_scaled = {
+    std::vector<float> poly_scaled = {
             floaty(mul(poly_scale, poly[0])),
             floaty(mul(poly_scale, poly[1])),
             floaty(mul(poly_scale, mul(r, poly[2]))),
@@ -348,7 +348,7 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
             floaty(mul(poly_scale, mul(r, mul(r, poly[5]))))
     };
 
-    LOGI("Scaled polynomial coefficients: [%f, %f, %f, %f, %f, %f]",
+    LOGI("Scaled coefficients: [%f, %f, %f, %f, %f, %f]",
          poly_scaled[0], poly_scaled[1], poly_scaled[2], poly_scaled[3], poly_scaled[4], poly_scaled[5]);
 
     mpfr_clear(radius_mpfr);
@@ -404,13 +404,13 @@ Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_generateOrbit(JNIEnv *e
     OrbitData data = makeReferenceOrbit(*state);
 
     jclass localClass = env->FindClass("com/dmitrybrant/android/mandelbrot/OrbitResult");
-    jmethodID ctor = env->GetMethodID(localClass, "<init>", "([F[DIID)V");
+    jmethodID ctor = env->GetMethodID(localClass, "<init>", "([F[FIID)V");
 
     jfloatArray orbitArr = env->NewFloatArray(data.orbit.size());
     env->SetFloatArrayRegion(orbitArr, 0, data.orbit.size(), data.orbit.data());
 
-    jdoubleArray polyArr = env->NewDoubleArray(data.polyScaled.size());
-    env->SetDoubleArrayRegion(polyArr, 0, data.polyScaled.size(), data.polyScaled.data());
+    jfloatArray polyArr = env->NewFloatArray(data.polyScaled.size());
+    env->SetFloatArrayRegion(polyArr, 0, data.polyScaled.size(), data.polyScaled.data());
 
     mpfr_t log_val;
     mpfr_init2(log_val, MPFR_DIGITS);

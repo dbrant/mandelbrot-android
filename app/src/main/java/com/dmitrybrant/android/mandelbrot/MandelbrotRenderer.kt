@@ -237,11 +237,11 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
         println("Polynomial limit: ${orbitResult.polyLim}, Scale exp: ${orbitResult.polyScaleExp}")
 
         glUniform4f(
-            uPoly1, orbitResult.polyScaled[0].toFloat(), orbitResult.polyScaled[1].toFloat(),
-            orbitResult.polyScaled[2].toFloat(), orbitResult.polyScaled[3].toFloat()
+            uPoly1, orbitResult.polyScaled[0], orbitResult.polyScaled[1],
+            orbitResult.polyScaled[2], orbitResult.polyScaled[3]
         )
         glUniform4f(
-            uPoly2, orbitResult.polyScaled[4].toFloat(), orbitResult.polyScaled[5].toFloat(),
+            uPoly2, orbitResult.polyScaled[4], orbitResult.polyScaled[5],
             orbitResult.polyLim.toFloat(), orbitResult.polyScaleExp.toFloat()
         )
 
