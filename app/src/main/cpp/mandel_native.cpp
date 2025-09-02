@@ -358,6 +358,7 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
 
 // JNI wrapper functions
 extern "C" {
+
 JNIEXPORT jlong JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_createState(JNIEnv *env, jclass clazz) {
     return reinterpret_cast<jlong>(new MandelbrotState());
@@ -442,18 +443,6 @@ JNIEXPORT jstring JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getRadius(JNIEnv *env, jclass clazz, jlong statePtr) {
     std::string str = reinterpret_cast<MandelbrotState*>(statePtr)->getRadiusString();
     return env->NewStringUTF(str.c_str());
-}
-
-JNIEXPORT jdouble JNICALL
-Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getCenterXAsDouble(JNIEnv *env, jclass clazz, jlong statePtr) {
-    MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
-    return mpfr_get_d(*state->getCenterX(), MPFR_RNDN);
-}
-
-JNIEXPORT jdouble JNICALL
-Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getCenterYAsDouble(JNIEnv *env, jclass clazz, jlong statePtr) {
-    MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
-    return mpfr_get_d(*state->getCenterY(), MPFR_RNDN);
 }
 
 }

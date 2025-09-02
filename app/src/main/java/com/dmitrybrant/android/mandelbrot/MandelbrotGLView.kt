@@ -21,7 +21,6 @@ class MandelGLView(context: Context, attrs: AttributeSet? = null) : GLSurfaceVie
     }
 
     override fun onTouchEvent(e: MotionEvent): Boolean {
-        // Handle touch to zoom in and pan, matching JavaScript behavior
         if (e.action == MotionEvent.ACTION_UP) {
             renderer.handleTouch(e.x, e.y, width, height)
             requestRender()

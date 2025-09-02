@@ -23,8 +23,6 @@ object MandelbrotNative {
     external fun generateOrbit(statePtr: Long): OrbitResult?
     external fun getCenterX(statePtr: Long): String?
     external fun getCenterY(statePtr: Long): String?
-    external fun getCenterXAsDouble(statePtr: Long): Double
-    external fun getCenterYAsDouble(statePtr: Long): Double
     external fun getRadius(statePtr: Long): String?
 
 
@@ -68,9 +66,6 @@ object MandelbrotNative {
         val centerX: String
             get() = getCenterX(nativePtr)!!
 
-        val centerXasDouble: Double
-            get() = getCenterXAsDouble(nativePtr)
-
         val centerY: String
             get() = getCenterY(nativePtr)!!
 
@@ -84,8 +79,7 @@ object MandelbrotNative {
         }
 
         fun zoomOut() {
-            // Use the native zoomOut implementation
-            MandelbrotNative.zoomOut(nativePtr)
+            zoomOut(nativePtr)
         }
 
         val stateString: String
