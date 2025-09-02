@@ -18,8 +18,8 @@ object MandelbrotNative {
     // Native methods
     external fun createState(): Long
     external fun destroyState(statePtr: Long)
-    external fun setState(statePtr: Long, x: Double, y: Double, r: Double)
-    external fun setStateFromStrings(statePtr: Long, x: String, y: String, r: String)
+    external fun setState(statePtr: Long, x: Double, y: Double, r: Double, iterations: Int)
+    external fun setStateStr(statePtr: Long, x: String, y: String, r: String, iterations: Int)
     external fun updateState(statePtr: Long, dx: Double, dy: Double)
     external fun zoomOut(statePtr: Long)
     external fun generateOrbit(statePtr: Long): OrbitResult?
@@ -49,16 +49,16 @@ object MandelbrotNative {
             destroy()
         }
 
-        fun set(x: Double, y: Double, r: Double) {
-            setState(nativePtr, x, y, r)
+        fun set(x: Double, y: Double, r: Double, iterations: Int) {
+            setState(nativePtr, x, y, r, iterations)
+        }
+
+        fun set(x: String, y: String, r: String, iterations: Int) {
+            setStateStr(nativePtr, x, y, r, iterations)
         }
 
         fun update(dx: Double, dy: Double) {
             updateState(nativePtr, dx, dy)
-        }
-
-        fun setFromStrings(x: String, y: String, r: String) {
-            setStateFromStrings(nativePtr, x, y, r)
         }
 
         fun generateOrbit(): OrbitResult {
@@ -77,15 +77,11 @@ object MandelbrotNative {
         fun reset() {
             iterations = 1000
             cmapscale = 20.1
-            set(0.0, 0.0, 2.0)
+            set(0.0, 0.0, 2.0, iterations)
         }
 
         fun zoomOut() {
             zoomOut(nativePtr)
         }
-
-        val stateString: String
-            get() = "re=" + this.centerX + "; im=" + this.centerY +
-                    "; r=" + this.radius + "; iterations=" + iterations
     }
 }

@@ -39,16 +39,18 @@ public:
         mpfr_clear(radius);
     }
 
-    void set(double x, double y, double r) {
+    void set(double x, double y, double r, int iterations) {
         mpfr_set_d(center_x, x, MPFR_RNDN);
         mpfr_set_d(center_y, y, MPFR_RNDN);
         mpfr_set_d(radius, r, MPFR_RNDN);
+        this->iterations = iterations;
     }
 
-    void setFromStrings(const std::string& x_str, const std::string& y_str, const std::string& r_str) {
+    void set(const std::string& x_str, const std::string& y_str, const std::string& r_str, int iterations) {
         int result_x = mpfr_set_str(center_x, x_str.c_str(), 10, MPFR_RNDN);
         int result_y = mpfr_set_str(center_y, y_str.c_str(), 10, MPFR_RNDN);
         int result_r = mpfr_set_str(radius, r_str.c_str(), 10, MPFR_RNDN);
+        this->iterations = iterations;
         
         if (result_x != 0 || result_y != 0 || result_r != 0) {
             LOGI("Warning: Failed to parse some coordinate strings");
@@ -358,33 +360,33 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
 extern "C" {
 
 JNIEXPORT jlong JNICALL
-Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_createState(JNIEnv *env, jclass clazz) {
+Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_createState(JNIEnv *env, jobject clazz) {
     return reinterpret_cast<jlong>(new MandelbrotState());
 }
 
 JNIEXPORT void JNICALL
-Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_destroyState(JNIEnv *env, jclass clazz, jlong statePtr) {
+Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_destroyState(JNIEnv *env, jobject clazz, jlong statePtr) {
     delete reinterpret_cast<MandelbrotState*>(statePtr);
 }
 
 JNIEXPORT void JNICALL
-Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_setState(JNIEnv *env, jclass clazz, jlong statePtr, jdouble x, jdouble y, jdouble r) {
-    reinterpret_cast<MandelbrotState*>(statePtr)->set(x, y, r);
+Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_setState(JNIEnv *env, jobject clazz, jlong statePtr, jdouble x, jdouble y, jdouble r, jint iterations) {
+    reinterpret_cast<MandelbrotState*>(statePtr)->set(x, y, r, iterations);
 }
 
 JNIEXPORT void JNICALL
-Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_updateState(JNIEnv *env, jclass clazz, jlong statePtr, jdouble dx, jdouble dy) {
+Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_updateState(JNIEnv *env, jobject clazz, jlong statePtr, jdouble dx, jdouble dy) {
     reinterpret_cast<MandelbrotState*>(statePtr)->update(dx, dy);
 }
 
 JNIEXPORT void JNICALL
-Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_setStateFromStrings(JNIEnv *env, jclass clazz, jlong statePtr, jstring x_str, jstring y_str, jstring r_str) {
+Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_setStateStr(JNIEnv *env, jobject clazz, jlong statePtr, jstring x_str, jstring y_str, jstring r_str, jint iterations) {
     const char* x_cstr = env->GetStringUTFChars(x_str, nullptr);
     const char* y_cstr = env->GetStringUTFChars(y_str, nullptr);
     const char* r_cstr = env->GetStringUTFChars(r_str, nullptr);
     
-    reinterpret_cast<MandelbrotState*>(statePtr)->setFromStrings(
-        std::string(x_cstr), std::string(y_cstr), std::string(r_cstr)
+    reinterpret_cast<MandelbrotState*>(statePtr)->set(
+        std::string(x_cstr), std::string(y_cstr), std::string(r_cstr), iterations
     );
     
     env->ReleaseStringUTFChars(x_str, x_cstr);
@@ -393,12 +395,12 @@ Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_setStateFromStrings(JNI
 }
 
 JNIEXPORT void JNICALL
-Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_zoomOut(JNIEnv *env, jclass clazz, jlong statePtr) {
+Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_zoomOut(JNIEnv *env, jobject clazz, jlong statePtr) {
     reinterpret_cast<MandelbrotState*>(statePtr)->zoomOut();
 }
 
 JNIEXPORT jobject JNICALL
-Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_generateOrbit(JNIEnv *env, jclass clazz, jlong statePtr) {
+Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_generateOrbit(JNIEnv *env, jobject clazz, jlong statePtr) {
     MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
     OrbitData data = makeReferenceOrbit(*state);
 
@@ -426,19 +428,19 @@ Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_generateOrbit(JNIEnv *e
 }
 
 JNIEXPORT jstring JNICALL
-Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getCenterX(JNIEnv *env, jclass clazz, jlong statePtr) {
+Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getCenterX(JNIEnv *env, jobject clazz, jlong statePtr) {
     std::string str = reinterpret_cast<MandelbrotState*>(statePtr)->getCenterXString();
     return env->NewStringUTF(str.c_str());
 }
 
 JNIEXPORT jstring JNICALL
-Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getCenterY(JNIEnv *env, jclass clazz, jlong statePtr) {
+Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getCenterY(JNIEnv *env, jobject clazz, jlong statePtr) {
     std::string str = reinterpret_cast<MandelbrotState*>(statePtr)->getCenterYString();
     return env->NewStringUTF(str.c_str());
 }
 
 JNIEXPORT jstring JNICALL
-Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getRadius(JNIEnv *env, jclass clazz, jlong statePtr) {
+Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getRadius(JNIEnv *env, jobject clazz, jlong statePtr) {
     std::string str = reinterpret_cast<MandelbrotState*>(statePtr)->getRadiusString();
     return env->NewStringUTF(str.c_str());
 }

@@ -12,7 +12,7 @@ import javax.microedition.khronos.opengles.GL10
 
 class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
-    private val mandelbrotState = MandelbrotNative.MandelbrotState()
+    private var mandelbrotState: MandelbrotNative.MandelbrotState? = null
     private var surfaceWidth = 0
     private var surfaceHeight = 0
 
@@ -55,26 +55,30 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
         // Convert screen coordinates to normalized coordinates (-1 to 1)
         val normalizedX = (x / (width / 2.0f) - 1.0f).toDouble()
         val normalizedY = (y / (height / 2.0f) - 1.0f).toDouble()
-        mandelbrotState.update(normalizedX, normalizedY)
+        mandelbrotState?.update(normalizedX, normalizedY)
     }
 
     fun setIterations(iterations: Int) {
-        mandelbrotState.iterations = iterations
+        mandelbrotState?.iterations = iterations
     }
 
     fun setCmapScale(scale: Double) {
-        mandelbrotState.cmapscale = scale
+        mandelbrotState?.cmapscale = scale
     }
 
     fun reset() {
-        mandelbrotState.reset()
+        mandelbrotState?.reset()
     }
 
     fun zoomOut() {
-        mandelbrotState.zoomOut()
+        mandelbrotState?.zoomOut()
     }
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
+        if (mandelbrotState == null) {
+            mandelbrotState = MandelbrotNative.MandelbrotState()
+        }
+
         val vertexShader = loadShader(GL_VERTEX_SHADER, readAsset("mandelbrot_vert.glsl"))
         val fragmentShader = loadShader(GL_FRAGMENT_SHADER, readAsset("mandelbrot_frag.glsl"))
 
@@ -136,7 +140,10 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
     }
 
     override fun onDrawFrame(gl: GL10?) {
-        val orbitResult = mandelbrotState.generateOrbit()
+        if (mandelbrotState == null) {
+            return
+        }
+        val orbitResult = mandelbrotState!!.generateOrbit()
 
         val orbitBuffer = orbitResult.orbit
             .order(ByteOrder.nativeOrder())
@@ -167,8 +174,8 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
         println("Radius exponent: ${orbitResult.radiusExp}")
 
         glUniform4f(
-            uState, 0.0f, mandelbrotState.cmapscale.toFloat(),
-            (1 + orbitResult.radiusExp).toFloat(), mandelbrotState.iterations.toFloat()
+            uState, 0.0f, mandelbrotState!!.cmapscale.toFloat(),
+            (1 + orbitResult.radiusExp).toFloat(), mandelbrotState!!.iterations.toFloat()
         )
 
         println("Polynomial coefficients: ${orbitResult.polyScaled.contentToString()}")
@@ -208,7 +215,8 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
             orbitTexture = 0
         }
 
-        mandelbrotState.destroy()
+        mandelbrotState?.destroy()
+        mandelbrotState = null
     }
 
     private fun readAsset(name: String) =
