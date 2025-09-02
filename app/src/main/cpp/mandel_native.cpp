@@ -366,6 +366,7 @@ Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_createState(JNIEnv *env
 
 JNIEXPORT void JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_destroyState(JNIEnv *env, jobject clazz, jlong statePtr) {
+    LOGI("Cleaning up native resources.");
     delete reinterpret_cast<MandelbrotState*>(statePtr);
 }
 

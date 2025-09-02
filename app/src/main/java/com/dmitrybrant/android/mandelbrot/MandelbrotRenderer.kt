@@ -200,21 +200,6 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
     }
 
     fun cleanup() {
-        if (shaderProgram != 0) {
-            glDeleteProgram(shaderProgram)
-            shaderProgram = 0
-        }
-
-        if (vertexBuffer != 0) {
-            glDeleteBuffers(1, intArrayOf(vertexBuffer), 0)
-            vertexBuffer = 0
-        }
-
-        if (orbitTexture != 0) {
-            glDeleteTextures(1, intArrayOf(orbitTexture), 0)
-            orbitTexture = 0
-        }
-
         mandelbrotState?.destroy()
         mandelbrotState = null
     }

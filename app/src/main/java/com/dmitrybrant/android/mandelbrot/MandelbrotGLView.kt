@@ -15,6 +15,11 @@ class MandelGLView(context: Context, attrs: AttributeSet? = null) : GLSurfaceVie
         renderMode = RENDERMODE_WHEN_DIRTY
     }
 
+    override fun onDetachedFromWindow() {
+        renderer.cleanup()
+        super.onDetachedFromWindow()
+    }
+
     fun reset() {
         // TODO
         requestRender()
