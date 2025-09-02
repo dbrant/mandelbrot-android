@@ -10,7 +10,7 @@ class OrbitResult(
 
 object MandelbrotNative {
     init {
-        System.loadLibrary("mandel_native") // Load the native library
+        System.loadLibrary("mandel_native")
     }
 
     // Native methods
@@ -21,10 +21,6 @@ object MandelbrotNative {
     external fun updateState(statePtr: Long, dx: Double, dy: Double)
     external fun zoomOut(statePtr: Long)
     external fun generateOrbit(statePtr: Long): OrbitResult?
-    external fun getPolynomialCoefficients(statePtr: Long): DoubleArray?
-    external fun getPolynomialLimit(statePtr: Long): Int
-    external fun getPolynomialScaleExp(statePtr: Long): Int
-    external fun getRadiusExponent(statePtr: Long): Double
     external fun getCenterX(statePtr: Long): String?
     external fun getCenterY(statePtr: Long): String?
     external fun getCenterXAsDouble(statePtr: Long): Double
@@ -68,18 +64,6 @@ object MandelbrotNative {
         fun generateOrbit(): OrbitResult {
             return generateOrbit(nativePtr)!!
         }
-
-        val polynomialCoefficients: DoubleArray
-            get() = getPolynomialCoefficients(nativePtr)!!
-
-        val polynomialLimit: Int
-            get() = getPolynomialLimit(nativePtr)
-
-        val polynomialScaleExp: Int
-            get() = getPolynomialScaleExp(nativePtr)
-
-        val radiusExponent: Double
-            get() = getRadiusExponent(nativePtr)
 
         val centerX: String
             get() = getCenterX(nativePtr)!!

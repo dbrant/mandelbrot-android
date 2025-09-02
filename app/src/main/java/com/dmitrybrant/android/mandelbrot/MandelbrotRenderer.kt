@@ -9,9 +9,6 @@ import java.nio.FloatBuffer
 import android.opengl.GLES30.*
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
-import kotlin.math.abs
-import kotlin.math.floor
-import kotlin.math.log2
 
 class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
@@ -20,13 +17,10 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
     private var surfaceHeight = 0
     private var stateChangeCallback: ((String) -> Unit)? = null
 
-
-    // OpenGL objects
     private var shaderProgram: Int = 0
     private var vertexBuffer: Int = 0
     private var orbitTexture: Int = 0
 
-    // Uniform locations
     private var uProjectionMatrix: Int = 0
     private var uModelViewMatrix: Int = 0
     private var uState: Int = 0
@@ -34,7 +28,6 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
     private var uPoly2: Int = 0
     private var aVertexPosition: Int = 0
 
-    // Matrices
     private val projectionMatrix = FloatArray(16)
     private val modelViewMatrix = FloatArray(16)
 
@@ -68,11 +61,8 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
 
     fun handleTouch(x: Float, y: Float, width: Int, height: Int) {
         // Convert screen coordinates to normalized coordinates (-1 to 1)
-        // Matching JavaScript: x = x / (canvasSize / 2) - 1; y = y / (canvasSize / 2) - 1
         val normalizedX = (x / (width / 2.0f) - 1.0f).toDouble()
         val normalizedY = (y / (height / 2.0f) - 1.0f).toDouble()
-        
-        // Call the native update method
         mandelbrotState.update(normalizedX, normalizedY)
     }
 
@@ -135,7 +125,6 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
         val vertexShader = loadShader(GL_VERTEX_SHADER, readAsset("mandelbrot_vert.glsl"))
         val fragmentShader = loadShader(GL_FRAGMENT_SHADER, readAsset("mandelbrot_frag.glsl"))
 
-        // Create shader program
         shaderProgram = glCreateProgram().also { program ->
             glAttachShader(program, vertexShader)
             glAttachShader(program, fragmentShader)
@@ -237,16 +226,11 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
         glUniformMatrix4fv(uProjectionMatrix, 1, false, projectionMatrix, 0)
         glUniformMatrix4fv(uModelViewMatrix, 1, false, modelViewMatrix, 0)
 
-        // Calculate state parameters
-        val radiusExp = mandelbrotState.radiusExponent
+        println("Radius exponent: ${orbitResult.radiusExp}")
 
-        println("Radius exponent: $radiusExp")
-
-        // Set state uniform (placeholder, cmapscale, radius_exp + 1, iterations) 
-        // Note: JavaScript sets center[0] here but shader doesn't actually use it for coordinate transformation
         glUniform4f(
             uState, 0.0f, mandelbrotState.cmapscale.toFloat(),
-            (1 + radiusExp).toFloat(), mandelbrotState.iterations.toFloat()
+            (1 + orbitResult.radiusExp).toFloat(), mandelbrotState.iterations.toFloat()
         )
 
         println("Polynomial coefficients: ${orbitResult.polyScaled.contentToString()}")
@@ -261,15 +245,12 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
             orbitResult.polyLim.toFloat(), orbitResult.polyScaleExp.toFloat()
         )
 
-        // Bind texture
         glActiveTexture(GL_TEXTURE0)
         glBindTexture(GL_TEXTURE_2D, orbitTexture)
         glUniform1i(glGetUniformLocation(shaderProgram, "sequence"), 0)
 
-        // Draw the quad
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
 
-        // Clean up
         glDisableVertexAttribArray(aVertexPosition)
     }
 
@@ -292,22 +273,6 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
         mandelbrotState.destroy()
     }
 
-    private fun getRadiusExponent(radiusString: String): Int {
-        // Parse the high-precision radius string to extract exponent
-        // This is a simplified version - you might need more sophisticated parsing
-        return try {
-            val radius = radiusString.toDouble()
-            if (radius == 0.0) 0 else floor(log2(abs(radius))).toInt()
-        } catch (e: NumberFormatException) {
-            // For very high precision numbers, you'd need to parse the string format
-            // that MPFR outputs (e.g., scientific notation)
-            0
-        }
-    }
-
     private fun readAsset(name: String) =
         context.assets.open(name).bufferedReader().use { it.readText() }
 }
-
-
-// Extension function removed - now using native setFromStrings implementation
