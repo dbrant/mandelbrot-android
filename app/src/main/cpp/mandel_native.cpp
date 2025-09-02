@@ -10,6 +10,10 @@
 #define LOG_TAG "MandelbrotNative"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 
+#define CALC_WIDTH 1024
+#define CALC_HEIGHT 1024
+#define CALC_ITERATIONS 1000
+#define CALC_BAILOUT 400
 #define MPFR_DIGITS 1200
 
 class MandelbrotState {
@@ -18,18 +22,15 @@ private:
 
 public:
     int iterations;
-    double cmapscale;
 
-    std::shared_ptr<std::vector<float>> orbitPtr = std::make_shared<std::vector<float>>(1024 * 1024);
+    std::shared_ptr<std::vector<float>> orbitPtr = std::make_shared<std::vector<float>>(CALC_WIDTH * CALC_HEIGHT);
 
-    MandelbrotState() : iterations(1000), cmapscale(20.0) {
+    MandelbrotState() : iterations(CALC_ITERATIONS) {
         mpfr_init2(center_x, MPFR_DIGITS);
         mpfr_init2(center_y, MPFR_DIGITS);
         mpfr_init2(radius, MPFR_DIGITS);
 
-        mpfr_set_d(center_x, 0.0, MPFR_RNDN);
-        mpfr_set_d(center_y, 0.0, MPFR_RNDN);
-        mpfr_set_d(radius, 2.0, MPFR_RNDN);
+        reset();
     }
 
     ~MandelbrotState() {
@@ -81,8 +82,7 @@ public:
     }
 
     void reset() {
-        iterations = 1000;
-        cmapscale = 20.1;
+        iterations = CALC_ITERATIONS;
         mpfr_set_d(center_x, 0.0, MPFR_RNDN);
         mpfr_set_d(center_y, 0.0, MPFR_RNDN);
         mpfr_set_d(radius, 2.0, MPFR_RNDN);
@@ -303,12 +303,11 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
         mpfr_clear(radius_for_poly);
 
         DoubleDouble z_squared = add(mul(fx_new, fx_new), mul(fy_new, fy_new));
-        if (gt(z_squared, DoubleDouble(400, 0))) {
+        if (gt(z_squared, DoubleDouble(CALC_BAILOUT, 0))) {
             break;
         }
     }
 
-    // Clean up
     mpfr_clear(x);
     mpfr_clear(y);
     mpfr_clear(cx);
@@ -335,6 +334,7 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
     mpfr_exp_t exp_temp;
     double r_mantissa = mpfr_get_d_2exp(&exp_temp, radius_mpfr, MPFR_RNDN);
     DoubleDouble r(r_mantissa, rexp);
+    mpfr_clear(radius_mpfr);
 
     DoubleDouble poly_scale_exp = mul(DoubleDouble(1, 0), maxabs(poly[0], poly[1]));
     DoubleDouble poly_scale(1, -poly_scale_exp.exponent);
@@ -350,8 +350,6 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
 
     LOGI("Scaled coefficients: [%f, %f, %f, %f, %f, %f]",
          poly_scaled[0], poly_scaled[1], poly_scaled[2], poly_scaled[3], poly_scaled[4], poly_scaled[5]);
-
-    mpfr_clear(radius_mpfr);
 
     return { poly_double, polylim, poly_scaled, (int)poly_scale_exp.exponent };
 }
