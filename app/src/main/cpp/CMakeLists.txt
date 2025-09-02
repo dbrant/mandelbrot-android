@@ -13,6 +13,9 @@ add_library(mpfr STATIC IMPORTED)
 set_target_properties(mpfr PROPERTIES
     IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/prebuilt/${ANDROID_ABI}/libmpfr.a)
 
+set(CMAKE_SHARED_LINKER_FLAGS
+        "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,max-page-size=16384")
+
 # Headers
 target_include_directories(mandel_native PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
