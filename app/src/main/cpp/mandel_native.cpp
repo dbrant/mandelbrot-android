@@ -10,6 +10,7 @@
 #define LOG_TAG "MandelbrotNative"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 
+#define MPFR_DIGITS 1200
 
 class MandelbrotState {
 private:
@@ -20,11 +21,10 @@ public:
     double cmapscale;
 
     MandelbrotState() : iterations(1000), cmapscale(20.0) {
-        mpfr_init2(center_x, 1200);
-        mpfr_init2(center_y, 1200);
-        mpfr_init2(radius, 1200);
+        mpfr_init2(center_x, MPFR_DIGITS);
+        mpfr_init2(center_y, MPFR_DIGITS);
+        mpfr_init2(radius, MPFR_DIGITS);
 
-        // Initialize to default values - matching JavaScript
         mpfr_set_d(center_x, 0.0, MPFR_RNDN);
         mpfr_set_d(center_y, 0.0, MPFR_RNDN);
         mpfr_set_d(radius, 2.0, MPFR_RNDN);
@@ -54,8 +54,8 @@ public:
 
     void update(double dx, double dy) {
         mpfr_t mx, my;
-        mpfr_init2(mx, 1200);
-        mpfr_init2(my, 1200);
+        mpfr_init2(mx, MPFR_DIGITS);
+        mpfr_init2(my, MPFR_DIGITS);
 
         // mx = radius * dx
         mpfr_mul_d(mx, radius, dx, MPFR_RNDN);
@@ -124,13 +124,11 @@ DoubleDouble sub(const DoubleDouble& a, const DoubleDouble& b) {
     double ret_e = std::max(a.exponent, b.exponent);
     double am = a.mantissa;
     double bm = b.mantissa;
-
     if (ret_e > a.exponent) {
         am = am * std::pow(2, a.exponent - ret_e);
     } else {
         bm = bm * std::pow(2, b.exponent - ret_e);
     }
-
     return DoubleDouble(am - bm, ret_e);
 }
 
@@ -138,26 +136,22 @@ DoubleDouble add(const DoubleDouble& a, const DoubleDouble& b) {
     double ret_e = std::max(a.exponent, b.exponent);
     double am = a.mantissa;
     double bm = b.mantissa;
-
     if (ret_e > a.exponent) {
         am = am * std::pow(2, a.exponent - ret_e);
     } else {
         bm = bm * std::pow(2, b.exponent - ret_e);
     }
-
     return DoubleDouble(am + bm, ret_e);
 }
 
 DoubleDouble mul(const DoubleDouble& a, const DoubleDouble& b) {
     double m = a.mantissa * b.mantissa;
     double e = a.exponent + b.exponent;
-
     if (m != 0) {
         double logm = std::round(std::log2(std::abs(m)));
         m = m / std::pow(2, logm);
         e = e + logm;
     }
-
     return DoubleDouble(m, e);
 }
 
@@ -165,13 +159,11 @@ DoubleDouble maxabs(const DoubleDouble& a, const DoubleDouble& b) {
     double ret_e = std::max(a.exponent, b.exponent);
     double am = a.mantissa;
     double bm = b.mantissa;
-
     if (ret_e > a.exponent) {
         am = am * std::pow(2, a.exponent - ret_e);
     } else {
         bm = bm * std::pow(2, b.exponent - ret_e);
     }
-
     return DoubleDouble(std::max(std::abs(am), std::abs(bm)), ret_e);
 }
 
@@ -179,13 +171,11 @@ bool gt(const DoubleDouble& a, const DoubleDouble& b) {
     double ret_e = std::max(a.exponent, b.exponent);
     double am = a.mantissa;
     double bm = b.mantissa;
-
     if (ret_e > a.exponent) {
         am = am * std::pow(2, a.exponent - ret_e);
     } else {
         bm = bm * std::pow(2, b.exponent - ret_e);
     }
-
     return am > bm;
 }
 
@@ -194,7 +184,7 @@ double floaty(const DoubleDouble& d) {
 }
 
 struct OrbitData {
-    std::vector<double> orbit;  // Changed from float to double
+    std::vector<float> orbit;  // Changed from float to double
     std::vector<double> poly;
     int polylim;
     std::vector<double> polyScaled;  // Changed from float to double
@@ -205,10 +195,10 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
     LOGI("makeReferenceOrbit: Starting orbit generation");
 
     mpfr_t x, y, cx, cy;
-    mpfr_init2(x, 1200);
-    mpfr_init2(y, 1200);
-    mpfr_init2(cx, 1200);
-    mpfr_init2(cy, 1200);
+    mpfr_init2(x, MPFR_DIGITS);
+    mpfr_init2(y, MPFR_DIGITS);
+    mpfr_init2(cx, MPFR_DIGITS);
+    mpfr_init2(cy, MPFR_DIGITS);
 
     // Initialize starting point
     mpfr_set_d(x, 0.0, MPFR_RNDN);
@@ -221,12 +211,12 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
     double cy_debug = mpfr_get_d(cy, MPFR_RNDN);
     LOGI("Center: (%f, %f), iterations: %d", cx_debug, cy_debug, state.iterations);
 
-    std::vector<double> orbit(1024 * 1024, -1.0f);
+    std::vector<float> orbit(1024 * 1024, -1.0f);
 
     mpfr_t txx, txy, tyy;
-    mpfr_init2(txx, 1200);
-    mpfr_init2(txy, 1200);
-    mpfr_init2(tyy, 1200);
+    mpfr_init2(txx, MPFR_DIGITS);
+    mpfr_init2(txy, MPFR_DIGITS);
+    mpfr_init2(tyy, MPFR_DIGITS);
 
     int polylim = 0;
 
@@ -315,7 +305,7 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
         // Implement JavaScript polynomial selection logic
         // JavaScript logic: if (i == 0 || gt(maxabs(Cx, Cy), mul([1000, radius_exp], maxabs(Dx, Dy))))
         mpfr_t radius_for_poly;
-        mpfr_init2(radius_for_poly, 1200);
+        mpfr_init2(radius_for_poly, MPFR_DIGITS);
         mpfr_set(radius_for_poly, *state.getRadius(), MPFR_RNDN);
         mpfr_exp_t radius_exp = mpfr_get_exp(radius_for_poly);
         
@@ -368,7 +358,7 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
 
     // Calculate scaled polynomial coefficients (matching JS logic)
     mpfr_t radius_mpfr;
-    mpfr_init2(radius_mpfr, 1200);
+    mpfr_init2(radius_mpfr, MPFR_DIGITS);
     mpfr_set(radius_mpfr, *state.getRadius(), MPFR_RNDN);
 
     mpfr_exp_t rexp = mpfr_get_exp(radius_mpfr);
@@ -442,13 +432,13 @@ Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_zoomOut(JNIEnv *env, jc
     reinterpret_cast<MandelbrotState*>(statePtr)->zoomOut();
 }
 
-JNIEXPORT jdoubleArray JNICALL
+JNIEXPORT jfloatArray JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_generateOrbit(JNIEnv *env, jclass clazz, jlong statePtr) {
     MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
     OrbitData data = makeReferenceOrbit(*state);
 
-    jdoubleArray result = env->NewDoubleArray(data.orbit.size());
-    env->SetDoubleArrayRegion(result, 0, data.orbit.size(), data.orbit.data());
+    jfloatArray result = env->NewFloatArray(data.orbit.size());
+    env->SetFloatArrayRegion(result, 0, data.orbit.size(), data.orbit.data());
 
     return result;
 }
@@ -484,7 +474,7 @@ JNIEXPORT jdouble JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getRadiusExponent(JNIEnv *env, jclass clazz, jlong statePtr) {
     MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
     mpfr_t log_val;
-    mpfr_init2(log_val, 1200);
+    mpfr_init2(log_val, MPFR_DIGITS);
     mpfr_log2(log_val, *state->getRadius(), MPFR_RNDN);
     double result = mpfr_get_d(log_val, MPFR_RNDN);
     mpfr_clear(log_val);

@@ -206,21 +206,20 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
         val polyScaleExp = mandelbrotState.polynomialScaleExp
 
         // Find minimum orbit scale for debugging
-        var minVal = 2.0
+        var minVal = 2.0f
         for (i in 2 until orbitData.size step 3) {
-            if (orbitData[i] != -1.0) {
+            if (orbitData[i] != -1.0f) {
                 minVal = minOf(minVal, abs(orbitData[i]))
             }
         }
         println("Smallest orbit bit: $minVal")
 
         // Upload orbit data to texture
-        val orbitFloatArray = orbitData.map { it.toFloat() }.toFloatArray()
         val orbitBuffer = ByteBuffer.allocateDirect(orbitData.size * 4)
             .order(ByteOrder.nativeOrder())
             .asFloatBuffer()
             .apply {
-                put(orbitFloatArray)
+                put(orbitData)
                 position(0)
             }
 
