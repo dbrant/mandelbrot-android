@@ -57,22 +57,17 @@ public:
         }
     }
 
-    void update(double dx, double dy) {
+    void zoomIn(double dx, double dy, double factor) {
         mpfr_t mx, my;
         mpfr_init2(mx, MPFR_DIGITS);
         mpfr_init2(my, MPFR_DIGITS);
 
-        // mx = radius * dx
         mpfr_mul_d(mx, radius, dx, MPFR_RNDN);
-        // my = radius * (-dy)
         mpfr_mul_d(my, radius, -dy, MPFR_RNDN);
 
-        // radius = radius * 0.5
-        mpfr_mul_d(radius, radius, 0.5, MPFR_RNDN);
+        mpfr_mul_d(radius, radius, factor, MPFR_RNDN);
 
-        // center_x += mx
         mpfr_add(center_x, center_x, mx, MPFR_RNDN);
-        // center_y += my
         mpfr_add(center_y, center_y, my, MPFR_RNDN);
 
         mpfr_clear(mx);
@@ -376,8 +371,8 @@ Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_setState(JNIEnv *env, j
 }
 
 JNIEXPORT void JNICALL
-Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_updateState(JNIEnv *env, jobject clazz, jlong statePtr, jdouble dx, jdouble dy) {
-    reinterpret_cast<MandelbrotState*>(statePtr)->update(dx, dy);
+Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_zoomIn(JNIEnv *env, jobject clazz, jlong statePtr, jdouble dx, jdouble dy, jdouble factor) {
+    reinterpret_cast<MandelbrotState*>(statePtr)->zoomIn(dx, dy, factor);
 }
 
 JNIEXPORT void JNICALL

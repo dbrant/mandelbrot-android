@@ -20,7 +20,7 @@ object MandelbrotNative {
     external fun destroyState(statePtr: Long)
     external fun setState(statePtr: Long, x: Double, y: Double, r: Double, iterations: Int)
     external fun setStateStr(statePtr: Long, x: String, y: String, r: String, iterations: Int)
-    external fun updateState(statePtr: Long, dx: Double, dy: Double)
+    external fun zoomIn(statePtr: Long, dx: Double, dy: Double, factor: Double)
     external fun zoomOut(statePtr: Long, factor: Double)
     external fun generateOrbit(statePtr: Long): OrbitResult?
     external fun getCenterX(statePtr: Long): String?
@@ -57,8 +57,8 @@ object MandelbrotNative {
             setStateStr(nativePtr, x, y, r, iterations)
         }
 
-        fun update(dx: Double, dy: Double) {
-            updateState(nativePtr, dx, dy)
+        fun zoomIn(dx: Double, dy: Double, factor: Double) {
+            zoomIn(nativePtr, dx, dy, factor)
         }
 
         fun generateOrbit(): OrbitResult {

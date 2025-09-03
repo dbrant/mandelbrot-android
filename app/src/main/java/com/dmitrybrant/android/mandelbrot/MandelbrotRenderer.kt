@@ -67,7 +67,7 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
             normalizedY = y / (height / 2.0) - 1.0
         }
         
-        mandelbrotState?.update(normalizedX, normalizedY)
+        mandelbrotState?.zoomIn(normalizedX, normalizedY, 0.5)
     }
 
     fun setIterations(iterations: Int) {
