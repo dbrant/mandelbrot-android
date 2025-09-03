@@ -29,6 +29,11 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
 
     private val projectionMatrix = FloatArray(16)
     private val modelViewMatrix = FloatArray(16)
+    
+    // Gesture transformation parameters
+    private var gestureScale = 1.0f
+    private var gestureTranslateX = 0.0f
+    private var gestureTranslateY = 0.0f
 
     // Vertex data for full-screen quad
     private val vertices = floatArrayOf(
@@ -58,6 +63,12 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
         val normalizedX = (x / (width / 2.0f) - 1.0f).toDouble()
         val normalizedY = (y / (height / 2.0f) - 1.0f).toDouble()
         mandelbrotState?.update(normalizedX, normalizedY)
+    }
+    
+    fun setTransformation(scale: Float, translateX: Float, translateY: Float) {
+        gestureScale = scale
+        gestureTranslateX = translateX
+        gestureTranslateY = translateY
     }
 
     fun setIterations(iterations: Int) {
@@ -171,7 +182,11 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
             // Taller than square - crop left/right, fill height completely
             Matrix.orthoM(projectionMatrix, 0, -aspect, aspect, -1f, 1f, -1f, 1f)
         }
+        
+        // Set up model-view matrix with gesture transformations
         Matrix.setIdentityM(modelViewMatrix, 0)
+        Matrix.translateM(modelViewMatrix, 0, gestureTranslateX, gestureTranslateY, 0f)
+        Matrix.scaleM(modelViewMatrix, 0, gestureScale, gestureScale, 1f)
 
         glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer)
         glVertexAttribPointer(aVertexPosition, 2, GL_FLOAT, false, 0, 0)
