@@ -76,8 +76,8 @@ object MandelbrotNative {
 
         fun reset() {
             iterations = 1000
-            cmapscale = 20.1
-            set(0.0, 0.0, 2.0, iterations)
+            cmapscale = 20.0
+            set(-0.5, 0.0, 2.0, iterations)
         }
 
         fun zoomOut(factor: Double) {
