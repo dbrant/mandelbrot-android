@@ -55,17 +55,16 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
 
     fun handleTouch(x: Float, y: Float, width: Int, height: Int) {
         // Convert screen coordinates to normalized coordinates (-1 to 1)
-        var normalizedX = (x / (width / 2.0f) - 1.0f).toDouble()
-        var normalizedY = (y / (height / 2.0f) - 1.0f).toDouble()
-        
-        // Correct for center-crop aspect ratio transformation
-        val aspect = width.toFloat() / height.toFloat()
+        var normalizedX: Double
+        var normalizedY: Double
+
+        val aspect = width.toDouble() / height.toDouble()
         if (aspect > 1.0f) {
-            // Wide screen: texture is cropped top/bottom, so Y coordinates need scaling
-            normalizedY *= aspect.toDouble()
+            normalizedX = x / (width / 2.0) - 1.0
+            normalizedY = (y + (width - height) / 2.0) / (width / 2.0) - 1.0
         } else {
-            // Tall screen: texture is cropped left/right, so X coordinates need scaling
-            normalizedX /= aspect.toDouble()
+            normalizedX = (x + (height - width) / 2.0) / (height / 2.0) - 1.0
+            normalizedY = y / (height / 2.0) - 1.0
         }
         
         mandelbrotState?.update(normalizedX, normalizedY)
