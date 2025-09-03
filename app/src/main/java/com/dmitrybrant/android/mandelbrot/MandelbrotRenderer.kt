@@ -205,6 +205,8 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
         val viewportAspect = width.toFloat() / height.toFloat()
         val textureAspect = 1.0f // 1024x1024 = 1:1
         
+        println("Updating vertices for aspect ratio: viewport=${width}x${height}, aspect=${viewportAspect}")
+        
         val scaleX: Float
         val scaleY: Float
         
@@ -217,6 +219,8 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
             scaleX = 1.0f
             scaleY = textureAspect / viewportAspect  // > 1, expands vertically
         }
+        
+        println("Scale factors: scaleX=${scaleX}, scaleY=${scaleY}")
         
         // Update vertices with center-crop scaling
         vertices = floatArrayOf(
@@ -235,9 +239,12 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
                 position(0)
             }
         
-        // Update the GPU buffer with the new vertex data
-        glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer)
-        glBufferData(GL_ARRAY_BUFFER, vertices.size * 4, vertexBufferData, GL_STATIC_DRAW)
+        // Update the GPU buffer with the new vertex data (only if vertex buffer is created)
+        if (vertexBuffer != 0) {
+            glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer)
+            glBufferData(GL_ARRAY_BUFFER, vertices.size * 4, vertexBufferData, GL_STATIC_DRAW)
+            println("Updated GPU vertex buffer with new aspect ratio data")
+        }
     }
 
     private fun readAsset(name: String) =
