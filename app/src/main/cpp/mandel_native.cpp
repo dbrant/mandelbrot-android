@@ -58,20 +58,33 @@ public:
     }
 
     void zoomIn(double dx, double dy, double factor) {
-        mpfr_t mx, my;
+        mpfr_t mx, my, offset_x, offset_y;
         mpfr_init2(mx, MPFR_DIGITS);
         mpfr_init2(my, MPFR_DIGITS);
+        mpfr_init2(offset_x, MPFR_DIGITS);
+        mpfr_init2(offset_y, MPFR_DIGITS);
 
+        // Calculate the world-space position of the clicked point
+        // clicked_point = center + radius * (dx, -dy)
         mpfr_mul_d(mx, radius, dx, MPFR_RNDN);
         mpfr_mul_d(my, radius, -dy, MPFR_RNDN);
+        mpfr_add(offset_x, center_x, mx, MPFR_RNDN);  // clicked_x = center_x + mx
+        mpfr_add(offset_y, center_y, my, MPFR_RNDN);  // clicked_y = center_y + my
 
+        // Apply zoom to radius
         mpfr_mul_d(radius, radius, factor, MPFR_RNDN);
 
-        mpfr_add(center_x, center_x, mx, MPFR_RNDN);
-        mpfr_add(center_y, center_y, my, MPFR_RNDN);
+        // Calculate new center to keep clicked point at same screen position
+        // new_center = clicked_point - new_radius * (dx, -dy)
+        mpfr_mul_d(mx, radius, dx, MPFR_RNDN);
+        mpfr_mul_d(my, radius, -dy, MPFR_RNDN);
+        mpfr_sub(center_x, offset_x, mx, MPFR_RNDN);  // center_x = clicked_x - new_mx
+        mpfr_sub(center_y, offset_y, my, MPFR_RNDN);  // center_y = clicked_y - new_my
 
         mpfr_clear(mx);
         mpfr_clear(my);
+        mpfr_clear(offset_x);
+        mpfr_clear(offset_y);
     }
 
     void zoomOut(double factor) {
