@@ -30,22 +30,25 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
     private val projectionMatrix = FloatArray(16)
     private val modelViewMatrix = FloatArray(16)
 
-    // Vertex data for full-screen quad - will be updated based on aspect ratio
-    private var vertices = floatArrayOf(
+    // Vertex data for full-screen quad
+    private val vertices = floatArrayOf(
         1.0f,  1.0f,   // top right
         -1.0f, 1.0f,   // top left
         1.0f, -1.0f,   // bottom right
         -1.0f, -1.0f   // bottom left
     )
 
-    private lateinit var vertexBufferData: FloatBuffer
+    private val vertexBufferData: FloatBuffer = ByteBuffer.allocateDirect(vertices.size * 4)
+        .order(ByteOrder.nativeOrder())
+        .asFloatBuffer()
+        .apply {
+            put(vertices)
+            position(0)
+        }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
         surfaceWidth = width
         surfaceHeight = height
-        
-        // Calculate aspect-corrected vertices for center-crop behavior
-        updateVerticesForAspectRatio(width, height)
         
         glViewport(0, 0, width, height)
     }
@@ -102,10 +105,13 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
         uPoly2 = glGetUniformLocation(shaderProgram, "poly2")
         aVertexPosition = glGetAttribLocation(shaderProgram, "aVertexPosition")
 
-        // Create vertex buffer (data will be set in onSurfaceChanged)
+        // Create and populate vertex buffer
         val buffers = IntArray(1)
         glGenBuffers(1, buffers, 0)
         vertexBuffer = buffers[0]
+        
+        glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer)
+        glBufferData(GL_ARRAY_BUFFER, vertices.size * 4, vertexBufferData, GL_STATIC_DRAW)
 
         val textures = IntArray(1)
         glGenTextures(1, textures, 0)
@@ -156,7 +162,15 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
         glDepthFunc(GL_LEQUAL)
         glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
 
-        Matrix.setIdentityM(projectionMatrix, 0)
+        // Set up projection matrix for center-crop behavior
+        val aspect = surfaceWidth.toFloat() / surfaceHeight.toFloat()
+        if (aspect > 1.0f) {
+            // Wider than square - expand horizontally for center-crop
+            Matrix.orthoM(projectionMatrix, 0, -aspect, aspect, -1f, 1f, -1f, 1f)
+        } else {
+            // Taller than square - expand vertically for center-crop
+            Matrix.orthoM(projectionMatrix, 0, -1f, 1f, -1f/aspect, 1f/aspect, -1f, 1f)
+        }
         Matrix.setIdentityM(modelViewMatrix, 0)
 
         glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer)
