@@ -166,10 +166,10 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
         val aspect = surfaceWidth.toFloat() / surfaceHeight.toFloat()
         if (aspect > 1.0f) {
             // Wider than square - expand horizontally for center-crop
-            Matrix.orthoM(projectionMatrix, 0, -aspect, aspect, -1f, 1f, -1f, 1f)
-        } else {
-            // Taller than square - expand vertically for center-crop
             Matrix.orthoM(projectionMatrix, 0, -1f, 1f, -1f/aspect, 1f/aspect, -1f, 1f)
+        } else {
+            // Taller than square - crop left/right, fill height completely
+            Matrix.orthoM(projectionMatrix, 0, -aspect, aspect, -1f, 1f, -1f, 1f)
         }
         Matrix.setIdentityM(modelViewMatrix, 0)
 
@@ -213,52 +213,6 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
     fun cleanup() {
         mandelbrotState?.destroy()
         mandelbrotState = null
-    }
-
-    private fun updateVerticesForAspectRatio(width: Int, height: Int) {
-        val viewportAspect = width.toFloat() / height.toFloat()
-        val textureAspect = 1.0f // 1024x1024 = 1:1
-        
-        println("Updating vertices for aspect ratio: viewport=${width}x${height}, aspect=${viewportAspect}")
-        
-        val scaleX: Float
-        val scaleY: Float
-        
-        if (viewportAspect > textureAspect) {
-            // Viewport is wider than texture - scale by width for center-crop
-            scaleX = viewportAspect / textureAspect  // > 1, expands horizontally
-            scaleY = 1.0f
-        } else {
-            // Viewport is taller than texture - scale by height for center-crop
-            scaleX = 1.0f
-            scaleY = textureAspect / viewportAspect  // > 1, expands vertically
-        }
-        
-        println("Scale factors: scaleX=${scaleX}, scaleY=${scaleY}")
-        
-        // Update vertices with center-crop scaling
-        vertices = floatArrayOf(
-            scaleX,  scaleY,    // top right
-            -scaleX, scaleY,    // top left
-            scaleX, -scaleY,    // bottom right
-            -scaleX, -scaleY    // bottom left
-        )
-        
-        // Update the vertex buffer
-        vertexBufferData = ByteBuffer.allocateDirect(vertices.size * 4)
-            .order(ByteOrder.nativeOrder())
-            .asFloatBuffer()
-            .apply {
-                put(vertices)
-                position(0)
-            }
-        
-        // Update the GPU buffer with the new vertex data (only if vertex buffer is created)
-        if (vertexBuffer != 0) {
-            glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer)
-            glBufferData(GL_ARRAY_BUFFER, vertices.size * 4, vertexBufferData, GL_STATIC_DRAW)
-            println("Updated GPU vertex buffer with new aspect ratio data")
-        }
     }
 
     private fun readAsset(name: String) =
