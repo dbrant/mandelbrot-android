@@ -30,25 +30,24 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
     private val projectionMatrix = FloatArray(16)
     private val modelViewMatrix = FloatArray(16)
 
-    // Vertex data for full-screen quad
-    private val vertices = floatArrayOf(
+    // Vertex data for full-screen quad - will be updated based on aspect ratio
+    private var vertices = floatArrayOf(
         1.0f,  1.0f,   // top right
         -1.0f, 1.0f,   // top left
         1.0f, -1.0f,   // bottom right
         -1.0f, -1.0f   // bottom left
     )
 
-    private val vertexBufferData: FloatBuffer = ByteBuffer.allocateDirect(vertices.size * 4)
-        .order(ByteOrder.nativeOrder())
-        .asFloatBuffer()
-        .apply {
-            put(vertices)
-            position(0)
-        }
+    private lateinit var vertexBufferData: FloatBuffer
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
         surfaceWidth = width
         surfaceHeight = height
+        
+        // Calculate aspect-corrected vertices for center-crop behavior
+        updateVerticesForAspectRatio(width, height)
+        
+        glViewport(0, 0, width, height)
     }
 
     fun handleTouch(x: Float, y: Float, width: Int, height: Int) {
@@ -103,12 +102,10 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
         uPoly2 = glGetUniformLocation(shaderProgram, "poly2")
         aVertexPosition = glGetAttribLocation(shaderProgram, "aVertexPosition")
 
+        // Create vertex buffer (data will be set in onSurfaceChanged)
         val buffers = IntArray(1)
         glGenBuffers(1, buffers, 0)
         vertexBuffer = buffers[0]
-
-        glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer)
-        glBufferData(GL_ARRAY_BUFFER, vertices.size * 4, vertexBufferData, GL_STATIC_DRAW)
 
         val textures = IntArray(1)
         glGenTextures(1, textures, 0)
@@ -202,6 +199,45 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
     fun cleanup() {
         mandelbrotState?.destroy()
         mandelbrotState = null
+    }
+
+    private fun updateVerticesForAspectRatio(width: Int, height: Int) {
+        val viewportAspect = width.toFloat() / height.toFloat()
+        val textureAspect = 1.0f // 1024x1024 = 1:1
+        
+        val scaleX: Float
+        val scaleY: Float
+        
+        if (viewportAspect > textureAspect) {
+            // Viewport is wider than texture - scale by width for center-crop
+            scaleX = viewportAspect / textureAspect  // > 1, expands horizontally
+            scaleY = 1.0f
+        } else {
+            // Viewport is taller than texture - scale by height for center-crop
+            scaleX = 1.0f
+            scaleY = textureAspect / viewportAspect  // > 1, expands vertically
+        }
+        
+        // Update vertices with center-crop scaling
+        vertices = floatArrayOf(
+            scaleX,  scaleY,    // top right
+            -scaleX, scaleY,    // top left
+            scaleX, -scaleY,    // bottom right
+            -scaleX, -scaleY    // bottom left
+        )
+        
+        // Update the vertex buffer
+        vertexBufferData = ByteBuffer.allocateDirect(vertices.size * 4)
+            .order(ByteOrder.nativeOrder())
+            .asFloatBuffer()
+            .apply {
+                put(vertices)
+                position(0)
+            }
+        
+        // Update the GPU buffer with the new vertex data
+        glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer)
+        glBufferData(GL_ARRAY_BUFFER, vertices.size * 4, vertexBufferData, GL_STATIC_DRAW)
     }
 
     private fun readAsset(name: String) =
