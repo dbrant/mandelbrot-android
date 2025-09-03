@@ -107,7 +107,7 @@ class MandelbrotActivity : AppCompatActivity() {
                 return true
             }
             R.id.menu_zoom_out -> {
-                binding.mandelGLView.zoomOut()
+                binding.mandelGLView.zoomOut(2.0)
                 return true
             }
             R.id.menu_settings -> {

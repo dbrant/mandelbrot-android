@@ -20,8 +20,8 @@ class MandelGLView(context: Context, attrs: AttributeSet? = null) : GLSurfaceVie
         super.onDetachedFromWindow()
     }
 
-    fun zoomOut() {
-        renderer.zoomOut()
+    fun zoomOut(factor: Double) {
+        renderer.zoomOut(factor)
         requestRender()
     }
 

@@ -79,13 +79,13 @@ public:
         mpfr_clear(my);
     }
 
-    void zoomOut() {
-        mpfr_mul_d(radius, radius, 2.0, MPFR_RNDN);
+    void zoomOut(double factor) {
+        mpfr_mul_d(radius, radius, factor, MPFR_RNDN);
     }
 
     void reset() {
         iterations = CALC_ITERATIONS;
-        mpfr_set_d(center_x, 0.0, MPFR_RNDN);
+        mpfr_set_d(center_x, -0.5, MPFR_RNDN);
         mpfr_set_d(center_y, 0.0, MPFR_RNDN);
         mpfr_set_d(radius, 2.0, MPFR_RNDN);
     }
@@ -396,8 +396,8 @@ Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_setStateStr(JNIEnv *env
 }
 
 JNIEXPORT void JNICALL
-Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_zoomOut(JNIEnv *env, jobject clazz, jlong statePtr) {
-    reinterpret_cast<MandelbrotState*>(statePtr)->zoomOut();
+Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_zoomOut(JNIEnv *env, jobject clazz, jlong statePtr, jdouble factor) {
+    reinterpret_cast<MandelbrotState*>(statePtr)->zoomOut(factor);
 }
 
 JNIEXPORT jobject JNICALL

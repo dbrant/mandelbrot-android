@@ -82,8 +82,8 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
         mandelbrotState?.reset()
     }
 
-    fun zoomOut() {
-        mandelbrotState?.zoomOut()
+    fun zoomOut(factor: Double) {
+        mandelbrotState?.zoomOut(factor)
     }
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
