@@ -106,6 +106,10 @@ class MandelbrotActivity : AppCompatActivity() {
                 onBackPressed()
                 return true
             }
+            R.id.menu_zoom_out -> {
+                binding.mandelGLView.zoomOut()
+                return true
+            }
             R.id.menu_settings -> {
                 // TODO
                 return true
@@ -123,7 +127,7 @@ class MandelbrotActivity : AppCompatActivity() {
                 return true
             }
             R.id.menu_reset -> {
-                // TODO
+                binding.mandelGLView.reset()
                 return true
             }
             R.id.menu_about -> {
