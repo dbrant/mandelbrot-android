@@ -16,7 +16,7 @@ object MandelbrotNative {
     }
 
     // Native methods
-    external fun createState(): Long
+    external fun createState(x: Double, y: Double, r: Double, iterations: Int): Long
     external fun destroyState(statePtr: Long)
     external fun setState(statePtr: Long, x: Double, y: Double, r: Double, iterations: Int)
     external fun setStateStr(statePtr: Long, x: String, y: String, r: String, iterations: Int)
@@ -27,14 +27,18 @@ object MandelbrotNative {
     external fun getCenterY(statePtr: Long): String?
     external fun getRadius(statePtr: Long): String?
 
+    const val ITERATIONS = 2000
+    const val INIT_X = -0.5
+    const val INIT_Y = 0.0
+    const val INIT_R = 2.0
 
     class MandelbrotState {
         private var nativePtr: Long
-        var iterations: Int = 1000
-        var cmapscale: Double = 20.0
+        var iterations = ITERATIONS
+        var cmapscale = 20.0
 
         init {
-            nativePtr = createState()
+            nativePtr = createState(INIT_X, INIT_Y, INIT_R, iterations)
         }
 
         fun destroy() {
@@ -75,9 +79,9 @@ object MandelbrotNative {
             get() = getRadius(nativePtr)!!
 
         fun reset() {
-            iterations = 1000
+            iterations = ITERATIONS
             cmapscale = 20.0
-            set(-0.5, 0.0, 2.0, iterations)
+            set(INIT_X, INIT_Y, INIT_R, iterations)
         }
 
         fun zoomOut(factor: Double) {

@@ -12,7 +12,6 @@
 
 #define CALC_WIDTH 1024
 #define CALC_HEIGHT 1024
-#define CALC_ITERATIONS 1000
 #define CALC_BAILOUT 400
 #define MPFR_DIGITS 1200
 
@@ -25,12 +24,12 @@ public:
 
     std::shared_ptr<std::vector<float>> orbitPtr = std::make_shared<std::vector<float>>(CALC_WIDTH * CALC_HEIGHT);
 
-    MandelbrotState() : iterations(CALC_ITERATIONS) {
+    MandelbrotState(double x, double y, double r, int iterations) {
         mpfr_init2(center_x, MPFR_DIGITS);
         mpfr_init2(center_y, MPFR_DIGITS);
         mpfr_init2(radius, MPFR_DIGITS);
 
-        reset();
+        set(x, y, r, iterations);
     }
 
     ~MandelbrotState() {
@@ -89,13 +88,6 @@ public:
 
     void zoomOut(double factor) {
         mpfr_mul_d(radius, radius, factor, MPFR_RNDN);
-    }
-
-    void reset() {
-        iterations = CALC_ITERATIONS;
-        mpfr_set_d(center_x, -0.5, MPFR_RNDN);
-        mpfr_set_d(center_y, 0.0, MPFR_RNDN);
-        mpfr_set_d(radius, 2.0, MPFR_RNDN);
     }
 
     mpfr_t* getCenterX() { return &center_x; }
@@ -368,8 +360,8 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
 extern "C" {
 
 JNIEXPORT jlong JNICALL
-Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_createState(JNIEnv *env, jobject clazz) {
-    return reinterpret_cast<jlong>(new MandelbrotState());
+Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_createState(JNIEnv *env, jobject clazz, jdouble x, jdouble y, jdouble r, jint iterations) {
+    return reinterpret_cast<jlong>(new MandelbrotState(x, y, r, iterations));
 }
 
 JNIEXPORT void JNICALL
