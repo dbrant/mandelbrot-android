@@ -29,7 +29,7 @@ void main() {
   int q = int(uState[2]) - 1;
   int cq = q;
   q = q + int(poly2[3]);
-  float S = pow(2., float(q));
+  float S = exp2(float(q));
   float dcx = delta[0];
   float dcy = delta[1];
   float x;
@@ -52,9 +52,9 @@ void main() {
     j += 1;
     k += 1;
     float os = get_orbit_scale(k - 1);
-    dcx = delta[0] * pow(2., float(-q + cq - int(os)));
-    dcy = delta[1] * pow(2., float(-q + cq - int(os)));
-    float unS = pow(2., float(q) -get_orbit_scale(k - 1));
+    dcx = delta[0] * exp2(float(-q + cq - int(os)));
+    dcy = delta[1] * exp2(float(-q + cq - int(os)));
+    float unS = exp2(float(q) -get_orbit_scale(k - 1));
 
     if (isinf(unS)) {
       unS = 0.;
@@ -65,12 +65,12 @@ void main() {
     dx = tx;
 
     q = q + int(os);
-    S = pow(2., float(q));
+    S = exp2(float(q));
 
     x = get_orbit_x(k);
     y = get_orbit_y(k);
-    float fx = x * pow(2., get_orbit_scale(k)) + S * dx;
-    float fy = y * pow(2., get_orbit_scale(k))+ S * dy;
+    float fx = x * exp2(get_orbit_scale(k)) + S * dx;
+    float fy = y * exp2(get_orbit_scale(k))+ S * dy;
     if (fx * fx + fy * fy > 4.){
       break;
     }
@@ -79,18 +79,18 @@ void main() {
       dx = dx / 2.;
       dy = dy / 2.;
       q = q + 1;
-      S = pow(2., float(q));
-      dcx = delta[0] * pow(2., float(-q + cq));
-      dcy = delta[1] * pow(2., float(-q + cq));
+      S = exp2(float(q));
+      dcx = delta[0] * exp2(float(-q + cq));
+      dcy = delta[1] * exp2(float(-q + cq));
     }
 
     if (fx * fx + fy * fy < S * S * dx * dx + S * S * dy * dy || (x == -1. && y == -1.)) {
       dx  = fx;
       dy = fy;
       q = 0;
-      S = pow(2., float(q));
-      dcx = delta[0] * pow(2., float(-q + cq));
-      dcy = delta[1] * pow(2., float(-q + cq));
+      S = exp2(float(q));
+      dcx = delta[0] * exp2(float(-q + cq));
+      dcy = delta[1] * exp2(float(-q + cq));
       k = 0;
       x = get_orbit_x(0);
       y = get_orbit_y(0);
