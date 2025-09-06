@@ -42,6 +42,8 @@ void main() {
   float dx = poly1[0]  * dcx - poly1[1] *  dcy + poly1[2] * sqrx - poly1[3] * sqry;
   float dy = poly1[0] *  dcy + poly1[1] *  dcx + poly1[2] * sqry + poly1[3] * sqrx;
 
+  float f1, tx, fx, fy, fx2, fy2, dx2, dy2, S2, scaleExp2;
+
   int k = int(poly2[2]);
 
   int j = k;
@@ -52,15 +54,17 @@ void main() {
     j += 1;
     k += 1;
     float os = get_orbit_scale(k - 1);
-    dcx = delta[0] * exp2(float(-q + cq - int(os)));
-    dcy = delta[1] * exp2(float(-q + cq - int(os)));
+
+    f1 = exp2(float(-q + cq - int(os)));
+    dcx = delta[0] * f1;
+    dcy = delta[1] * f1;
     float unS = exp2(float(q) -get_orbit_scale(k - 1));
 
     if (isinf(unS)) {
       unS = 0.;
     }
 
-    float tx = 2. * x * dx - 2. * y * dy + unS  * dx * dx - unS * dy * dy + dcx;
+    tx = 2. * x * dx - 2. * y * dy + unS  * dx * dx - unS * dy * dy + dcx;
     dy = 2. * x * dy + 2. * y * dx + unS * 2. * dx * dy +  dcy;
     dx = tx;
 
@@ -69,28 +73,36 @@ void main() {
 
     x = get_orbit_x(k);
     y = get_orbit_y(k);
-    float fx = x * exp2(get_orbit_scale(k)) + S * dx;
-    float fy = y * exp2(get_orbit_scale(k))+ S * dy;
-    if (fx * fx + fy * fy > 4.){
+    scaleExp2 = exp2(get_orbit_scale(k));
+    fx = x * scaleExp2 + S * dx;
+    fy = y * scaleExp2 + S * dy;
+    fx2 = fx * fx;
+    fy2 = fy * fy;
+    dx2 = dx * dx;
+    dy2 = dy * dy;
+    S2 = S * S;
+
+    if (fx2 + fy2 > 4.){
       break;
     }
 
-    if (dx * dx + dy * dy > 1000000.) {
+    if (dx2 + dy2 > 1000000.) {
       dx = dx / 2.;
       dy = dy / 2.;
       q = q + 1;
       S = exp2(float(q));
-      dcx = delta[0] * exp2(float(-q + cq));
-      dcy = delta[1] * exp2(float(-q + cq));
+      f1 = exp2(float(-q + cq));
+      dcx = delta[0] * f1;
+      dcy = delta[1] * f1;
     }
 
-    if (fx * fx + fy * fy < S * S * dx * dx + S * S * dy * dy || (x == -1. && y == -1.)) {
+    if (fx2 + fy2 < S2 * dx2 + S2 * dy2 || (x == -1. && y == -1.)) {
       dx  = fx;
       dy = fy;
       q = 0;
-      S = exp2(float(q));
-      dcx = delta[0] * exp2(float(-q + cq));
-      dcy = delta[1] * exp2(float(-q + cq));
+      S = 1.0;
+      dcx = delta[0];
+      dcy = delta[1];
       k = 0;
       x = get_orbit_x(0);
       y = get_orbit_y(0);
