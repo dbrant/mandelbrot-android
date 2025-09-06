@@ -6,21 +6,25 @@ uniform vec4 uState;
 uniform vec4 poly1;
 uniform vec4 poly2;
 uniform sampler2D sequence;
+
 float get_orbit_x(int i) {
   i = i * 3;
   int row = i / 1024;
   return texelFetch(sequence, ivec2( i % 1024, row), 0)[0];
 }
+
 float get_orbit_y(int i) {
   i = i * 3 + 1;
   int row = i / 1024;
   return texelFetch(sequence, ivec2( i % 1024, row), 0)[0];
 }
+
 float get_orbit_scale(int i) {
   i = i * 3 + 2;
   int row = i / 1024;
   return texelFetch(sequence, ivec2( i % 1024, row), 0)[0];
 }
+
 void main() {
   int q = int(uState[2]) - 1;
   int cq = q;
@@ -30,23 +34,16 @@ void main() {
   float dcy = delta[1];
   float x;
   float y;
-  // dx + dyi = (p0 + p1 i) * (dcx, dcy) + (p2 + p3i) * (dcx + dcy * i) * (dcx + dcy * i)
   float sqrx =  (dcx * dcx - dcy * dcy);
   float sqry =  (2. * dcx * dcy);
 
   float cux =  (dcx * sqrx - dcy * sqry);
   float cuy =  (dcx * sqry + dcy * sqrx);
-  float dx = poly1[0]  * dcx - poly1[1] *  dcy + poly1[2] * sqrx - poly1[3] * sqry ;// + poly2[0] * cux - poly2[1] * cuy;
-  float dy = poly1[0] *  dcy + poly1[1] *  dcx + poly1[2] * sqry + poly1[3] * sqrx ;//+ poly2[0] * cuy + poly2[1] * cux;
+  float dx = poly1[0]  * dcx - poly1[1] *  dcy + poly1[2] * sqrx - poly1[3] * sqry;
+  float dy = poly1[0] *  dcy + poly1[1] *  dcx + poly1[2] * sqry + poly1[3] * sqrx;
 
   int k = int(poly2[2]);
 
-  if (false) {
-      q = cq;
-      dx = 0.;
-      dy = 0.;
-      k = 0;
-  }
   int j = k;
   x = get_orbit_x(k);
   y = get_orbit_y(k);
@@ -60,8 +57,8 @@ void main() {
     float unS = pow(2., float(q) -get_orbit_scale(k - 1));
 
     if (isinf(unS)) {
-    unS = 0.;
-      }
+      unS = 0.;
+    }
 
     float tx = 2. * x * dx - 2. * y * dy + unS  * dx * dx - unS * dy * dy + dcx;
     dy = 2. * x * dy + 2. * y * dx + unS * 2. * dx * dy +  dcy;
@@ -78,8 +75,7 @@ void main() {
       break;
     }
 
-
-    if ( true && dx * dx + dy * dy > 1000000.) {
+    if (dx * dx + dy * dy > 1000000.) {
       dx = dx / 2.;
       dy = dy / 2.;
       q = q + 1;
@@ -87,16 +83,8 @@ void main() {
       dcx = delta[0] * pow(2., float(-q + cq));
       dcy = delta[1] * pow(2., float(-q + cq));
     }
-    if ( false && dx * dx + dy * dy < .25) {
-      dx = dx * 2.;
-      dy = dy * 2.;
-      q = q - 1;
-      S = pow(2., float(q));
-      dcx = delta[0] * pow(2., float(-q + cq));
-      dcy = delta[1] * pow(2., float(-q + cq));
-    }
 
-    if (true  && fx * fx + fy * fy < S * S * dx * dx + S * S * dy * dy || (x == -1. && y == -1.)) {
+    if (fx * fx + fy * fy < S * S * dx * dx + S * S * dy * dy || (x == -1. && y == -1.)) {
       dx  = fx;
       dy = fy;
       q = 0;
