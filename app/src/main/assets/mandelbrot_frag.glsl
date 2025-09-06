@@ -9,20 +9,17 @@ uniform sampler2D sequence;
 
 float get_orbit_x(int i) {
   i = i * 3;
-  int row = i / 1024;
-  return texelFetch(sequence, ivec2( i % 1024, row), 0)[0];
+  return texelFetch(sequence, ivec2(i % 1024, i / 1024), 0)[0];
 }
 
 float get_orbit_y(int i) {
   i = i * 3 + 1;
-  int row = i / 1024;
-  return texelFetch(sequence, ivec2( i % 1024, row), 0)[0];
+  return texelFetch(sequence, ivec2(i % 1024, i / 1024), 0)[0];
 }
 
 float get_orbit_scale(int i) {
   i = i * 3 + 2;
-  int row = i / 1024;
-  return texelFetch(sequence, ivec2( i % 1024, row), 0)[0];
+  return texelFetch(sequence, ivec2(i % 1024, i / 1024), 0)[0];
 }
 
 void main() {
@@ -34,13 +31,11 @@ void main() {
   float dcy = delta[1];
   float x;
   float y;
-  float sqrx =  (dcx * dcx - dcy * dcy);
-  float sqry =  (2. * dcx * dcy);
+  float sqrx = (dcx * dcx - dcy * dcy);
+  float sqry = (2. * dcx * dcy);
 
-  float cux =  (dcx * sqrx - dcy * sqry);
-  float cuy =  (dcx * sqry + dcy * sqrx);
-  float dx = poly1[0]  * dcx - poly1[1] *  dcy + poly1[2] * sqrx - poly1[3] * sqry;
-  float dy = poly1[0] *  dcy + poly1[1] *  dcx + poly1[2] * sqry + poly1[3] * sqrx;
+  float dx = poly1[0] * dcx - poly1[1] * dcy + poly1[2] * sqrx - poly1[3] * sqry;
+  float dy = poly1[0] * dcy + poly1[1] * dcx + poly1[2] * sqry + poly1[3] * sqrx;
 
   float f1, tx, fx, fy, fx2, fy2, dx2, dy2, S2, scaleExp2;
   float unsDy, twodx, twody;
