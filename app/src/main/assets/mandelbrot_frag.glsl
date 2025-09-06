@@ -43,6 +43,7 @@ void main() {
   float dy = poly1[0] *  dcy + poly1[1] *  dcx + poly1[2] * sqry + poly1[3] * sqrx;
 
   float f1, tx, fx, fy, fx2, fy2, dx2, dy2, S2, scaleExp2;
+  float unsDy, twodx, twody;
 
   int k = int(poly2[2]);
 
@@ -58,14 +59,17 @@ void main() {
     f1 = exp2(float(-q + cq - int(os)));
     dcx = delta[0] * f1;
     dcy = delta[1] * f1;
-    float unS = exp2(float(q) -get_orbit_scale(k - 1));
+    float unS = exp2(float(q) - os);
 
     if (isinf(unS)) {
       unS = 0.;
     }
 
-    tx = 2. * x * dx - 2. * y * dy + unS  * dx * dx - unS * dy * dy + dcx;
-    dy = 2. * x * dy + 2. * y * dx + unS * 2. * dx * dy +  dcy;
+    twodx = 2. * dx;
+    twody = 2. * dy;
+    unsDy = unS * dy;
+    tx = twodx * x - twody * y + unS * dx * dx - unsDy * dy + dcx;
+    dy = twody * x + twodx * y + unsDy * twodx + dcy;
     dx = tx;
 
     q = q + int(os);
