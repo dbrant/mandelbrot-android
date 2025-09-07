@@ -31,14 +31,14 @@ void main() {
   float dcy = delta[1];
   float x;
   float y;
-  float sqrx = (dcx * dcx - dcy * dcy);
-  float sqry = (2. * dcx * dcy);
+  float dcx2mdcy2 = (dcx * dcx - dcy * dcy);
+  float dcxdcy2 = (2. * dcx * dcy);
 
-  float dx = poly1[0] * dcx - poly1[1] * dcy + poly1[2] * sqrx - poly1[3] * sqry;
-  float dy = poly1[0] * dcy + poly1[1] * dcx + poly1[2] * sqry + poly1[3] * sqrx;
+  float dx = poly1[0] * dcx - poly1[1] * dcy + poly1[2] * dcx2mdcy2 - poly1[3] * dcxdcy2;
+  float dy = poly1[0] * dcy + poly1[1] * dcx + poly1[2] * dcxdcy2 + poly1[3] * dcx2mdcy2;
 
   float f1, tx, fx, fy, fx2, fy2, dx2, dy2, S2, scaleExp2;
-  float unsDy, twodx, twody;
+  float os, unS, unsDy, twodx, twody;
 
   int k = int(poly2[2]);
 
@@ -47,18 +47,15 @@ void main() {
   y = get_orbit_y(k);
 
   for (int i = k; float(i) < uState[3]; i++){
-    j += 1;
-    k += 1;
-    float os = get_orbit_scale(k - 1);
+    j++;
+    k++;
+    os = get_orbit_scale(k - 1);
 
     f1 = exp2(float(-q + cq - int(os)));
     dcx = delta[0] * f1;
     dcy = delta[1] * f1;
-    float unS = exp2(float(q) - os);
-
-    if (isinf(unS)) {
-      unS = 0.;
-    }
+    unS = exp2(float(q) - os);
+    unS = isinf(unS) ? 0. : unS;
 
     twodx = 2. * dx;
     twody = 2. * dy;
@@ -67,7 +64,7 @@ void main() {
     dy = twody * x + twodx * y + unsDy * twodx + dcy;
     dx = tx;
 
-    q = q + int(os);
+    q += int(os);
     S = exp2(float(q));
 
     x = get_orbit_x(k);
@@ -88,7 +85,7 @@ void main() {
     if (dx2 + dy2 > 1000000.) {
       dx = dx / 2.;
       dy = dy / 2.;
-      q = q + 1;
+      q++;
       S = exp2(float(q));
       f1 = exp2(float(-q + cq));
       dcx = delta[0] * f1;
