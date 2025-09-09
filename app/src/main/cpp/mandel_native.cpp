@@ -376,6 +376,11 @@ Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_setState(JNIEnv *env, j
 }
 
 JNIEXPORT void JNICALL
+Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_setIterations(JNIEnv *env, jobject clazz, jlong statePtr, jint iterations) {
+    reinterpret_cast<MandelbrotState*>(statePtr)->iterations = iterations;
+}
+
+JNIEXPORT void JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_zoomIn(JNIEnv *env, jobject clazz, jlong statePtr, jdouble dx, jdouble dy, jdouble factor) {
     reinterpret_cast<MandelbrotState*>(statePtr)->zoomIn(dx, dy, factor);
 }

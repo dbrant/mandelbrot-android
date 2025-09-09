@@ -23,6 +23,7 @@ object MandelbrotNative {
     external fun zoomIn(statePtr: Long, dx: Double, dy: Double, factor: Double)
     external fun zoomOut(statePtr: Long, factor: Double)
     external fun generateOrbit(statePtr: Long): OrbitResult?
+    external fun setIterations(statePtr: Long, iterations: Int)
     external fun getCenterX(statePtr: Long): String?
     external fun getCenterY(statePtr: Long): String?
     external fun getRadius(statePtr: Long): String?
@@ -34,7 +35,13 @@ object MandelbrotNative {
 
     class MandelbrotState {
         private var nativePtr: Long
+
         var iterations = ITERATIONS
+            set(value) {
+                field = value
+                setIterations(nativePtr, iterations)
+            }
+
         var cmapscale = 20.0
 
         init {

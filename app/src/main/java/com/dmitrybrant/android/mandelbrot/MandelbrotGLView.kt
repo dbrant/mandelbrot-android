@@ -6,6 +6,10 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 
 class MandelGLView(context: Context, attrs: AttributeSet? = null) : GLSurfaceView(context, attrs) {
+    interface Callback {
+        fun onUpdateState(centerX: String, centerY: String, radius: String, iterations: Int, colorScale: Int)
+    }
+
     private val renderer: MandelbrotRenderer
 
     init {
@@ -38,13 +42,13 @@ class MandelGLView(context: Context, attrs: AttributeSet? = null) : GLSurfaceVie
         return true
     }
 
-    fun setIterations(it: Int) {
-
+    fun setIterations(iterations: Int) {
+        renderer.setIterations(iterations)
         requestRender()
     }
 
-    fun setCmapScale(s: Float) {
-
+    fun setCmapScale(scale: Double) {
+        renderer.setCmapScale(scale)
         requestRender()
     }
 }

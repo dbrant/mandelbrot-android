@@ -18,6 +18,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
 import androidx.documentfile.provider.DocumentFile
@@ -96,7 +97,7 @@ class MandelbrotActivity : AppCompatActivity() {
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.menu_main, menu)
+        menuInflater.inflate(R.menu.menu_gmp, menu)
         return true
     }
 
@@ -111,19 +112,11 @@ class MandelbrotActivity : AppCompatActivity() {
                 return true
             }
             R.id.menu_settings -> {
-                // TODO
-                return true
-            }
-            R.id.menu_julia_mode -> {
-                // TODO
+                binding.settingsContainer.isVisible = true
                 return true
             }
             R.id.menu_save_image -> {
                 checkWritePermissionThenSaveImage()
-                return true
-            }
-            R.id.menu_color_scheme -> {
-                // TODO
                 return true
             }
             R.id.menu_reset -> {
