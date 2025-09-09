@@ -1,117 +1,78 @@
 package com.dmitrybrant.android.mandelbrot.simple
 
 import android.graphics.Bitmap
-import kotlin.math.pow
+import android.util.Log
 
-data class FractalParams(
-    var power: Int = 2,
-    var numIterations: Int = 100,
-    var xmin: Double = -2.0,
-    var xmax: Double = 1.0,
-    var ymin: Double = -1.5,
-    var ymax: Double = 1.5,
-    var viewWidth: Int = 0,
-    var viewHeight: Int = 0,
-    var isJulia: Boolean = false,
-    var juliaX: Double = 0.0,
-    var juliaY: Double = 0.0,
-    var colorPalette: IntArray = intArrayOf(),
-    var numPaletteColors: Int = 0,
-    var pixelBuffer: IntArray? = null,
-    var x0array: DoubleArray? = null,
+class MandelbrotCalculator {
+    private val MAX_PALETTE_COLORS = 512
+
+    var power: Int = 2
+    var numIterations: Int = 100
+    var xmin: Double = -2.0
+    var xmax: Double = 1.0
+    var ymin: Double = -1.5
+    var ymax: Double = 1.5
+    var viewWidth: Int = 0
+    var viewHeight: Int = 0
+    var isJulia: Boolean = false
+    var juliaX: Double = 0.0
+    var juliaY: Double = 0.0
+    var colorPalette: IntArray = intArrayOf()
+    var numPaletteColors: Int = 0
+    lateinit var pixelBuffer: IntArray
+    var x0array = DoubleArray(0)
     @Volatile var terminateJob: Boolean = false
-)
-
-object MandelbrotCalculator {
-    private const val MAX_PALETTE_COLORS = 512
-    private val params = Array(2) { FractalParams() }
 
     fun setParameters(
-        paramIndex: Int,
         power: Int,
         numIterations: Int,
         xMin: Double,
         xMax: Double,
         yMin: Double,
         yMax: Double,
-        isJulia: Int,
+        isJulia: Boolean,
         juliaX: Double,
         juliaY: Double,
         viewWidth: Int,
         viewHeight: Int
     ) {
-        params[paramIndex].apply {
-            this.power = power
-            this.numIterations = numIterations
-            this.xmin = xMin
-            this.xmax = xMax
-            this.ymin = yMin
-            this.ymax = yMax
-            this.viewWidth = viewWidth
-            this.viewHeight = viewHeight
-            this.isJulia = isJulia != 0
-            this.juliaX = juliaX
-            this.juliaY = juliaY
-            this.x0array = DoubleArray(viewWidth * 2)
-            this.terminateJob = false
-        }
+        this.power = power
+        this.numIterations = numIterations
+        this.xmin = xMin
+        this.xmax = xMax
+        this.ymin = yMin
+        this.ymax = yMax
+        this.viewWidth = viewWidth
+        this.viewHeight = viewHeight
+        this.isJulia = isJulia
+        this.juliaX = juliaX
+        this.juliaY = juliaY
+        this.x0array = DoubleArray(viewWidth * 2)
+        this.terminateJob = false
     }
 
-    fun releaseParameters(paramIndex: Int) {
-        params[paramIndex].x0array = null
-    }
-
-    fun setBitmap(paramIndex: Int, bmp: Bitmap?) {
+    fun setBitmap(bmp: Bitmap?) {
         if (bmp == null) return
-        
         val bufferSize = (bmp.width + 32) * (bmp.height + 32)
-        params[paramIndex].pixelBuffer = IntArray(bufferSize)
+        pixelBuffer = IntArray(bufferSize)
     }
 
-    fun updateBitmap(paramIndex: Int, bmp: Bitmap?) {
+    fun updateBitmap(bmp: Bitmap?) {
         if (bmp == null) return
-        
-        val pixelBuffer = params[paramIndex].pixelBuffer ?: return
-        val pixels = IntArray(bmp.width * bmp.height)
-        
-        // Copy from our buffer to the array
-        System.arraycopy(pixelBuffer, 0, pixels, 0, bmp.width * bmp.height)
-        
-        // Set pixels to bitmap
-        bmp.setPixels(pixels, 0, bmp.width, 0, 0, bmp.width, bmp.height)
+        bmp.setPixels(pixelBuffer, 0, bmp.width, 0, 0, bmp.width, bmp.height)
     }
 
-    fun releaseBitmap(paramIndex: Int) {
-        params[paramIndex].pixelBuffer = null
-    }
-
-    fun setColorPalette(paramIndex: Int, colors: IntArray?, numColors: Int) {
+    fun setColorPalette(colors: IntArray?, numColors: Int) {
         if (colors == null) return
-        
-        params[paramIndex].apply {
-            numPaletteColors = numColors
-            colorPalette = colors.copyOf(minOf(numColors, MAX_PALETTE_COLORS))
-        }
+        numPaletteColors = numColors
+        colorPalette = colors.copyOf(minOf(numColors, MAX_PALETTE_COLORS))
     }
 
-    fun signalTerminate(paramIndex: Int) {
-        params[paramIndex].terminateJob = true
+    fun signalTerminate() {
+        terminateJob = true
     }
 
     fun drawFractal(
-        paramIndex: Int,
-        startX: Int,
-        startY: Int,
-        startWidth: Int,
-        startHeight: Int,
-        level: Int,
-        doAll: Int
-    ) {
-        drawPixels(paramIndex, startX, startY, startWidth, startHeight, level, doAll != 0)
-    }
-
-    private fun drawPixels(
-        paramIndex: Int,
         startX: Int,
         startY: Int,
         startWidth: Int,
@@ -120,17 +81,13 @@ object MandelbrotCalculator {
         doAll: Boolean
     ) {
         if (level < 1) return
-        
-        val param = params[paramIndex]
-        val pixelBuffer = param.pixelBuffer ?: return
-        val x0array = param.x0array ?: return
-        
+
         val maxY = startY + startHeight
         val maxX = startX + startWidth
-        val xscale = (param.xmax - param.xmin) / param.viewWidth
-        val yscale = (param.ymax - param.ymin) / param.viewHeight
-        val numIterations = param.numIterations
-        val numPaletteColors = param.numPaletteColors
+        val xscale = (xmax - xmin) / viewWidth
+        val yscale = (ymax - ymin) / viewHeight
+        val numIterations = numIterations
+        val numPaletteColors = numPaletteColors
         
         val iterScale = if (numIterations < numPaletteColors) {
             numPaletteColors / numIterations
@@ -138,16 +95,18 @@ object MandelbrotCalculator {
             1
         }
 
+        Log.d("MandelbrotCalculator", ">>> drawing at level $level")
+
         // Pre-calculate x values
         for (px in startX until maxX) {
-            x0array[px] = param.xmin + px * xscale
+            x0array[px] = xmin + px * xscale
         }
 
         var yindex = 0
         var py = startY
-        while (py < maxY && !param.terminateJob) {
-            val y0 = param.ymin + py * yscale
-            val yptr = py * param.viewWidth
+        while (py < maxY && !terminateJob) {
+            val y0 = ymin + py * yscale
+            val yptr = py * viewWidth
             
             var xindex = 0
             var px = startX
@@ -160,17 +119,17 @@ object MandelbrotCalculator {
                     }
                 }
 
-                val iteration = when (param.power) {
-                    2 -> calculateIterations2(param, x0array[px], y0, numIterations)
-                    3 -> calculateIterations3(param, x0array[px], y0, numIterations)
-                    4 -> calculateIterations4(param, x0array[px], y0, numIterations)
-                    else -> calculateIterations2(param, x0array[px], y0, numIterations)
+                val iteration = when (power) {
+                    2 -> calculateIterations2(x0array[px], y0, numIterations)
+                    3 -> calculateIterations3(x0array[px], y0, numIterations)
+                    4 -> calculateIterations4(x0array[px], y0, numIterations)
+                    else -> calculateIterations2(x0array[px], y0, numIterations)
                 }
 
                 val color = if (iteration >= numIterations) {
                     0
                 } else {
-                    param.colorPalette[(iteration * iterScale) % numPaletteColors]
+                    colorPalette[(iteration * iterScale) % numPaletteColors]
                 }
 
                 // Fill the level x level block
@@ -181,7 +140,7 @@ object MandelbrotCalculator {
                         for (ix in px until maxIx) {
                             pixelBuffer[yptr2 + ix] = color
                         }
-                        yptr2 += param.viewWidth
+                        yptr2 += viewWidth
                     }
                 } else {
                     pixelBuffer[yptr + px] = color
@@ -196,12 +155,11 @@ object MandelbrotCalculator {
     }
 
     private fun calculateIterations2(
-        param: FractalParams,
         x0Val: Double,
         y0Val: Double,
         maxIterations: Int
     ): Int {
-        if (param.isJulia) {
+        if (isJulia) {
             var x = x0Val
             var y = y0Val
             var iteration = 0
@@ -212,8 +170,8 @@ object MandelbrotCalculator {
                 if (x2 + y2 > 4.0) {
                     break
                 }
-                y = 2 * x * y + param.juliaY
-                x = x2 - y2 + param.juliaX
+                y = 2 * x * y + juliaY
+                x = x2 - y2 + juliaX
                 iteration++
             }
             return iteration
@@ -236,12 +194,11 @@ object MandelbrotCalculator {
     }
 
     private fun calculateIterations3(
-        param: FractalParams,
         x0Val: Double,
         y0Val: Double,
         maxIterations: Int
     ): Int {
-        if (param.isJulia) {
+        if (isJulia) {
             var x = x0Val
             var y = y0Val
             var iteration = 0
@@ -254,8 +211,8 @@ object MandelbrotCalculator {
                 if (x2 + y2 > 4.0) {
                     break
                 }
-                y = (3 * x2 * y) - y3 + param.juliaY
-                x = x3 - (3 * y2 * x) + param.juliaX
+                y = (3 * x2 * y) - y3 + juliaY
+                x = x3 - (3 * y2 * x) + juliaX
                 iteration++
             }
             return iteration
@@ -282,12 +239,11 @@ object MandelbrotCalculator {
     }
 
     private fun calculateIterations4(
-        param: FractalParams,
         x0Val: Double,
         y0Val: Double,
         maxIterations: Int
     ): Int {
-        if (param.isJulia) {
+        if (isJulia) {
             var x = x0Val
             var y = y0Val
             var iteration = 0
@@ -302,8 +258,8 @@ object MandelbrotCalculator {
                 if (x2 + y2 > 4.0) {
                     break
                 }
-                y = (4 * x3 * y) - (4 * y3 * x) + param.juliaY
-                x = x4 + y4 - (6 * x2 * y2) + param.juliaX
+                y = (4 * x3 * y) - (4 * y3 * x) + juliaY
+                x = x4 + y4 - (6 * x2 * y2) + juliaX
                 iteration++
             }
             return iteration

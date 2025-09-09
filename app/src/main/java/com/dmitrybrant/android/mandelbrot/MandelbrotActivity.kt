@@ -23,13 +23,13 @@ import androidx.core.view.updatePadding
 import androidx.documentfile.provider.DocumentFile
 import com.dmitrybrant.android.mandelbrot.simple.ColorScheme.initColorSchemes
 import com.dmitrybrant.android.mandelbrot.GradientUtil.getCubicGradient
-import com.dmitrybrant.android.mandelbrot.databinding.MainBinding
+import com.dmitrybrant.android.mandelbrot.databinding.MandelGmpBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.text.SimpleDateFormat
 import java.util.*
 
 class MandelbrotActivity : AppCompatActivity() {
-    private lateinit var binding: MainBinding
+    private lateinit var binding: MandelGmpBinding
     private val viewModel: MandelbrotActivityViewModel by viewModels()
 
     private val openDocumentLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -52,7 +52,7 @@ class MandelbrotActivity : AppCompatActivity() {
 
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = MainBinding.inflate(layoutInflater)
+        binding = MandelGmpBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         initColorSchemes()

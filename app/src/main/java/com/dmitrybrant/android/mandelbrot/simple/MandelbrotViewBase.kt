@@ -11,6 +11,7 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.io.OutputStream
 import kotlin.math.sqrt
+import androidx.core.graphics.createBitmap
 
 abstract class MandelbrotViewBase(context: Context, attrs: AttributeSet? = null)
     : View(context, attrs) {
@@ -23,8 +24,9 @@ abstract class MandelbrotViewBase(context: Context, attrs: AttributeSet? = null)
         fun newCoordinates(xmin: Double, xmax: Double, ymin: Double, ymax: Double)
     }
 
+    private val renderer = MandelbrotCalculator()
+
     private var isJulia = false
-    private var paramIndex = 0
     private val currentThreads = mutableListOf<Thread>()
     @Volatile private var terminateThreads = false
     private val paint = Paint()
@@ -68,7 +70,6 @@ abstract class MandelbrotViewBase(context: Context, attrs: AttributeSet? = null)
             return
         }
         this.isJulia = isJulia
-        paramIndex = if (isJulia) 1 else 0
         displayDensity = resources.displayMetrics.density
         paint.style = Paint.Style.FILL
         paint.color = Color.WHITE
@@ -88,8 +89,8 @@ abstract class MandelbrotViewBase(context: Context, attrs: AttributeSet? = null)
             }
             terminateThreads()
             initMinMax()
-            viewportBitmap = Bitmap.createBitmap(screenWidth, screenHeight, Bitmap.Config.ARGB_8888)
-            MandelNative.setBitmap(paramIndex, viewportBitmap)
+            viewportBitmap = createBitmap(screenWidth, screenHeight)
+            renderer.setBitmap(viewportBitmap)
             viewportRect = Rect(0, 0, viewportBitmap.width - 1, viewportBitmap.height - 1)
             render()
             return
@@ -97,7 +98,7 @@ abstract class MandelbrotViewBase(context: Context, attrs: AttributeSet? = null)
         if (screenWidth == 0 || screenHeight == 0) {
             return
         }
-        MandelNative.updateBitmap(paramIndex, viewportBitmap)
+        renderer.updateBitmap(viewportBitmap)
         canvas.drawBitmap(viewportBitmap, viewportRect, viewportRect, paint)
         if (showCrosshairs) {
             canvas.drawLine(screenWidth / 2 - CROSSHAIR_WIDTH * displayDensity, screenHeight / 2.toFloat(),
@@ -190,19 +191,21 @@ abstract class MandelbrotViewBase(context: Context, attrs: AttributeSet? = null)
         xExtent = xmax - xmin
         xCenter = xmin + xExtent / 2.0
         yCenter = ymin + (ymax - ymin) / 2.0
-        MandelNative.setParameters(paramIndex, power, numIterations, xmin, xmax, ymin, ymax,
-                if (isJulia) 1 else 0, jx, jy, screenWidth, screenHeight)
-        var t = MandelThread(0, 0, screenWidth, screenHeight / 2, startCoarseness)
-        t.start()
-        currentThreads.add(t)
-        t = MandelThread(0, screenHeight / 2, screenWidth, screenHeight / 2, startCoarseness)
-        t.start()
-        currentThreads.add(t)
+        renderer.setParameters(power, numIterations, xmin, xmax, ymin, ymax,
+            isJulia, jx, jy, screenWidth, screenHeight)
+        var y = 0
+        val numThreads = 1
+        for (i in 0 until numThreads) {
+            val t = MandelThread(0, y, screenWidth, screenHeight / numThreads, startCoarseness)
+            t.start()
+            currentThreads.add(t)
+            y += screenHeight / numThreads
+        }
     }
 
     fun terminateThreads() {
         try {
-            MandelNative.signalTerminate(paramIndex)
+            renderer.signalTerminate()
             terminateThreads = true
             for (t in currentThreads) {
                 if (t.isAlive) {
@@ -235,7 +238,7 @@ abstract class MandelbrotViewBase(context: Context, attrs: AttributeSet? = null)
     }
 
     fun setColorScheme(colors: IntArray) {
-        MandelNative.setColorPalette(paramIndex, colors, colors.size)
+        renderer.setColorPalette(colors, colors.size)
     }
 
     fun setJuliaCoords(jx: Double, jy: Double) {
@@ -278,7 +281,7 @@ abstract class MandelbrotViewBase(context: Context, attrs: AttributeSet? = null)
         override fun run() {
             var curLevel = level
             while (true) {
-                MandelNative.drawFractal(paramIndex, startX, startY, startWidth, startHeight, curLevel, if (curLevel == level) 1 else 0)
+                renderer.drawFractal(startX, startY, startWidth, startHeight, curLevel, curLevel == level)
                 postInvalidate()
                 if (terminateThreads) {
                     break

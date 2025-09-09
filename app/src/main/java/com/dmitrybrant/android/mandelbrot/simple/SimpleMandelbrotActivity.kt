@@ -35,7 +35,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.sqrt
 
-class MandelbrotActivity : AppCompatActivity() {
+class SimpleMandelbrotActivity : AppCompatActivity() {
     private lateinit var binding: MandelSimpleBinding
     private val viewModel: MandelbrotActivityViewModel by viewModels()
 
