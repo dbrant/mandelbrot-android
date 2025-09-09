@@ -38,18 +38,18 @@ public:
         mpfr_clear(radius);
     }
 
-    void set(double x, double y, double r, int iterations) {
+    void set(double x, double y, double r, int iter) {
         mpfr_set_d(center_x, x, MPFR_RNDN);
         mpfr_set_d(center_y, y, MPFR_RNDN);
         mpfr_set_d(radius, r, MPFR_RNDN);
-        this->iterations = iterations;
+        this->iterations = iter;
     }
 
-    void set(const std::string& x_str, const std::string& y_str, const std::string& r_str, int iterations) {
+    void set(const std::string& x_str, const std::string& y_str, const std::string& r_str, int iter) {
         int result_x = mpfr_set_str(center_x, x_str.c_str(), 10, MPFR_RNDN);
         int result_y = mpfr_set_str(center_y, y_str.c_str(), 10, MPFR_RNDN);
         int result_r = mpfr_set_str(radius, r_str.c_str(), 10, MPFR_RNDN);
-        this->iterations = iterations;
+        this->iterations = iter;
         
         if (result_x != 0 || result_y != 0 || result_r != 0) {
             LOGI("Warning: Failed to parse some coordinate strings");
@@ -93,28 +93,39 @@ public:
     mpfr_t* getCenterX() { return &center_x; }
     mpfr_t* getCenterY() { return &center_y; }
     mpfr_t* getRadius() { return &radius; }
-
-    std::string getCenterXString() const {
-        char* str = mpfr_get_str(nullptr, nullptr, 10, 0, center_x, MPFR_RNDN);
-        std::string result(str);
-        mpfr_free_str(str);
-        return result;
-    }
-
-    std::string getCenterYString() const {
-        char* str = mpfr_get_str(nullptr, nullptr, 10, 0, center_y, MPFR_RNDN);
-        std::string result(str);
-        mpfr_free_str(str);
-        return result;
-    }
-
-    std::string getRadiusString() const {
-        char* str = mpfr_get_str(nullptr, nullptr, 10, 0, radius, MPFR_RNDN);
-        std::string result(str);
-        mpfr_free_str(str);
-        return result;
-    }
 };
+
+std::string mpfr_to_string(mpfr_t *x, int base = 10, size_t precision = 0) {
+    mpfr_exp_t exp;
+    char *mantissa = mpfr_get_str(nullptr, &exp, base, precision, *x, MPFR_RNDN);
+    if (!mantissa) return {};
+
+    std::string result;
+    bool is_negative = (mantissa[0] == '-');
+    std::string digits = is_negative ? mantissa + 1 : mantissa;
+
+    if (is_negative)
+        result.push_back('-');
+
+    if (exp <= 0) {
+        // number is < 1
+        result += "0.";
+        result.append(-exp, '0'); // leading zeros after decimal point
+        result += digits;
+    } else if ((size_t)exp >= digits.size()) {
+        // number is >= 1, no decimal point needed (just add trailing zeros if needed)
+        result += digits;
+        result.append(exp - digits.size(), '0');
+    } else {
+        // insert decimal point inside digits
+        result.append(digits.substr(0, exp));
+        result.push_back('.');
+        result.append(digits.substr(exp));
+    }
+
+    mpfr_free_str(mantissa);
+    return result;
+}
 
 // Helper functions for double-double arithmetic (mantissa, exponent pairs)
 struct DoubleDouble {
@@ -435,19 +446,22 @@ Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_generateOrbit(JNIEnv *e
 
 JNIEXPORT jstring JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getCenterX(JNIEnv *env, jobject clazz, jlong statePtr) {
-    std::string str = reinterpret_cast<MandelbrotState*>(statePtr)->getCenterXString();
+    MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
+    std::string str = mpfr_to_string(state->getCenterX());
     return env->NewStringUTF(str.c_str());
 }
 
 JNIEXPORT jstring JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getCenterY(JNIEnv *env, jobject clazz, jlong statePtr) {
-    std::string str = reinterpret_cast<MandelbrotState*>(statePtr)->getCenterYString();
+    MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
+    std::string str = mpfr_to_string(state->getCenterY());
     return env->NewStringUTF(str.c_str());
 }
 
 JNIEXPORT jstring JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getRadius(JNIEnv *env, jobject clazz, jlong statePtr) {
-    std::string str = reinterpret_cast<MandelbrotState*>(statePtr)->getRadiusString();
+    MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
+    std::string str = mpfr_to_string(state->getRadius());
     return env->NewStringUTF(str.c_str());
 }
 
