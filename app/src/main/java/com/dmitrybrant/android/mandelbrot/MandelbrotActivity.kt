@@ -21,7 +21,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
 import androidx.documentfile.provider.DocumentFile
-import com.dmitrybrant.android.mandelbrot.ColorScheme.initColorSchemes
+import com.dmitrybrant.android.mandelbrot.simple.ColorScheme.initColorSchemes
 import com.dmitrybrant.android.mandelbrot.GradientUtil.getCubicGradient
 import com.dmitrybrant.android.mandelbrot.databinding.MainBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder

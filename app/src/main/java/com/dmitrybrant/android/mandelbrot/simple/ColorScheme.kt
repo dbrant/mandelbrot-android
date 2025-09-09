@@ -1,4 +1,4 @@
-package com.dmitrybrant.android.mandelbrot
+package com.dmitrybrant.android.mandelbrot.simple
 
 import android.graphics.Color
 
