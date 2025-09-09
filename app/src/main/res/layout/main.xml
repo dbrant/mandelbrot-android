@@ -29,26 +29,30 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="Simple rendering"/>
+                android:textSize="18sp"
+                android:text="@string/button_render_simple"/>
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
-                android:text="Limited zoom (double precision), pan and zoom by swiping and pinching."/>
+                android:layout_marginTop="4dp"
+                android:text="@string/desc_render_simple"/>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/buttonStartExperimental"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:text="Experimental rendering"/>
+                android:layout_marginTop="32dp"
+                android:textSize="18sp"
+                android:text="@string/button_render_gmp"/>
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
-                android:text="Unlimited zoom (arbitrary precision using GMP), GPU accelerated, tap to zoom."/>
+                android:layout_marginTop="4dp"
+                android:text="@string/desc_render_gmp"/>
 
         </LinearLayout>
 

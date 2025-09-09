@@ -8,6 +8,12 @@
     <string name="save_image">Save image</string>
     <string name="reset">Reset</string>
     <string name="about">About…</string>
+
+    <string name="button_render_simple">Simple rendering</string>
+    <string name="button_render_gmp">Experimental rendering</string>
+    <string name="desc_render_simple">Limited zoom (double precision), pan and zoom by swiping and pinching, Julia mode.</string>
+    <string name="desc_render_gmp">Unlimited zoom (arbitrary precision using GMP), GPU accelerated, tap to zoom only, no panning, no Julia mode.</string>
+
     <string name="power">Power:</string>
     <string name="iterations">Iterations:</string>
     <string name="coordinate_display">Real: %1$f to %2$f\nImag: %3$f to %4$f</string>
