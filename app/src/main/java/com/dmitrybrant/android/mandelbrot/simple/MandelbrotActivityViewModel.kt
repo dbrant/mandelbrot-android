@@ -16,11 +16,11 @@ class MandelbrotActivityViewModel(app: Application) : AndroidViewModel(app) {
     var power = 0
 
     init {
-        xCenter = sharedPreferences.getString("xcenter", MandelbrotViewBase.DEFAULT_X_CENTER.toString())!!.toDouble()
-        yCenter = sharedPreferences.getString("ycenter", MandelbrotViewBase.DEFAULT_Y_CENTER.toString())!!.toDouble()
-        xExtent = sharedPreferences.getString("xextent", MandelbrotViewBase.DEFAULT_X_EXTENT.toString())!!.toDouble()
-        numIterations = sharedPreferences.getInt("iterations", MandelbrotViewBase.DEFAULT_ITERATIONS)
-        power = sharedPreferences.getInt("power", MandelbrotViewBase.DEFAULT_POWER)
+        xCenter = sharedPreferences.getString("xcenter", MandelbrotCalculator.DEFAULT_X_CENTER.toString())!!.toDouble()
+        yCenter = sharedPreferences.getString("ycenter", MandelbrotCalculator.DEFAULT_Y_CENTER.toString())!!.toDouble()
+        xExtent = sharedPreferences.getString("xextent", MandelbrotCalculator.DEFAULT_X_EXTENT.toString())!!.toDouble()
+        numIterations = sharedPreferences.getInt("iterations", MandelbrotCalculator.DEFAULT_ITERATIONS)
+        power = sharedPreferences.getInt("power", MandelbrotCalculator.DEFAULT_POWER)
         currentColorScheme = sharedPreferences.getInt("colorscheme", 0)
         juliaEnabled = sharedPreferences.getBoolean("juliaEnabled", false)
     }

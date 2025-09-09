@@ -24,7 +24,9 @@ abstract class MandelbrotViewBase(context: Context, attrs: AttributeSet? = null)
         fun newCoordinates(xmin: Double, xmax: Double, ymin: Double, ymax: Double)
     }
 
-    private val renderer = MandelbrotCalculator()
+    private val renderer = MandelbrotCalculator(
+
+    )
 
     private var isJulia = false
     private val currentThreads = mutableListOf<Thread>()
@@ -47,8 +49,8 @@ abstract class MandelbrotViewBase(context: Context, attrs: AttributeSet? = null)
     private var jx = 0.0
     private var jy = 0.0
 
-    var numIterations = DEFAULT_ITERATIONS
-        set(value) { field = value.coerceIn(MIN_ITERATIONS, MAX_ITERATIONS) }
+    var numIterations = MandelbrotCalculator.DEFAULT_ITERATIONS
+        set(value) { field = value.coerceIn(MandelbrotCalculator.MIN_ITERATIONS, MandelbrotCalculator.MAX_ITERATIONS) }
 
     var power = 2
         set(value) { field = value.coerceIn(2, 4) }
@@ -191,10 +193,12 @@ abstract class MandelbrotViewBase(context: Context, attrs: AttributeSet? = null)
         xExtent = xmax - xmin
         xCenter = xmin + xExtent / 2.0
         yCenter = ymin + (ymax - ymin) / 2.0
+
         renderer.setParameters(power, numIterations, xmin, xmax, ymin, ymax,
             isJulia, jx, jy, screenWidth, screenHeight)
+
         var y = 0
-        val numThreads = 1
+        val numThreads = 2
         for (i in 0 until numThreads) {
             val t = MandelThread(0, y, screenWidth, screenHeight / numThreads, startCoarseness)
             t.start()
@@ -224,20 +228,21 @@ abstract class MandelbrotViewBase(context: Context, attrs: AttributeSet? = null)
 
     fun reset() {
         if (isJulia) {
-            xCenter = DEFAULT_JULIA_X_CENTER
-            yCenter = DEFAULT_JULIA_Y_CENTER
-            xExtent = DEFAULT_JULIA_EXTENT
+            xCenter = MandelbrotCalculator.DEFAULT_JULIA_X_CENTER
+            yCenter = MandelbrotCalculator.DEFAULT_JULIA_Y_CENTER
+            xExtent = MandelbrotCalculator.DEFAULT_JULIA_EXTENT
         } else {
-            xCenter = DEFAULT_X_CENTER
-            yCenter = DEFAULT_Y_CENTER
-            xExtent = DEFAULT_X_EXTENT
+            xCenter = MandelbrotCalculator.DEFAULT_X_CENTER
+            yCenter = MandelbrotCalculator.DEFAULT_Y_CENTER
+            xExtent = MandelbrotCalculator.DEFAULT_X_EXTENT
         }
-        numIterations = DEFAULT_ITERATIONS
+        numIterations = MandelbrotCalculator.DEFAULT_ITERATIONS
         initMinMax()
         render()
     }
 
     fun setColorScheme(colors: IntArray) {
+        terminateThreads()
         renderer.setColorPalette(colors, colors.size)
     }
 
@@ -246,12 +251,10 @@ abstract class MandelbrotViewBase(context: Context, attrs: AttributeSet? = null)
         this.jy = jy
     }
 
-    @Throws(IOException::class)
     fun savePicture(fileName: String) {
         savePicture(FileOutputStream(fileName))
     }
 
-    @Throws(IOException::class)
     fun savePicture(stream: OutputStream) {
         viewportBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
         stream.flush()
@@ -296,16 +299,6 @@ abstract class MandelbrotViewBase(context: Context, attrs: AttributeSet? = null)
 
     companion object {
         private const val TAG = "MandelbrotViewBase"
-        const val DEFAULT_POWER = 2
-        const val DEFAULT_ITERATIONS = 128
-        const val MAX_ITERATIONS = 2048
-        const val MIN_ITERATIONS = 2
-        const val DEFAULT_X_CENTER = -0.5
-        const val DEFAULT_Y_CENTER = 0.0
-        const val DEFAULT_X_EXTENT = 3.0
-        const val DEFAULT_JULIA_X_CENTER = 0.0
-        const val DEFAULT_JULIA_Y_CENTER = 0.0
-        const val DEFAULT_JULIA_EXTENT = 3.0
         private const val TOUCH_NONE = 0
         private const val TOUCH_ROTATE = 1
         private const val TOUCH_ZOOM = 2

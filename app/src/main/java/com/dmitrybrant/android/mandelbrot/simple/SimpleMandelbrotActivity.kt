@@ -70,7 +70,7 @@ class SimpleMandelbrotActivity : AppCompatActivity() {
         supportActionBar?.title = ""
 
         binding.settingsContainer.visibility = View.GONE
-        binding.seekBarIterations.max = sqrt(MandelbrotViewBase.MAX_ITERATIONS.toDouble()).toInt() + 1
+        binding.seekBarIterations.max = sqrt(MandelbrotCalculator.MAX_ITERATIONS.toDouble()).toInt() + 1
         binding.seekBarIterations.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
                 if (!fromUser) {

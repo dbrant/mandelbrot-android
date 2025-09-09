@@ -4,24 +4,28 @@ import android.graphics.Bitmap
 import android.util.Log
 
 class MandelbrotCalculator {
-    private val MAX_PALETTE_COLORS = 512
 
-    var power: Int = 2
-    var numIterations: Int = 100
-    var xmin: Double = -2.0
-    var xmax: Double = 1.0
-    var ymin: Double = -1.5
-    var ymax: Double = 1.5
-    var viewWidth: Int = 0
-    var viewHeight: Int = 0
-    var isJulia: Boolean = false
-    var juliaX: Double = 0.0
-    var juliaY: Double = 0.0
-    var colorPalette: IntArray = intArrayOf()
-    var numPaletteColors: Int = 0
-    lateinit var pixelBuffer: IntArray
-    var x0array = DoubleArray(0)
-    @Volatile var terminateJob: Boolean = false
+    private var power: Int = DEFAULT_POWER
+    private var numIterations: Int = DEFAULT_ITERATIONS
+    private var xmin: Double = DEFAULT_X_CENTER - DEFAULT_X_EXTENT / 2.0
+    private var xmax: Double = DEFAULT_X_CENTER + DEFAULT_X_EXTENT / 2.0
+    private var ymin: Double = DEFAULT_Y_CENTER - DEFAULT_X_EXTENT / 2.0
+    private var ymax: Double = DEFAULT_Y_CENTER + DEFAULT_X_EXTENT / 2.0
+    private var viewWidth: Int = 0
+    private var viewHeight: Int = 0
+    private var isJulia: Boolean = false
+    private var juliaX: Double = DEFAULT_JULIA_X_CENTER
+    private var juliaY: Double = DEFAULT_JULIA_Y_CENTER
+
+
+    private var colorPalette: IntArray = intArrayOf()
+    private var numPaletteColors: Int = 0
+
+
+    private lateinit var pixelBuffer: IntArray
+    private var x0array = DoubleArray(0)
+
+    private var terminateJob: Boolean = false
 
     fun setParameters(
         power: Int,
@@ -86,8 +90,6 @@ class MandelbrotCalculator {
         val maxX = startX + startWidth
         val xscale = (xmax - xmin) / viewWidth
         val yscale = (ymax - ymin) / viewHeight
-        val numIterations = numIterations
-        val numPaletteColors = numPaletteColors
         
         val iterScale = if (numIterations < numPaletteColors) {
             numPaletteColors / numIterations
@@ -287,5 +289,19 @@ class MandelbrotCalculator {
             }
             return iteration
         }
+    }
+
+    companion object {
+        private val MAX_PALETTE_COLORS = 512
+        const val DEFAULT_POWER = 2
+        const val DEFAULT_ITERATIONS = 128
+        const val MAX_ITERATIONS = 2048
+        const val MIN_ITERATIONS = 2
+        const val DEFAULT_X_CENTER = -0.5
+        const val DEFAULT_Y_CENTER = 0.0
+        const val DEFAULT_X_EXTENT = 3.0
+        const val DEFAULT_JULIA_X_CENTER = 0.0
+        const val DEFAULT_JULIA_Y_CENTER = 0.0
+        const val DEFAULT_JULIA_EXTENT = 3.0
     }
 }
