@@ -243,7 +243,7 @@ abstract class MandelbrotViewBase(context: Context, attrs: AttributeSet? = null)
 
     fun setColorScheme(colors: IntArray) {
         terminateThreads()
-        renderer.setColorPalette(colors, colors.size)
+        renderer.setColorPalette(colors)
     }
 
     fun setJuliaCoords(jx: Double, jy: Double) {

@@ -1,7 +1,6 @@
 package com.dmitrybrant.android.mandelbrot.simple
 
 import android.graphics.Bitmap
-import android.util.Log
 
 class MandelbrotCalculator {
 
@@ -66,10 +65,10 @@ class MandelbrotCalculator {
         bmp.setPixels(pixelBuffer, 0, bmp.width, 0, 0, bmp.width, bmp.height)
     }
 
-    fun setColorPalette(colors: IntArray?, numColors: Int) {
+    fun setColorPalette(colors: IntArray?) {
         if (colors == null) return
-        numPaletteColors = numColors
-        colorPalette = colors.copyOf(minOf(numColors, MAX_PALETTE_COLORS))
+        numPaletteColors = colors.size
+        colorPalette = colors.copyOf()
     }
 
     fun signalTerminate() {
@@ -96,8 +95,6 @@ class MandelbrotCalculator {
         } else {
             1
         }
-
-        Log.d("MandelbrotCalculator", ">>> drawing at level $level")
 
         // Pre-calculate x values
         for (px in startX until maxX) {
@@ -169,7 +166,7 @@ class MandelbrotCalculator {
             while (iteration < maxIterations) {
                 val x2 = x * x
                 val y2 = y * y
-                if (x2 + y2 > 4.0) {
+                if (x2 + y2 > BAILOUT) {
                     break
                 }
                 y = 2 * x * y + juliaY
@@ -184,7 +181,7 @@ class MandelbrotCalculator {
             var y2 = 0.0
             var iteration = 0
             
-            while (x2 + y2 < 4.0 && iteration <= maxIterations) {
+            while (x2 + y2 < BAILOUT && iteration <= maxIterations) {
                 y = 2 * x * y + y0Val
                 x = x2 - y2 + x0Val
                 x2 = x * x
@@ -210,7 +207,7 @@ class MandelbrotCalculator {
                 val y2 = y * y
                 val x3 = x2 * x
                 val y3 = y2 * y
-                if (x2 + y2 > 4.0) {
+                if (x2 + y2 > BAILOUT) {
                     break
                 }
                 y = (3 * x2 * y) - y3 + juliaY
@@ -227,7 +224,7 @@ class MandelbrotCalculator {
             var y3 = 0.0
             var iteration = 0
             
-            while (x2 + y2 < 4.0 && iteration <= maxIterations) {
+            while (x2 + y2 < BAILOUT && iteration <= maxIterations) {
                 y = (3 * x2 * y) - y3 + y0Val
                 x = x3 - (3 * y2 * x) + x0Val
                 x2 = x * x
@@ -257,7 +254,7 @@ class MandelbrotCalculator {
                 val y3 = y2 * y
                 val x4 = x3 * x
                 val y4 = y3 * y
-                if (x2 + y2 > 4.0) {
+                if (x2 + y2 > BAILOUT) {
                     break
                 }
                 y = (4 * x3 * y) - (4 * y3 * x) + juliaY
@@ -276,7 +273,7 @@ class MandelbrotCalculator {
             var y4 = 0.0
             var iteration = 0
             
-            while (x2 + y2 < 4.0 && iteration <= maxIterations) {
+            while (x2 + y2 < BAILOUT && iteration <= maxIterations) {
                 y = (4 * x3 * y) - (4 * y3 * x) + y0Val
                 x = x4 + y4 - (6 * x2 * y2) + x0Val
                 x2 = x * x
@@ -292,7 +289,7 @@ class MandelbrotCalculator {
     }
 
     companion object {
-        private val MAX_PALETTE_COLORS = 512
+        private const val MAX_PALETTE_COLORS = 512
         const val DEFAULT_POWER = 2
         const val DEFAULT_ITERATIONS = 128
         const val MAX_ITERATIONS = 2048
@@ -303,5 +300,6 @@ class MandelbrotCalculator {
         const val DEFAULT_JULIA_X_CENTER = 0.0
         const val DEFAULT_JULIA_Y_CENTER = 0.0
         const val DEFAULT_JULIA_EXTENT = 3.0
+        const val BAILOUT = 4.0
     }
 }
