@@ -7,7 +7,7 @@ import androidx.lifecycle.AndroidViewModel
 class MandelbrotActivityViewModel(app: Application) : AndroidViewModel(app) {
     private val sharedPreferences = app.getSharedPreferences("MandelbrotActivityPrefs", 0)
 
-    var colorScale = 0
+    var colorScale = MandelbrotNative.INIT_COLOR_SCALE
     var xCenter = MandelbrotNative.INIT_X.toString()
     var yCenter = MandelbrotNative.INIT_Y.toString()
     var xExtent = MandelbrotNative.INIT_R.toString()
@@ -18,7 +18,7 @@ class MandelbrotActivityViewModel(app: Application) : AndroidViewModel(app) {
         yCenter = sharedPreferences.getString("gmp_ycenter", MandelbrotNative.INIT_X.toString())!!
         xExtent = sharedPreferences.getString("gmp_xextent", MandelbrotNative.INIT_R.toString())!!
         numIterations = sharedPreferences.getInt("gmp_iterations", MandelbrotNative.ITERATIONS)
-        colorScale = sharedPreferences.getInt("gmp_colorscale", 0)
+        colorScale = sharedPreferences.getFloat("gmp_colorscale", MandelbrotNative.INIT_COLOR_SCALE)
     }
 
     fun save() {
@@ -27,7 +27,7 @@ class MandelbrotActivityViewModel(app: Application) : AndroidViewModel(app) {
             putString("gmp_ycenter", yCenter)
             putString("gmp_xextent", xExtent)
             putInt("gmp_iterations", numIterations)
-            putInt("gmp_colorscale", colorScale)
+            putFloat("gmp_colorscale", colorScale)
         }
     }
 }

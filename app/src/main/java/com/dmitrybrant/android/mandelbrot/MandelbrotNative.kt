@@ -32,6 +32,7 @@ object MandelbrotNative {
     const val INIT_X = -0.5
     const val INIT_Y = 0.0
     const val INIT_R = 2.0
+    const val INIT_COLOR_SCALE = 20f
 
     class MandelbrotState {
         private var nativePtr: Long
@@ -41,8 +42,6 @@ object MandelbrotNative {
                 field = value
                 setIterations(nativePtr, iterations)
             }
-
-        var cmapscale = 20.0
 
         init {
             nativePtr = createState(INIT_X, INIT_Y, INIT_R, iterations)
@@ -87,7 +86,6 @@ object MandelbrotNative {
 
         fun reset() {
             iterations = ITERATIONS
-            cmapscale = 20.0
             set(INIT_X, INIT_Y, INIT_R, iterations)
         }
 

@@ -85,6 +85,19 @@ class MandelbrotActivity : AppCompatActivity() {
 
             WindowInsetsCompat.CONSUMED
         }
+
+        binding.mandelGLView.callback = object : MandelGLView.Callback {
+            override fun onUpdateState(centerX: String, centerY: String, radius: String, iterations: Int, colorScale: Float) {
+                viewModel.xCenter = centerX
+                viewModel.yCenter = centerY
+                viewModel.xExtent = radius
+                viewModel.numIterations = iterations
+                viewModel.colorScale = colorScale
+                updateInfo()
+            }
+        }
+        binding.mandelGLView.initState(viewModel.xCenter, viewModel.yCenter, viewModel.xExtent, viewModel.numIterations, viewModel.colorScale)
+        updateInfo()
     }
 
     override fun onStop() {
@@ -129,6 +142,10 @@ class MandelbrotActivity : AppCompatActivity() {
             }
         }
         return super.onOptionsItemSelected(item)
+    }
+
+    private fun updateInfo() {
+        binding.txtInfo.text = "Re: " + viewModel.xCenter + "\nIm: " + viewModel.yCenter + "\nRadius: " + viewModel.xExtent
     }
 
     private fun checkWritePermissionThenSaveImage() {

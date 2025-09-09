@@ -7,10 +7,11 @@ import android.view.MotionEvent
 
 class MandelGLView(context: Context, attrs: AttributeSet? = null) : GLSurfaceView(context, attrs) {
     interface Callback {
-        fun onUpdateState(centerX: String, centerY: String, radius: String, iterations: Int, colorScale: Int)
+        fun onUpdateState(centerX: String, centerY: String, radius: String, iterations: Int, colorScale: Float)
     }
 
     private val renderer: MandelbrotRenderer
+    var callback: Callback? = null
 
     init {
         setEGLContextClientVersion(3)
@@ -19,25 +20,39 @@ class MandelGLView(context: Context, attrs: AttributeSet? = null) : GLSurfaceVie
         renderMode = RENDERMODE_WHEN_DIRTY
     }
 
+    fun initState(centerX: String, centerY: String, radius: String, iterations: Int, colorScale: Float) {
+        renderer.mandelbrotState?.set(centerX, centerY, radius, iterations)
+        renderer.colorMapScale = colorScale
+    }
+
     override fun onDetachedFromWindow() {
         renderer.cleanup()
         super.onDetachedFromWindow()
     }
 
+    private fun doCallback() {
+        renderer.mandelbrotState?.let { state ->
+            callback?.onUpdateState(state.centerX, state.centerY, state.radius, state.iterations, renderer.colorMapScale)
+        }
+    }
+
     fun zoomOut(factor: Double) {
         renderer.zoomOut(factor)
         requestRender()
+        doCallback()
     }
 
     fun reset() {
         renderer.reset()
         requestRender()
+        doCallback()
     }
 
     override fun onTouchEvent(e: MotionEvent): Boolean {
         if (e.action == MotionEvent.ACTION_UP) {
             renderer.handleTouch(e.x, e.y, width, height)
             requestRender()
+            doCallback()
         }
         return true
     }
@@ -45,10 +60,12 @@ class MandelGLView(context: Context, attrs: AttributeSet? = null) : GLSurfaceVie
     fun setIterations(iterations: Int) {
         renderer.setIterations(iterations)
         requestRender()
+        doCallback()
     }
 
-    fun setCmapScale(scale: Double) {
-        renderer.setCmapScale(scale)
+    fun setCmapScale(scale: Float) {
+        renderer.colorMapScale = scale
         requestRender()
+        doCallback()
     }
 }

@@ -12,7 +12,13 @@ import javax.microedition.khronos.opengles.GL10
 
 class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
-    private var mandelbrotState: MandelbrotNative.MandelbrotState? = null
+    var mandelbrotState: MandelbrotNative.MandelbrotState? = null
+
+    var colorMapScale = MandelbrotNative.INIT_COLOR_SCALE
+        set(value) {
+            field = if (value > 0f) value else MandelbrotNative.INIT_COLOR_SCALE
+        }
+
     private var surfaceWidth = 0
     private var surfaceHeight = 0
 
@@ -74,12 +80,9 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
         mandelbrotState?.iterations = iterations
     }
 
-    fun setCmapScale(scale: Double) {
-        mandelbrotState?.cmapscale = scale
-    }
-
     fun reset() {
         mandelbrotState?.reset()
+        colorMapScale = MandelbrotNative.INIT_COLOR_SCALE
     }
 
     fun zoomOut(factor: Double) {
@@ -195,7 +198,7 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
         println("Radius exponent: ${orbitResult.radiusExp}")
 
         glUniform4f(
-            uState, 0.0f, mandelbrotState!!.cmapscale.toFloat(),
+            uState, 0.0f, colorMapScale,
             (1 + orbitResult.radiusExp).toFloat(), mandelbrotState!!.iterations.toFloat()
         )
 
