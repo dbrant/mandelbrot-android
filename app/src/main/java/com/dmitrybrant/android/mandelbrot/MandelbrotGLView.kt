@@ -4,6 +4,7 @@ import android.content.Context
 import android.opengl.GLSurfaceView
 import android.util.AttributeSet
 import android.view.MotionEvent
+import kotlin.math.abs
 
 class MandelGLView(context: Context, attrs: AttributeSet? = null) : GLSurfaceView(context, attrs) {
     interface Callback {
@@ -12,6 +13,10 @@ class MandelGLView(context: Context, attrs: AttributeSet? = null) : GLSurfaceVie
 
     private val renderer: MandelbrotRenderer
     var callback: Callback? = null
+
+    private var touchDownX = 0f
+    private var touchDownY = 0f
+    private var touchSlop = 16f * resources.displayMetrics.density
 
     init {
         setEGLContextClientVersion(3)
@@ -49,10 +54,15 @@ class MandelGLView(context: Context, attrs: AttributeSet? = null) : GLSurfaceVie
     }
 
     override fun onTouchEvent(e: MotionEvent): Boolean {
-        if (e.action == MotionEvent.ACTION_UP) {
-            renderer.handleTouch(e.x, e.y, width, height)
-            requestRender()
-            doCallback()
+        if (e.action == MotionEvent.ACTION_DOWN) {
+            touchDownX = e.x
+            touchDownY = e.y
+        } else if (e.action == MotionEvent.ACTION_UP) {
+            if (abs(e.x - touchDownX) < touchSlop && abs(e.y - touchDownY) < touchSlop) {
+                renderer.handleTouch(e.x, e.y, width, height)
+                requestRender()
+                doCallback()
+            }
         }
         return true
     }
