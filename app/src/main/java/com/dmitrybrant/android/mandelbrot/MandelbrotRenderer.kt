@@ -58,6 +58,8 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
     private lateinit var fullScreenTexCoordBuffer: FloatBuffer
     private var frameBufferTexture = -1
     private var frameBufferRef = -1
+    private var quadVBO = -1
+    private var texCoordVBO = -1
 
     private val vertexBufferData: FloatBuffer = ByteBuffer.allocateDirect(vertices.size * 4)
         .order(ByteOrder.nativeOrder())
@@ -152,8 +154,8 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
         frameBufferaTexCoordLoc = glGetAttribLocation(frameBufferBlitProgram, "aTexCoord")
         frameBufferuTextureLoc  = glGetUniformLocation(frameBufferBlitProgram, "uTexture")
 
-        // Setup fullscreen quad (two triangles)
-        val quadVertices = floatArrayOf(-1f, -1f, 1f, -1f, -1f,  1f, 1f,   1f)
+        // Setup fullscreen quad (two triangles) - triangle strip order
+        val quadVertices = floatArrayOf(-1f, -1f, 1f, -1f, -1f, 1f, 1f, 1f)
         val texCoords = floatArrayOf(0f, 0f, 1f, 0f, 0f, 1f, 1f, 1f)
         fullScreenQuadBuffer = ByteBuffer
             .allocateDirect(quadVertices.size * 4)
@@ -168,6 +170,20 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
             .asFloatBuffer()
             .put(texCoords)
         fullScreenTexCoordBuffer.position(0)
+
+        // Create VBOs for fullscreen quad
+        val vbos = IntArray(2)
+        glGenBuffers(2, vbos, 0)
+        quadVBO = vbos[0]
+        texCoordVBO = vbos[1]
+        
+        glBindBuffer(GL_ARRAY_BUFFER, quadVBO)
+        glBufferData(GL_ARRAY_BUFFER, quadVertices.size * 4, fullScreenQuadBuffer, GL_STATIC_DRAW)
+        
+        glBindBuffer(GL_ARRAY_BUFFER, texCoordVBO)
+        glBufferData(GL_ARRAY_BUFFER, texCoords.size * 4, fullScreenTexCoordBuffer, GL_STATIC_DRAW)
+        
+        glBindBuffer(GL_ARRAY_BUFFER, 0)
 
         glDeleteShader(frameBufferVertexShader)
         glDeleteShader(frameBufferFragmentShader)
@@ -313,6 +329,11 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
 
         glDisableVertexAttribArray(aVertexPosition)
+        
+        // Unbind framebuffer before blitting
+        glBindFramebuffer(GL_FRAMEBUFFER, 0)
+        
+        drawFrameBuffer(frameBufferTexture)
     }
 
     fun cleanup() {
@@ -338,10 +359,13 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
         glEnableVertexAttribArray(frameBufferaPositionLoc)
         glEnableVertexAttribArray(frameBufferaTexCoordLoc)
 
-        fullScreenQuadBuffer.position(0)
-        fullScreenTexCoordBuffer.position(0)
-        glVertexAttribPointer(frameBufferaPositionLoc, 2, GL_FLOAT, false, 0, fullScreenQuadBuffer)
-        glVertexAttribPointer(frameBufferaTexCoordLoc, 2, GL_FLOAT, false, 0, fullScreenTexCoordBuffer)
+        // Bind and set vertex positions
+        glBindBuffer(GL_ARRAY_BUFFER, quadVBO)
+        glVertexAttribPointer(frameBufferaPositionLoc, 2, GL_FLOAT, false, 0, 0)
+        
+        // Bind and set texture coordinates  
+        glBindBuffer(GL_ARRAY_BUFFER, texCoordVBO)
+        glVertexAttribPointer(frameBufferaTexCoordLoc, 2, GL_FLOAT, false, 0, 0)
 
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
 
