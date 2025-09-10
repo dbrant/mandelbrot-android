@@ -49,7 +49,7 @@ class MandelbrotRenderer(private val context: Context, val callback: Callback) :
 
     private var curOrbitResult: OrbitResult? = null
     private var curOrbitBuffer: FloatBuffer? = null
-    private var curOrbitLoaded = false
+    private var recalculateOrbit = false
     private val tileQueue = ArrayDeque<Int>()
     private var tileHeight = 0
     private var lastFrameMillis = 0L
@@ -109,13 +109,16 @@ class MandelbrotRenderer(private val context: Context, val callback: Callback) :
     }
 
     fun queueDraw() {
+        recalculateOrbit = true
+    }
+
+    fun doRecalculateOrbit() {
         tileQueue.clear()
 
         curOrbitResult = mandelbrotState!!.generateOrbit()
         curOrbitBuffer = curOrbitResult!!.orbit
             .order(ByteOrder.nativeOrder())
             .asFloatBuffer()
-        curOrbitLoaded = false
 
         val tilesPerDraw = 8
         tileHeight = (surfaceHeight / tilesPerDraw) + 1
@@ -131,6 +134,7 @@ class MandelbrotRenderer(private val context: Context, val callback: Callback) :
         } while (offsetLo + tileHeight > 0 && offsetHi - tileHeight < surfaceHeight)
         lastFrameMillis = System.currentTimeMillis()
     }
+
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         val vertexShader = loadShader(GL_VERTEX_SHADER, readAsset("mandelbrot_vert.glsl"))
@@ -310,7 +314,7 @@ class MandelbrotRenderer(private val context: Context, val callback: Callback) :
         if (mandelbrotState == null) {
             return
         }
-        if (tileQueue.isEmpty()) {
+        if (tileQueue.isEmpty() && !recalculateOrbit) {
             drawFrameBuffer(frameBufferTexture)
             return
         }
@@ -319,9 +323,10 @@ class MandelbrotRenderer(private val context: Context, val callback: Callback) :
         glViewport(0, 0, surfaceWidth, surfaceHeight)
 
         glBindTexture(GL_TEXTURE_2D, orbitTexture)
-        if (!curOrbitLoaded) {
+        if (recalculateOrbit) {
+            doRecalculateOrbit()
             glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, 1024, 1024, 0, GL_RED, GL_FLOAT, curOrbitBuffer)
-            curOrbitLoaded = true
+            recalculateOrbit = false
 
             glClearColor(0.2f, 0.2f, 0.4f, 1f)
             glClear(GL_COLOR_BUFFER_BIT)
