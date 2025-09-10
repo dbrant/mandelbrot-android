@@ -1,4 +1,4 @@
-package com.dmitrybrant.android.mandelbrot
+package com.dmitrybrant.android.mandelbrot.simple
 
 import android.graphics.Color
 
@@ -50,7 +50,7 @@ object ColorScheme {
                 cIndex++
                 cCounter = elementsPerStep
             }
-            colors[i] = -0x1000000 or (b.toInt() shl 16) or (g.toInt() shl 8) or r.toInt()
+            colors[i] = -0x1000000 or (r.toInt() shl 16) or (g.toInt() shl 8) or b.toInt()
             b += bInc
             g += gInc
             r += rInc

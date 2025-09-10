@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/topLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <com.dmitrybrant.android.mandelbrot.MandelGLView
+        android:id="@+id/mandelGLView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        />
+
+    <LinearLayout
+        android:id="@+id/settingsContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="?attr/actionBarSize"
+        android:orientation="vertical"
+        android:layout_gravity="bottom"
+        android:padding="16dp"
+        android:background="@color/info_background">
+        <TextView
+            android:id="@+id/txtInfo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingBottom="8dp"
+            tools:text="Lorem ipsum"
+            android:textColor="@color/info_text"
+            android:textSize="10sp" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:text="@string/iterations"
+                android:textColor="@color/info_text"/>
+            <TextView
+                android:id="@+id/txtIterations"
+                android:layout_width="48dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                tools:text="123"
+                android:gravity="center"
+                android:textColor="@color/info_text"/>
+            <ImageView
+                android:id="@+id/btnIterationsSubtract"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:padding="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:layout_gravity="center_vertical"
+                app:srcCompat="@drawable/outline_subtract_circle_24"
+                android:contentDescription="@null"/>
+            <SeekBar
+                android:id="@+id/seekBarIterations"
+                android:layout_width="0dp"
+                android:layout_height="32dp"
+                android:layout_gravity="center_vertical"
+                android:layout_weight="1" />
+            <ImageView
+                android:id="@+id/btnIterationsAdd"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:padding="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:layout_gravity="center_vertical"
+                app:srcCompat="@drawable/outline_add_circle_24"
+                android:contentDescription="@null"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:text="@string/color_map_scale"
+                android:textColor="@color/info_text"/>
+            <TextView
+                android:id="@+id/txtColorMapScale"
+                android:layout_width="48dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                tools:text="123"
+                android:gravity="center"
+                android:textColor="@color/info_text"/>
+            <ImageView
+                android:id="@+id/btnColorScaleSubtract"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:padding="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:layout_gravity="center_vertical"
+                app:srcCompat="@drawable/outline_subtract_circle_24"
+                android:contentDescription="@null"/>
+            <SeekBar
+                android:id="@+id/seekBarColorMapScale"
+                android:layout_width="0dp"
+                android:layout_height="32dp"
+                android:layout_gravity="center_vertical"
+                android:layout_weight="1" />
+            <ImageView
+                android:id="@+id/btnColorScaleAdd"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:padding="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:layout_gravity="center_vertical"
+                app:srcCompat="@drawable/outline_add_circle_24"
+                android:contentDescription="@null"/>
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/mainToolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/toolbar_shade"
+        android:layout_gravity="top" />
+
+</FrameLayout>

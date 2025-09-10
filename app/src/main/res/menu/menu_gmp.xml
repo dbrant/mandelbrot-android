@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item android:id="@+id/menu_zoom_out"
+        android:title="@string/zoom_out"
+        android:icon="@drawable/outline_zoom_out_24"
+        app:showAsAction="always"
+        />
+    <item android:id="@+id/menu_settings"
+        android:title="@string/settings"
+        android:icon="@drawable/outline_settings_24"
+        app:showAsAction="always"
+        />
+    <item android:id="@+id/menu_save_image"
+        android:title="@string/save_image"
+        app:showAsAction="never"
+        />
+    <item android:id="@+id/menu_reset"
+        android:title="@string/reset"
+        app:showAsAction="never"
+        />
+    <item android:id="@+id/menu_about"
+        android:title="@string/about"
+        app:showAsAction="never"
+        />
+</menu>

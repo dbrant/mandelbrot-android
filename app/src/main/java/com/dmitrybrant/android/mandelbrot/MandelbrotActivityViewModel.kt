@@ -1,38 +1,33 @@
 package com.dmitrybrant.android.mandelbrot
 
 import android.app.Application
+import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 
 class MandelbrotActivityViewModel(app: Application) : AndroidViewModel(app) {
     private val sharedPreferences = app.getSharedPreferences("MandelbrotActivityPrefs", 0)
 
-    var juliaEnabled = false
-    var currentColorScheme = 0
-    var xCenter = 0.0
-    var yCenter = 0.0
-    var xExtent = 0.0
-    var numIterations = 0
-    var power = 0
+    var colorScale = MandelbrotNative.INIT_COLOR_SCALE
+    var xCenter = MandelbrotNative.INIT_X.toString()
+    var yCenter = MandelbrotNative.INIT_Y.toString()
+    var xExtent = MandelbrotNative.INIT_R.toString()
+    var numIterations = MandelbrotNative.ITERATIONS
 
     init {
-        xCenter = sharedPreferences.getString("xcenter", MandelbrotViewBase.DEFAULT_X_CENTER.toString())!!.toDouble()
-        yCenter = sharedPreferences.getString("ycenter", MandelbrotViewBase.DEFAULT_Y_CENTER.toString())!!.toDouble()
-        xExtent = sharedPreferences.getString("xextent", MandelbrotViewBase.DEFAULT_X_EXTENT.toString())!!.toDouble()
-        numIterations = sharedPreferences.getInt("iterations", MandelbrotViewBase.DEFAULT_ITERATIONS)
-        power = sharedPreferences.getInt("power", MandelbrotViewBase.DEFAULT_POWER)
-        currentColorScheme = sharedPreferences.getInt("colorscheme", 0)
-        juliaEnabled = sharedPreferences.getBoolean("juliaEnabled", false)
+        xCenter = sharedPreferences.getString("gmp_xcenter", MandelbrotNative.INIT_X.toString())!!
+        yCenter = sharedPreferences.getString("gmp_ycenter", MandelbrotNative.INIT_Y.toString())!!
+        xExtent = sharedPreferences.getString("gmp_xextent", MandelbrotNative.INIT_R.toString())!!
+        numIterations = sharedPreferences.getInt("gmp_iterations", MandelbrotNative.ITERATIONS)
+        colorScale = sharedPreferences.getFloat("gmp_colorscale", MandelbrotNative.INIT_COLOR_SCALE)
     }
 
     fun save() {
-        val editor = sharedPreferences.edit()
-        editor.putString("xcenter", xCenter.toString())
-        editor.putString("ycenter", yCenter.toString())
-        editor.putString("xextent", xExtent.toString())
-        editor.putInt("iterations", numIterations)
-        editor.putInt("power", power)
-        editor.putInt("colorscheme", currentColorScheme)
-        editor.putBoolean("juliaEnabled", juliaEnabled)
-        editor.apply()
+        sharedPreferences.edit {
+            putString("gmp_xcenter", xCenter)
+            putString("gmp_ycenter", yCenter)
+            putString("gmp_xextent", xExtent)
+            putInt("gmp_iterations", numIterations)
+            putFloat("gmp_colorscale", colorScale)
+        }
     }
 }
