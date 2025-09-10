@@ -52,6 +52,10 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
             position(0)
         }
 
+    init {
+        mandelbrotState = MandelbrotNative.MandelbrotState()
+    }
+
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
         surfaceWidth = width
         surfaceHeight = height
@@ -77,7 +81,7 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
     }
 
     fun setIterations(iterations: Int) {
-        mandelbrotState?.iterations = iterations
+        mandelbrotState?.numIterations = iterations
     }
 
     fun reset() {
@@ -90,10 +94,6 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
     }
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
-        if (mandelbrotState == null) {
-            mandelbrotState = MandelbrotNative.MandelbrotState()
-        }
-
         val vertexShader = loadShader(GL_VERTEX_SHADER, readAsset("mandelbrot_vert.glsl"))
         val fragmentShader = loadShader(GL_FRAGMENT_SHADER, readAsset("mandelbrot_frag.glsl"))
 
@@ -199,7 +199,7 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
 
         glUniform4f(
             uState, 0.0f, colorMapScale,
-            (1 + orbitResult.radiusExp).toFloat(), mandelbrotState!!.iterations.toFloat()
+            (1 + orbitResult.radiusExp).toFloat(), mandelbrotState!!.numIterations.toFloat()
         )
 
         println("Polynomial coefficients: ${orbitResult.polyScaled.contentToString()}")

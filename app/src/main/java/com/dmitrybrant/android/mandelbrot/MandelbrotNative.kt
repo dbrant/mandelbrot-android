@@ -1,6 +1,7 @@
 package com.dmitrybrant.android.mandelbrot
 
 import java.nio.ByteBuffer
+import kotlin.math.max
 
 class OrbitResult(
     val orbit: ByteBuffer,
@@ -28,23 +29,23 @@ object MandelbrotNative {
     external fun getCenterY(statePtr: Long): String?
     external fun getRadius(statePtr: Long): String?
 
-    const val ITERATIONS = 2000
+    const val ITERATIONS = 2048
     const val INIT_X = -0.5
     const val INIT_Y = 0.0
     const val INIT_R = 2.0
-    const val INIT_COLOR_SCALE = 20f
+    const val INIT_COLOR_SCALE = 23f
 
     class MandelbrotState {
         private var nativePtr: Long
 
-        var iterations = ITERATIONS
+        var numIterations = ITERATIONS
             set(value) {
-                field = value
-                setIterations(nativePtr, iterations)
+                field = max(value, 2)
+                setIterations(nativePtr, field)
             }
 
         init {
-            nativePtr = createState(INIT_X, INIT_Y, INIT_R, iterations)
+            nativePtr = createState(INIT_X, INIT_Y, INIT_R, numIterations)
         }
 
         fun destroy() {
@@ -85,8 +86,8 @@ object MandelbrotNative {
             get() = getRadius(nativePtr)!!
 
         fun reset() {
-            iterations = ITERATIONS
-            set(INIT_X, INIT_Y, INIT_R, iterations)
+            numIterations = ITERATIONS
+            set(INIT_X, INIT_Y, INIT_R, numIterations)
         }
 
         fun zoomOut(factor: Double) {

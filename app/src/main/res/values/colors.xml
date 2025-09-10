@@ -4,5 +4,5 @@
     <color name="list_item_selected">#d033b5e5</color>
     <color name="info_text">#ffffffff</color>
     <color name="info_background">#80000000</color>
-    <color name="toolbar_gradient">#a0000000</color>
+    <color name="toolbar_shade">#40000000</color>
 </resources>

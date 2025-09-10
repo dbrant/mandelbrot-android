@@ -15,7 +15,7 @@ class MandelbrotActivityViewModel(app: Application) : AndroidViewModel(app) {
 
     init {
         xCenter = sharedPreferences.getString("gmp_xcenter", MandelbrotNative.INIT_X.toString())!!
-        yCenter = sharedPreferences.getString("gmp_ycenter", MandelbrotNative.INIT_X.toString())!!
+        yCenter = sharedPreferences.getString("gmp_ycenter", MandelbrotNative.INIT_Y.toString())!!
         xExtent = sharedPreferences.getString("gmp_xextent", MandelbrotNative.INIT_R.toString())!!
         numIterations = sharedPreferences.getInt("gmp_iterations", MandelbrotNative.ITERATIONS)
         colorScale = sharedPreferences.getFloat("gmp_colorscale", MandelbrotNative.INIT_COLOR_SCALE)

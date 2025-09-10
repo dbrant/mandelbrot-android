@@ -123,6 +123,14 @@ std::string mpfr_to_string(mpfr_t *x, int base = 10, size_t precision = 0) {
         result.append(digits.substr(exp));
     }
 
+    // trim trailing zeros
+    if (auto dot_pos = result.find('.'); dot_pos != std::string::npos) {
+        while (!result.empty() && result.back() == '0')
+            result.pop_back();
+        if (!result.empty() && result.back() == '.')
+            result.pop_back(); // remove decimal point if nothing follows
+    }
+
     mpfr_free_str(mantissa);
     return result;
 }

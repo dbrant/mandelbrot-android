@@ -23,11 +23,12 @@ import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
 import androidx.documentfile.provider.DocumentFile
 import com.dmitrybrant.android.mandelbrot.simple.ColorScheme.initColorSchemes
-import com.dmitrybrant.android.mandelbrot.GradientUtil.getCubicGradient
 import com.dmitrybrant.android.mandelbrot.databinding.MandelGmpBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.math.log2
+import kotlin.math.pow
 
 class MandelbrotActivity : AppCompatActivity() {
     private lateinit var binding: MandelGmpBinding
@@ -57,24 +58,51 @@ class MandelbrotActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         initColorSchemes()
-        binding.mainToolbar.background = getCubicGradient(ContextCompat
-                .getColor(this, R.color.toolbar_gradient), Gravity.TOP)
         setSupportActionBar(binding.mainToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = ""
 
-        binding.settingsContainer.visibility = View.GONE
+        binding.settingsContainer.isVisible = false
+
+        binding.seekBarIterations.max = 12
         binding.seekBarIterations.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
+            override fun onProgressChanged(seekBar: SeekBar, value: Int, fromUser: Boolean) {
                 if (!fromUser) {
                     return
                 }
-                // TODO
+                doSetIterations(value)
             }
-
             override fun onStartTrackingTouch(arg0: SeekBar) {}
             override fun onStopTrackingTouch(arg0: SeekBar) {}
         })
+        binding.btnIterationsAdd.setOnClickListener {
+            binding.seekBarIterations.progress = (binding.seekBarIterations.progress + 1).coerceAtMost(binding.seekBarIterations.max)
+            doSetIterations(binding.seekBarIterations.progress)
+        }
+        binding.btnIterationsSubtract.setOnClickListener {
+            binding.seekBarIterations.progress = (binding.seekBarIterations.progress - 1).coerceAtLeast(0)
+            doSetIterations(binding.seekBarIterations.progress)
+        }
+
+        binding.seekBarColorMapScale.max = 200
+        binding.seekBarColorMapScale.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar, value: Int, fromUser: Boolean) {
+                if (!fromUser) {
+                    return
+                }
+                binding.mandelGLView.setCmapScale(value.toFloat())
+            }
+            override fun onStartTrackingTouch(arg0: SeekBar) {}
+            override fun onStopTrackingTouch(arg0: SeekBar) {}
+        })
+        binding.btnColorScaleAdd.setOnClickListener {
+            binding.seekBarColorMapScale.progress = (binding.seekBarColorMapScale.progress + 1).coerceAtMost(binding.seekBarColorMapScale.max)
+            binding.mandelGLView.setCmapScale(binding.seekBarColorMapScale.progress.toFloat())
+        }
+        binding.btnColorScaleSubtract.setOnClickListener {
+            binding.seekBarColorMapScale.progress = (binding.seekBarColorMapScale.progress - 1).coerceAtLeast(0)
+            binding.mandelGLView.setCmapScale(binding.seekBarColorMapScale.progress.toFloat())
+        }
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.topLayout) { view, insets ->
             val statusBarInsets = insets.getInsets(WindowInsetsCompat.Type.statusBars())
@@ -97,6 +125,8 @@ class MandelbrotActivity : AppCompatActivity() {
             }
         }
         binding.mandelGLView.initState(viewModel.xCenter, viewModel.yCenter, viewModel.xExtent, viewModel.numIterations, viewModel.colorScale)
+        binding.seekBarIterations.progress = (log2(viewModel.numIterations.toDouble()) - 10).toInt()
+        binding.seekBarColorMapScale.progress = viewModel.colorScale.toInt()
         updateInfo()
     }
 
@@ -117,7 +147,7 @@ class MandelbrotActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             android.R.id.home -> {
-                onBackPressed()
+                onBackPressedDispatcher.onBackPressed()
                 return true
             }
             R.id.menu_zoom_out -> {
@@ -125,7 +155,7 @@ class MandelbrotActivity : AppCompatActivity() {
                 return true
             }
             R.id.menu_settings -> {
-                binding.settingsContainer.isVisible = true
+                binding.settingsContainer.isVisible = !binding.settingsContainer.isVisible
                 return true
             }
             R.id.menu_save_image -> {
@@ -146,6 +176,12 @@ class MandelbrotActivity : AppCompatActivity() {
 
     private fun updateInfo() {
         binding.txtInfo.text = "Re: " + viewModel.xCenter + "\nIm: " + viewModel.yCenter + "\nRadius: " + viewModel.xExtent
+        binding.txtIterations.text = viewModel.numIterations.toString()
+        binding.txtColorMapScale.text = viewModel.colorScale.toString()
+    }
+
+    private fun doSetIterations(iterations: Int) {
+        binding.mandelGLView.setIterations(2.0.pow((iterations + 10).toDouble()).toInt())
     }
 
     private fun checkWritePermissionThenSaveImage() {

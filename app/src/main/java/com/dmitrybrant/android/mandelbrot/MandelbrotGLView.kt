@@ -32,7 +32,7 @@ class MandelGLView(context: Context, attrs: AttributeSet? = null) : GLSurfaceVie
 
     private fun doCallback() {
         renderer.mandelbrotState?.let { state ->
-            callback?.onUpdateState(state.centerX, state.centerY, state.radius, state.iterations, renderer.colorMapScale)
+            callback?.onUpdateState(state.centerX, state.centerY, state.radius, state.numIterations, renderer.colorMapScale)
         }
     }
 

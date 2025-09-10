@@ -20,14 +20,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
 import androidx.documentfile.provider.DocumentFile
 import com.dmitrybrant.android.mandelbrot.simple.ColorScheme.getColorSchemes
 import com.dmitrybrant.android.mandelbrot.simple.ColorScheme.getShiftedScheme
 import com.dmitrybrant.android.mandelbrot.simple.ColorScheme.initColorSchemes
-import com.dmitrybrant.android.mandelbrot.GradientUtil.getCubicGradient
 import com.dmitrybrant.android.mandelbrot.R
 import com.dmitrybrant.android.mandelbrot.databinding.MandelSimpleBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -63,8 +61,6 @@ class SimpleMandelbrotActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         initColorSchemes()
-        binding.mainToolbar.background = getCubicGradient(ContextCompat
-                .getColor(this, R.color.toolbar_gradient), Gravity.TOP)
         setSupportActionBar(binding.mainToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = ""
@@ -163,30 +159,19 @@ class SimpleMandelbrotActivity : AppCompatActivity() {
         return super.onKeyDown(keyCode, event)
     }
 
-    override fun onBackPressed() {
-        if (binding.settingsContainer.isVisible) {
-            toggleSettings()
-            return
-        } else if (viewModel.juliaEnabled) {
-            toggleJulia()
-            return
-        }
-        super.onBackPressed()
-    }
-
     override fun onTouchEvent(event: MotionEvent): Boolean {
         return binding.mandelbrotView.onTouchEvent(event)
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.menu_main, menu)
+        menuInflater.inflate(R.menu.menu_simple, menu)
         return true
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             android.R.id.home -> {
-                onBackPressed()
+                onBackPressedDispatcher.onBackPressed()
                 return true
             }
             R.id.menu_settings -> {
