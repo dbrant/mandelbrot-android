@@ -337,7 +337,7 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
     mpfr_clear(txy);
     mpfr_clear(tyy);
 
-    LOGI("Orbit generation completed: %d iterations, polylim: %d", i, polylim);
+    LOGI("Orbit generation completed: iterations: %d, polylim: %d", i, polylim);
 
     std::vector<double> poly_double;
     for (const auto& p : poly) {

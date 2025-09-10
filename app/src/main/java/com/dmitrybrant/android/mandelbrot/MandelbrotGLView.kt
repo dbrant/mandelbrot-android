@@ -20,9 +20,11 @@ class MandelGLView(context: Context, attrs: AttributeSet? = null) : GLSurfaceVie
 
     init {
         setEGLContextClientVersion(3)
-        renderer = MandelbrotRenderer(context)
+        renderer = MandelbrotRenderer(context) {
+            super.requestRender()
+        }
         setRenderer(renderer)
-        renderMode = RENDERMODE_WHEN_DIRTY // RENDERMODE_CONTINUOUSLY
+        renderMode = RENDERMODE_WHEN_DIRTY
     }
 
     fun initState(centerX: String, centerY: String, radius: String, iterations: Int, colorScale: Float) {
@@ -65,9 +67,9 @@ class MandelGLView(context: Context, attrs: AttributeSet? = null) : GLSurfaceVie
             touchDownY = e.y
         } else if (e.action == MotionEvent.ACTION_UP) {
             if (abs(e.x - touchDownX) < touchSlop && abs(e.y - touchDownY) < touchSlop) {
-                //renderer.handleTouch(e.x, e.y, width, height)
-                super.requestRender()
-                //doCallback()
+                renderer.handleTouch(e.x, e.y, width, height)
+                requestRender()
+                doCallback()
             }
         }
         return true

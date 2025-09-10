@@ -10,7 +10,10 @@ import android.opengl.GLES30.*
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
-class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer {
+class MandelbrotRenderer(private val context: Context, val callback: Callback) : GLSurfaceView.Renderer {
+    fun interface Callback {
+        fun onNeedRedraw()
+    }
 
     var mandelbrotState: MandelbrotNative.MandelbrotState? = null
 
@@ -46,8 +49,10 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
 
     private var curOrbitResult: OrbitResult? = null
     private var curOrbitBuffer: FloatBuffer? = null
-    private var doDraw = false
-
+    private var curOrbitLoaded = false
+    private val tileQueue = ArrayDeque<Int>()
+    private var tileHeight = 0
+    private var lastFrameMillis = 0L
 
 
     private var frameBufferBlitProgram = 0
@@ -58,8 +63,8 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
     private lateinit var fullScreenTexCoordBuffer: FloatBuffer
     private var frameBufferTexture = -1
     private var frameBufferRef = -1
-    private var quadVBO = -1
-    private var texCoordVBO = -1
+    private var frameBufferQuadVBO = -1
+    private var frameBufferTexCoordVBO = -1
 
     private val vertexBufferData: FloatBuffer = ByteBuffer.allocateDirect(vertices.size * 4)
         .order(ByteOrder.nativeOrder())
@@ -104,11 +109,27 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
     }
 
     fun queueDraw() {
+        tileQueue.clear()
+
         curOrbitResult = mandelbrotState!!.generateOrbit()
         curOrbitBuffer = curOrbitResult!!.orbit
             .order(ByteOrder.nativeOrder())
             .asFloatBuffer()
-        doDraw = true
+        curOrbitLoaded = false
+
+        val tilesPerDraw = 8
+        tileHeight = (surfaceHeight / tilesPerDraw) + 1
+        val yOffset = surfaceHeight / 2 - tileHeight / 2
+        var offsetHi = yOffset
+        var offsetLo = yOffset
+        tileQueue.add(yOffset)
+        do {
+            offsetLo -= tileHeight
+            offsetHi += tileHeight
+            tileQueue.add(offsetLo)
+            tileQueue.add(offsetHi)
+        } while (offsetLo + tileHeight > 0 && offsetHi - tileHeight < surfaceHeight)
+        lastFrameMillis = System.currentTimeMillis()
     }
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
@@ -174,13 +195,13 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
         // Create VBOs for fullscreen quad
         val vbos = IntArray(2)
         glGenBuffers(2, vbos, 0)
-        quadVBO = vbos[0]
-        texCoordVBO = vbos[1]
+        frameBufferQuadVBO = vbos[0]
+        frameBufferTexCoordVBO = vbos[1]
         
-        glBindBuffer(GL_ARRAY_BUFFER, quadVBO)
+        glBindBuffer(GL_ARRAY_BUFFER, frameBufferQuadVBO)
         glBufferData(GL_ARRAY_BUFFER, quadVertices.size * 4, fullScreenQuadBuffer, GL_STATIC_DRAW)
         
-        glBindBuffer(GL_ARRAY_BUFFER, texCoordVBO)
+        glBindBuffer(GL_ARRAY_BUFFER, frameBufferTexCoordVBO)
         glBufferData(GL_ARRAY_BUFFER, texCoords.size * 4, fullScreenTexCoordBuffer, GL_STATIC_DRAW)
         
         glBindBuffer(GL_ARRAY_BUFFER, 0)
@@ -250,7 +271,7 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
         frameBufferRef = fbos[0]
 
         glBindFramebuffer(GL_FRAMEBUFFER, frameBufferRef)
-        glClearColor(.8f, 0f, 0f, 1f)
+        glClearColor(0f, 0f, 0f, 1f)
         glClear(GL_COLOR_BUFFER_BIT)
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, frameBufferTexture, 0)
 
@@ -289,22 +310,23 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
         if (mandelbrotState == null) {
             return
         }
-
-        if (!doDraw) {
+        if (tileQueue.isEmpty()) {
             drawFrameBuffer(frameBufferTexture)
             return
         }
-        doDraw = false
 
         glBindFramebuffer(GL_FRAMEBUFFER, frameBufferRef)
         glViewport(0, 0, surfaceWidth, surfaceHeight)
 
         glBindTexture(GL_TEXTURE_2D, orbitTexture)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, 1024, 1024, 0, GL_RED, GL_FLOAT, curOrbitBuffer)
+        if (!curOrbitLoaded) {
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, 1024, 1024, 0, GL_RED, GL_FLOAT, curOrbitBuffer)
+            curOrbitLoaded = true
 
+            glClearColor(0.2f, 0.2f, 0.4f, 1f)
+            glClear(GL_COLOR_BUFFER_BIT)
+        }
         glDisable(GL_DEPTH_TEST)
-        glClearColor(0.1f, 0.7f, 0.3f, 1f)
-        glClear(GL_COLOR_BUFFER_BIT)
 
         glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer)
         glVertexAttribPointer(aVertexPosition, 2, GL_FLOAT, false, 0, 0)
@@ -326,14 +348,26 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
         glActiveTexture(GL_TEXTURE0)
         glUniform1i(glGetUniformLocation(shaderProgram, "sequence"), 0)
 
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
+        val yOffset = tileQueue.removeFirstOrNull()
+        if (yOffset != null) {
+            glEnable(GL_SCISSOR_TEST)
+            glScissor(0, yOffset, surfaceWidth, tileHeight)
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
+            glDisable(GL_SCISSOR_TEST)
+        }
 
         glDisableVertexAttribArray(aVertexPosition)
         
         // Unbind framebuffer before blitting
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
-        
-        drawFrameBuffer(frameBufferTexture)
+
+        val millis = System.currentTimeMillis()
+        //if (millis - lastFrameMillis > 200) {
+            drawFrameBuffer(frameBufferTexture)
+            lastFrameMillis = millis
+        //}
+
+        callback.onNeedRedraw()
     }
 
     fun cleanup() {
@@ -360,11 +394,11 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
         glEnableVertexAttribArray(frameBufferaTexCoordLoc)
 
         // Bind and set vertex positions
-        glBindBuffer(GL_ARRAY_BUFFER, quadVBO)
+        glBindBuffer(GL_ARRAY_BUFFER, frameBufferQuadVBO)
         glVertexAttribPointer(frameBufferaPositionLoc, 2, GL_FLOAT, false, 0, 0)
         
         // Bind and set texture coordinates  
-        glBindBuffer(GL_ARRAY_BUFFER, texCoordVBO)
+        glBindBuffer(GL_ARRAY_BUFFER, frameBufferTexCoordVBO)
         glVertexAttribPointer(frameBufferaTexCoordLoc, 2, GL_FLOAT, false, 0, 0)
 
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
