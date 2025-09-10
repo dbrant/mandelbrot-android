@@ -22,12 +22,13 @@ class MandelGLView(context: Context, attrs: AttributeSet? = null) : GLSurfaceVie
         setEGLContextClientVersion(3)
         renderer = MandelbrotRenderer(context)
         setRenderer(renderer)
-        renderMode = RENDERMODE_WHEN_DIRTY
+        renderMode = RENDERMODE_WHEN_DIRTY // RENDERMODE_CONTINUOUSLY
     }
 
     fun initState(centerX: String, centerY: String, radius: String, iterations: Int, colorScale: Float) {
         renderer.mandelbrotState?.set(centerX, centerY, radius, iterations)
         renderer.colorMapScale = colorScale
+        renderer.queueDraw()
     }
 
     override fun onDetachedFromWindow() {
@@ -39,6 +40,11 @@ class MandelGLView(context: Context, attrs: AttributeSet? = null) : GLSurfaceVie
         renderer.mandelbrotState?.let { state ->
             callback?.onUpdateState(state.centerX, state.centerY, state.radius, state.numIterations, renderer.colorMapScale)
         }
+    }
+
+    override fun requestRender() {
+        renderer.queueDraw()
+        super.requestRender()
     }
 
     fun zoomOut(factor: Double) {
@@ -59,9 +65,9 @@ class MandelGLView(context: Context, attrs: AttributeSet? = null) : GLSurfaceVie
             touchDownY = e.y
         } else if (e.action == MotionEvent.ACTION_UP) {
             if (abs(e.x - touchDownX) < touchSlop && abs(e.y - touchDownY) < touchSlop) {
-                renderer.handleTouch(e.x, e.y, width, height)
-                requestRender()
-                doCallback()
+                //renderer.handleTouch(e.x, e.y, width, height)
+                super.requestRender()
+                //doCallback()
             }
         }
         return true
