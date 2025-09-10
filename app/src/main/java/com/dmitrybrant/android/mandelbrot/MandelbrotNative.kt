@@ -62,10 +62,12 @@ object MandelbrotNative {
 
         fun set(x: Double, y: Double, r: Double, iterations: Int) {
             setState(nativePtr, x, y, r, iterations)
+            numIterations = iterations
         }
 
         fun set(x: String, y: String, r: String, iterations: Int) {
             setStateStr(nativePtr, x, y, r, iterations)
+            numIterations = iterations
         }
 
         fun zoomIn(dx: Double, dy: Double, factor: Double) {
@@ -86,8 +88,7 @@ object MandelbrotNative {
             get() = getRadius(nativePtr)!!
 
         fun reset() {
-            numIterations = ITERATIONS
-            set(INIT_X, INIT_Y, INIT_R, numIterations)
+            set(INIT_X, INIT_Y, INIT_R, ITERATIONS)
         }
 
         fun zoomOut(factor: Double) {
