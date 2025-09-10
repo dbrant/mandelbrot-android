@@ -46,8 +46,7 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
 
     private var curOrbitResult: OrbitResult? = null
     private var curOrbitBuffer: FloatBuffer? = null
-    private val tileQueue = ArrayDeque<Int>()
-    private var tileHeight = 0
+    private var doDraw = false
 
 
 
@@ -107,15 +106,7 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
         curOrbitBuffer = curOrbitResult!!.orbit
             .order(ByteOrder.nativeOrder())
             .asFloatBuffer()
-
-        val tilesPerDraw = 8
-        tileQueue.clear()
-        var yOffset = 0
-        tileHeight = (surfaceHeight / tilesPerDraw) + 1
-        while (yOffset < surfaceHeight) {
-            tileQueue.add(yOffset)
-            yOffset += tileHeight
-        }
+        doDraw = true
     }
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
@@ -283,11 +274,11 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
             return
         }
 
-        if (tileQueue.isEmpty()) {
+        if (!doDraw) {
             drawFrameBuffer(frameBufferTexture)
             return
         }
-
+        doDraw = false
 
         glBindFramebuffer(GL_FRAMEBUFFER, frameBufferRef)
         glViewport(0, 0, surfaceWidth, surfaceHeight)
@@ -321,12 +312,7 @@ class MandelbrotRenderer(private val context: Context) : GLSurfaceView.Renderer 
 
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
 
-        tileQueue.clear()
-
         glDisableVertexAttribArray(aVertexPosition)
-
-        //drawFrameBuffer(frameBufferTexture)
-
     }
 
     fun cleanup() {
