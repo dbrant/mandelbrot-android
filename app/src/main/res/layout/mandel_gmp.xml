@@ -42,7 +42,7 @@
                 android:textColor="@color/info_text"/>
             <TextView
                 android:id="@+id/txtIterations"
-                android:layout_width="48dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
                 android:paddingStart="4dp"
@@ -88,7 +88,7 @@
                 android:textColor="@color/info_text"/>
             <TextView
                 android:id="@+id/txtColorMapScale"
-                android:layout_width="48dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
                 android:paddingStart="4dp"
