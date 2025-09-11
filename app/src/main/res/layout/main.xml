@@ -28,8 +28,10 @@
                 android:id="@+id/buttonStartSimple"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="24dp"
                 android:textSize="18sp"
+                android:paddingHorizontal="20dp"
+                android:paddingVertical="10dp"
                 android:text="@string/button_render_simple"/>
 
             <TextView
@@ -45,6 +47,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="32dp"
                 android:textSize="18sp"
+                android:paddingHorizontal="20dp"
+                android:paddingVertical="10dp"
                 android:text="@string/button_render_gmp"/>
 
             <TextView
