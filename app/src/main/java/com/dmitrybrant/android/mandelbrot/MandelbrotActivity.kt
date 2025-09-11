@@ -208,8 +208,8 @@ class MandelbrotActivity : AppCompatActivity() {
             val fileName = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.ROOT).format(Date()) + ".png"
             val file = dir.createFile("image/png", fileName)
 
-            // TODO
-            notifyContentResolver(file!!.uri.toString())
+            binding.mandelGLView.saveToBitmap(contentResolver.openOutputStream(file!!.uri)!!)
+            notifyContentResolver(file.uri.toString())
             Toast.makeText(this, String.format(getString(R.string.picture_save_success), file.uri.path), Toast.LENGTH_LONG).show()
         } catch (ex: Exception) {
             ex.printStackTrace()

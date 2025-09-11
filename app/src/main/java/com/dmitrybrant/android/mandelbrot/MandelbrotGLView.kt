@@ -5,6 +5,7 @@ import android.opengl.GLSurfaceView
 import android.util.AttributeSet
 import android.view.MotionEvent
 import kotlin.math.abs
+import java.io.OutputStream
 
 class MandelGLView(context: Context, attrs: AttributeSet? = null) : GLSurfaceView(context, attrs) {
     interface Callback {
@@ -85,5 +86,10 @@ class MandelGLView(context: Context, attrs: AttributeSet? = null) : GLSurfaceVie
         renderer.colorMapScale = scale
         requestRender()
         doCallback()
+    }
+
+    fun saveToBitmap(stream: OutputStream) {
+        renderer.enqueueScreenshot(stream)
+        super.requestRender()
     }
 }

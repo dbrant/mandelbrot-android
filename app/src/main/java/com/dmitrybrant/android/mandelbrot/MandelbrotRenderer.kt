@@ -1,12 +1,17 @@
 package com.dmitrybrant.android.mandelbrot
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.opengl.GLES30
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
 import android.opengl.GLES30.*
+import androidx.core.graphics.createBitmap
+import java.io.OutputStream
+import java.nio.IntBuffer
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
@@ -53,6 +58,8 @@ class MandelbrotRenderer(private val context: Context, val callback: Callback) :
     private val tileQueue = ArrayDeque<Int>()
     private var tileHeight = 0
     private var lastFrameMillis = 0L
+
+    private var pendingStreamForScreenshot: OutputStream? = null
 
 
     private var frameBufferBlitProgram = 0
@@ -316,6 +323,11 @@ class MandelbrotRenderer(private val context: Context, val callback: Callback) :
         }
         if (tileQueue.isEmpty() && !recalculateOrbit) {
             drawFrameBuffer(frameBufferTexture)
+
+            if (pendingStreamForScreenshot != null) {
+                saveToBitmap(pendingStreamForScreenshot!!)
+                pendingStreamForScreenshot = null
+            }
             return
         }
 
@@ -381,7 +393,6 @@ class MandelbrotRenderer(private val context: Context, val callback: Callback) :
     }
 
 
-
     private fun drawFrameBuffer(textureId: Int) {
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
         glViewport(0, 0, surfaceWidth, surfaceHeight)
@@ -410,6 +421,32 @@ class MandelbrotRenderer(private val context: Context, val callback: Callback) :
 
         glDisableVertexAttribArray(frameBufferaPositionLoc)
         glDisableVertexAttribArray(frameBufferaTexCoordLoc)
+    }
+
+    fun enqueueScreenshot(stream: OutputStream) {
+        pendingStreamForScreenshot = stream
+    }
+
+    private fun saveToBitmap(stream: OutputStream) {
+        val pixels = IntArray(surfaceWidth * surfaceHeight)
+        val buffer = IntBuffer.wrap(pixels)
+        buffer.position(0)
+
+        glReadPixels(0, 0, surfaceWidth, surfaceHeight, GL_RGBA, GL_UNSIGNED_BYTE, buffer)
+
+        // OpenGL returns data in bottom-to-top order, so flip it vertically
+        val flipped = IntArray(surfaceWidth * surfaceHeight)
+        for (y in 0..<surfaceHeight) {
+            System.arraycopy(pixels, y * surfaceWidth, flipped, (surfaceHeight - y - 1) * surfaceWidth, surfaceWidth)
+        }
+
+        // Convert to Bitmap (RGBA → ARGB)
+        val bitmap = createBitmap(surfaceWidth, surfaceHeight)
+        bitmap.copyPixelsFromBuffer(IntBuffer.wrap(flipped))
+
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+        stream.flush()
+        stream.close()
     }
 
     private fun readAsset(name: String) =
