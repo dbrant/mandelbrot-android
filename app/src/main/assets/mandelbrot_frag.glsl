@@ -1,4 +1,7 @@
 #version 300 es
+/*
+ * Adapted from https://github.com/HastingsGreer/mandeljs
+ */
 precision highp float;
 in highp vec2 delta;
 out vec4 fragColor;

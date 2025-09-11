@@ -220,7 +220,7 @@ class MandelbrotActivity : AppCompatActivity() {
     private fun showAboutDialog() {
         MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.about)
-                .setMessage(R.string.str_about)
+                .setMessage(R.string.str_about_gmp)
                 .setPositiveButton(android.R.string.ok, null)
                 .show()
     }

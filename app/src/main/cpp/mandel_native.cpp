@@ -1,3 +1,9 @@
+/*
+ * Adapted from https://github.com/HastingsGreer/mandeljs
+ * 
+ * Copyright 2025 Dmitry Brant
+ */
+
 #include <jni.h>
 #include <string>
 #include <vector>
