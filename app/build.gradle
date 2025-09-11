@@ -16,7 +16,7 @@ android {
         applicationId "com.dmitrybrant.android.mandelbrot"
         minSdk = 21
         targetSdk = 36
-        versionCode = 67
+        versionCode = 68
         versionName "${versionStart}-${date}"
 
         externalNativeBuild {
