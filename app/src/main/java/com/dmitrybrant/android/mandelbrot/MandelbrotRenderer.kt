@@ -2,13 +2,13 @@ package com.dmitrybrant.android.mandelbrot
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.opengl.GLES30
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
 import android.opengl.GLES30.*
+import android.util.Log
 import androidx.core.graphics.createBitmap
 import java.io.OutputStream
 import java.nio.IntBuffer
@@ -57,7 +57,10 @@ class MandelbrotRenderer(private val context: Context, val callback: Callback) :
     private var recalculateOrbit = false
     private val tileQueue = ArrayDeque<Int>()
     private var tileHeight = 0
+    private var tilesPerDraw = 9
+    private val minTilesPerDraw = 5
     private var lastFrameMillis = 0L
+    private var heaviestFrameMillis = 0L
 
     private var pendingStreamForScreenshot: OutputStream? = null
 
@@ -127,7 +130,6 @@ class MandelbrotRenderer(private val context: Context, val callback: Callback) :
             .order(ByteOrder.nativeOrder())
             .asFloatBuffer()
 
-        val tilesPerDraw = 8
         tileHeight = (surfaceHeight / tilesPerDraw) + 1
         val yOffset = surfaceHeight / 2 - tileHeight / 2
         var offsetHi = yOffset
@@ -136,10 +138,13 @@ class MandelbrotRenderer(private val context: Context, val callback: Callback) :
         do {
             offsetLo -= tileHeight
             offsetHi += tileHeight
-            tileQueue.add(offsetLo)
-            tileQueue.add(offsetHi)
+            if (offsetLo + tileHeight > 0) {
+                tileQueue.add(offsetLo)
+            }
+            if (offsetHi < surfaceHeight) {
+                tileQueue.add(offsetHi)
+            }
         } while (offsetLo + tileHeight > 0 && offsetHi - tileHeight < surfaceHeight)
-        lastFrameMillis = System.currentTimeMillis()
     }
 
 
@@ -324,6 +329,14 @@ class MandelbrotRenderer(private val context: Context, val callback: Callback) :
         if (tileQueue.isEmpty() && !recalculateOrbit) {
             drawFrameBuffer(frameBufferTexture)
 
+            if (heaviestFrameMillis > 250) {
+                tilesPerDraw += 4
+            } else {
+                tilesPerDraw -= 4
+            }
+            if (tilesPerDraw < minTilesPerDraw) { tilesPerDraw = minTilesPerDraw }
+            if (tilesPerDraw > 25) { tilesPerDraw = 25 }
+
             if (pendingStreamForScreenshot != null) {
                 saveToBitmap(pendingStreamForScreenshot!!)
                 pendingStreamForScreenshot = null
@@ -336,12 +349,20 @@ class MandelbrotRenderer(private val context: Context, val callback: Callback) :
 
         glBindTexture(GL_TEXTURE_2D, orbitTexture)
         if (recalculateOrbit) {
+            heaviestFrameMillis = 0
+            lastFrameMillis = System.currentTimeMillis()
             doRecalculateOrbit()
             glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, 1024, 1024, 0, GL_RED, GL_FLOAT, curOrbitBuffer)
             recalculateOrbit = false
 
             glClearColor(0.2f, 0.2f, 0.4f, 1f)
             glClear(GL_COLOR_BUFFER_BIT)
+        } else {
+            val m = System.currentTimeMillis() - lastFrameMillis
+            lastFrameMillis = System.currentTimeMillis()
+            if (m > heaviestFrameMillis) {
+                heaviestFrameMillis = m
+            }
         }
         glDisable(GL_DEPTH_TEST)
 
@@ -378,11 +399,7 @@ class MandelbrotRenderer(private val context: Context, val callback: Callback) :
         // Unbind framebuffer before blitting
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
-        val millis = System.currentTimeMillis()
-        //if (millis - lastFrameMillis > 200) {
-            drawFrameBuffer(frameBufferTexture)
-            lastFrameMillis = millis
-        //}
+        drawFrameBuffer(frameBufferTexture)
 
         callback.onNeedRedraw()
     }
