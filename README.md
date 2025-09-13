@@ -22,7 +22,11 @@ Offers two modes of rendering:
 - Tap to zoom in, tap toolbar button to zoom out.
 - Tap the Settings button in the toolbar to change iterations and adjust colors.
 
+## Building the "prebuilt" GMP and MPFR libraries
 
+- This app uses the GMP and MPFR libraries, compiled from source, using the Android NDK build tools.
+- Run the `buildgmp.sh` script, after updating it to point to the correct NDK directory, and the correct GMP and MPFR library sources.
+- When the build finishes, it should generate a `prebuilt` directory; copy this to `app/src/main/cpp`.
 
 ## License
 
