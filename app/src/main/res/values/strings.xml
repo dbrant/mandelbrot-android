@@ -17,8 +17,8 @@
     <string name="power">Power:</string>
     <string name="iterations">Iterations:</string>
     <string name="color_map_scale">Color map scale:</string>
-    <string name="coordinate_display">Real: %1$f to %2$f\nImag: %3$f to %4$f</string>
-    <string name="coordinate_display_julia">Real: %1$f to %2$f\nImag: %3$f to %4$f\nJulia: %5$f to %6$f</string>
+    <string name="coordinate_display">Real: %1$.15g to %2$.15g\nImag: %3$.15g to %4$.15g</string>
+    <string name="coordinate_display_julia">Real: %1$.15g to %2$.15g\nImag: %3$.15g to %4$.15g\nJulia: %5$.15g to %6$.15g</string>
     <string name="folder_picker_instruction">Select folder where image will be saved.</string>
     <string name="picture_save_success">Picture saved successfully: %1$s</string>
     <string name="picture_save_error">Error saving picture: %1$s</string>
