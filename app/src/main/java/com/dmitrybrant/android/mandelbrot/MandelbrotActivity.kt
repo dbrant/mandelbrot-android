@@ -12,6 +12,7 @@ import android.view.*
 import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -113,6 +114,16 @@ class MandelbrotActivity : AppCompatActivity() {
 
             WindowInsetsCompat.CONSUMED
         }
+
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (binding.settingsContainer.isVisible) {
+                    binding.settingsContainer.isVisible = false
+                } else {
+                    finish()
+                }
+            }
+        })
 
         binding.mandelGLView.callback = object : MandelGLView.Callback {
             override fun onUpdateState(centerX: String, centerY: String, radius: String, iterations: Int, colorScale: Float) {

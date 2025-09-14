@@ -14,6 +14,7 @@ import android.widget.FrameLayout
 import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -32,6 +33,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.sqrt
+import androidx.core.view.isVisible
 
 class SimpleMandelbrotActivity : AppCompatActivity() {
     private lateinit var binding: MandelSimpleBinding
@@ -65,7 +67,7 @@ class SimpleMandelbrotActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = ""
 
-        binding.settingsContainer.visibility = View.GONE
+        binding.settingsContainer.isVisible = false
         binding.seekBarIterations.max = sqrt(MandelbrotCalculator.MAX_ITERATIONS.toDouble()).toInt() + 1
         binding.seekBarIterations.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
@@ -124,6 +126,18 @@ class SimpleMandelbrotActivity : AppCompatActivity() {
         binding.buttonPower2.setOnClickListener { updatePower(2) }
         binding.buttonPower3.setOnClickListener { updatePower(3) }
         binding.buttonPower4.setOnClickListener { updatePower(4) }
+
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (binding.settingsContainer.isVisible) {
+                    toggleSettings()
+                } else if (viewModel.juliaEnabled) {
+                    toggleJulia()
+                } else {
+                    finish()
+                }
+            }
+        })
 
         updateIterationBar()
     }
@@ -236,7 +250,7 @@ class SimpleMandelbrotActivity : AppCompatActivity() {
 
     private val coordinatesChangedListener: MandelbrotViewBase.OnCoordinatesChanged = object : MandelbrotViewBase.OnCoordinatesChanged {
         override fun newCoordinates(xmin: Double, xmax: Double, ymin: Double, ymax: Double) {
-            if (binding.txtInfo.visibility != View.VISIBLE) {
+            if (!binding.txtInfo.isVisible) {
                 return
             }
             binding.txtIterations.text = String.format(Locale.ROOT, "%d", viewModel.numIterations)
@@ -261,10 +275,10 @@ class SimpleMandelbrotActivity : AppCompatActivity() {
         binding.mandelbrotView.invalidate()
         binding.mandelbrotView.requestCoordinates()
         if (viewModel.juliaEnabled) {
-            binding.juliaView.visibility = View.VISIBLE
+            binding.juliaView.isVisible = true
             binding.juliaView.render()
         } else {
-            binding.juliaView.visibility = View.GONE
+            binding.juliaView.isVisible = false
         }
     }
 
@@ -297,10 +311,10 @@ class SimpleMandelbrotActivity : AppCompatActivity() {
         if (binding.settingsContainer.animation != null && !binding.settingsContainer.animation.hasEnded()) {
             return
         }
-        if (binding.settingsContainer.visibility != View.VISIBLE) {
-            binding.settingsContainer.visibility = View.VISIBLE
+        if (!binding.settingsContainer.isVisible) {
+            binding.settingsContainer.isVisible = true
         } else {
-            binding.settingsContainer.visibility = View.GONE
+            binding.settingsContainer.isVisible = false
         }
     }
 
