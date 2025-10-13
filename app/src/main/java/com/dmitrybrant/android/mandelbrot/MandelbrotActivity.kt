@@ -20,7 +20,6 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
-import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
 import androidx.documentfile.provider.DocumentFile
 import com.dmitrybrant.android.mandelbrot.simple.ColorScheme.initColorSchemes
@@ -29,6 +28,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.log2
+import kotlin.math.max
 import kotlin.math.pow
 
 class MandelbrotActivity : AppCompatActivity() {
@@ -105,14 +105,14 @@ class MandelbrotActivity : AppCompatActivity() {
             binding.mandelGLView.setCmapScale(binding.seekBarColorMapScale.progress.toFloat())
         }
 
-        ViewCompat.setOnApplyWindowInsetsListener(binding.topLayout) { view, insets ->
-            val statusBarInsets = insets.getInsets(WindowInsetsCompat.Type.statusBars())
-            val navBarInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
-
-            binding.mainToolbar.updatePadding(top = statusBarInsets.top)
-            binding.settingsContainer.updateLayoutParams<ViewGroup.MarginLayoutParams> { bottomMargin = navBarInsets.bottom }
-
-            WindowInsetsCompat.CONSUMED
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
+            val newStatusBarInsets = insets.getInsets(WindowInsetsCompat.Type.statusBars())
+            val newNavBarInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
+            val newCaptionBarInsets = insets.getInsets(WindowInsetsCompat.Type.captionBar())
+            val newSystemBarInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            binding.mainToolbarContainer.updatePadding(top = max(max(max(newStatusBarInsets.top, newCaptionBarInsets.top), newSystemBarInsets.top), newNavBarInsets.top))
+            binding.settingsContainer.updatePadding(bottom = max(max(max(newStatusBarInsets.bottom, newCaptionBarInsets.bottom), newSystemBarInsets.bottom), newNavBarInsets.bottom))
+            insets
         }
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {

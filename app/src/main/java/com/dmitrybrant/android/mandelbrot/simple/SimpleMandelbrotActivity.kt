@@ -21,7 +21,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
 import androidx.documentfile.provider.DocumentFile
 import com.dmitrybrant.android.mandelbrot.simple.ColorScheme.getColorSchemes
@@ -34,6 +33,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.sqrt
 import androidx.core.view.isVisible
+import kotlin.math.max
 
 class SimpleMandelbrotActivity : AppCompatActivity() {
     private lateinit var binding: MandelSimpleBinding
@@ -90,14 +90,14 @@ class SimpleMandelbrotActivity : AppCompatActivity() {
         }
         binding.mandelbrotView.onCoordinatesChanged = coordinatesChangedListener
 
-        ViewCompat.setOnApplyWindowInsetsListener(binding.topLayout) { view, insets ->
-            val statusBarInsets = insets.getInsets(WindowInsetsCompat.Type.statusBars())
-            val navBarInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
-
-            binding.mainToolbar.updatePadding(top = statusBarInsets.top)
-            binding.settingsContainer.updateLayoutParams<ViewGroup.MarginLayoutParams> { bottomMargin = navBarInsets.bottom }
-
-            WindowInsetsCompat.CONSUMED
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
+            val newStatusBarInsets = insets.getInsets(WindowInsetsCompat.Type.statusBars())
+            val newNavBarInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
+            val newCaptionBarInsets = insets.getInsets(WindowInsetsCompat.Type.captionBar())
+            val newSystemBarInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            binding.mainToolbarContainer.updatePadding(top = max(max(max(newStatusBarInsets.top, newCaptionBarInsets.top), newSystemBarInsets.top), newNavBarInsets.top))
+            binding.settingsContainer.updatePadding(bottom = max(max(max(newStatusBarInsets.bottom, newCaptionBarInsets.bottom), newSystemBarInsets.bottom), newNavBarInsets.bottom))
+            insets
         }
 
         binding.mandelbrotView.reset()

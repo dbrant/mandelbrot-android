@@ -11,6 +11,7 @@ import androidx.core.view.updatePadding
 import com.dmitrybrant.android.mandelbrot.databinding.MainBinding
 import com.dmitrybrant.android.mandelbrot.simple.SimpleMandelbrotActivity
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import kotlin.math.max
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: MainBinding
@@ -22,11 +23,13 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(binding.mainToolbar)
         supportActionBar?.title = getString(R.string.app_name)
 
-        ViewCompat.setOnApplyWindowInsetsListener(binding.topLayout) { view, insets ->
-            val statusBarInsets = insets.getInsets(WindowInsetsCompat.Type.statusBars())
-            val navBarInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
-            binding.mainToolbar.updatePadding(top = statusBarInsets.top)
-            WindowInsetsCompat.CONSUMED
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
+            val newStatusBarInsets = insets.getInsets(WindowInsetsCompat.Type.statusBars())
+            val newNavBarInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
+            val newCaptionBarInsets = insets.getInsets(WindowInsetsCompat.Type.captionBar())
+            val newSystemBarInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            binding.mainToolbarContainer.updatePadding(top = max(max(max(newStatusBarInsets.top, newCaptionBarInsets.top), newSystemBarInsets.top), newNavBarInsets.top))
+            insets
         }
 
         binding.buttonStartSimple.setOnClickListener {

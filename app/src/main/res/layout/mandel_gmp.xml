@@ -124,11 +124,16 @@
 
     </LinearLayout>
 
-    <com.google.android.material.appbar.MaterialToolbar
-        android:id="@+id/mainToolbar"
+    <FrameLayout
+        android:id="@+id/mainToolbarContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/toolbar_shade"
-        android:layout_gravity="top" />
+        android:layout_gravity="top"
+        android:background="@color/toolbar_shade">
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/mainToolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"/>
+    </FrameLayout>
 
 </FrameLayout>
