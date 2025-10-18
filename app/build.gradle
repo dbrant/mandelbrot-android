@@ -1,11 +1,7 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
-
-def static getDate() {
-    def date = new Date()
-    def formattedDate = date.format('yyyy-MM-dd')
-    return formattedDate
-}
 
 android {
     compileSdk = 36
@@ -15,7 +11,7 @@ android {
         minSdk = 21
         targetSdk = 36
         versionCode = 70
-        versionName "${date}"
+        versionName "${(new Date()).format('yyyy-MM-dd')}"
 
         externalNativeBuild {
             cmake {
@@ -57,12 +53,14 @@ android {
         }
     }
 
+    kotlin {
+        compilerOptions {
+            jvmTarget = JvmTarget.JVM_17
+        }
+    }
     compileOptions {
         targetCompatibility JavaVersion.VERSION_17
         sourceCompatibility JavaVersion.VERSION_17
-    }
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17
     }
 }
 
