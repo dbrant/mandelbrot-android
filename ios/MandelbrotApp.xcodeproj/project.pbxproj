@@ -17,16 +17,13 @@
 		A10000000000000000000008 /* AdvancedModeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000008 /* AdvancedModeView.swift */; };
 		A10000000000000000000009 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000009 /* Assets.xcassets */; };
 		C10000000000000000000001 /* MandelbrotNative.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000001 /* MandelbrotNative.swift */; };
-		C10000000000000000000002 /* MandelbrotGLRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000002 /* MandelbrotGLRenderer.swift */; };
-		C10000000000000000000003 /* MandelbrotGLView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000003 /* MandelbrotGLView.swift */; };
 		C10000000000000000000004 /* AdvancedModeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000004 /* AdvancedModeViewModel.swift */; };
 		C10000000000000000000005 /* mandel_native.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000005 /* mandel_native.cpp */; };
-		C10000000000000000000010 /* mandelbrot_vert.glsl in Resources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000010 /* mandelbrot_vert.glsl */; };
-		C10000000000000000000011 /* mandelbrot_frag.glsl in Resources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000011 /* mandelbrot_frag.glsl */; };
-		C10000000000000000000012 /* framebuf_vert.glsl in Resources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000012 /* framebuf_vert.glsl */; };
-		C10000000000000000000013 /* framebuf_frag.glsl in Resources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000013 /* framebuf_frag.glsl */; };
-		C10000000000000000000020 /* GLKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C20000000000000000000020 /* GLKit.framework */; };
-		C10000000000000000000021 /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C20000000000000000000021 /* OpenGLES.framework */; };
+		D10000000000000000000001 /* MandelbrotMetalRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000001 /* MandelbrotMetalRenderer.swift */; };
+		D10000000000000000000002 /* MandelbrotMetalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000002 /* MandelbrotMetalView.swift */; };
+		D10000000000000000000003 /* Mandelbrot.metal in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000003 /* Mandelbrot.metal */; };
+		D10000000000000000000004 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D20000000000000000000004 /* Metal.framework */; };
+		D10000000000000000000005 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D20000000000000000000005 /* MetalKit.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -41,18 +38,15 @@
 		A20000000000000000000009 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A2000000000000000000000A /* MandelbrotApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MandelbrotApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C20000000000000000000001 /* MandelbrotNative.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MandelbrotNative.swift; sourceTree = "<group>"; };
-		C20000000000000000000002 /* MandelbrotGLRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MandelbrotGLRenderer.swift; sourceTree = "<group>"; };
-		C20000000000000000000003 /* MandelbrotGLView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MandelbrotGLView.swift; sourceTree = "<group>"; };
 		C20000000000000000000004 /* AdvancedModeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvancedModeViewModel.swift; sourceTree = "<group>"; };
 		C20000000000000000000005 /* mandel_native.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = mandel_native.cpp; sourceTree = "<group>"; };
 		C20000000000000000000006 /* mandel_native.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = mandel_native.h; sourceTree = "<group>"; };
 		C20000000000000000000007 /* MandelbrotApp-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "MandelbrotApp-Bridging-Header.h"; sourceTree = "<group>"; };
-		C20000000000000000000010 /* mandelbrot_vert.glsl */ = {isa = PBXFileReference; lastKnownFileType = text; path = mandelbrot_vert.glsl; sourceTree = "<group>"; };
-		C20000000000000000000011 /* mandelbrot_frag.glsl */ = {isa = PBXFileReference; lastKnownFileType = text; path = mandelbrot_frag.glsl; sourceTree = "<group>"; };
-		C20000000000000000000012 /* framebuf_vert.glsl */ = {isa = PBXFileReference; lastKnownFileType = text; path = framebuf_vert.glsl; sourceTree = "<group>"; };
-		C20000000000000000000013 /* framebuf_frag.glsl */ = {isa = PBXFileReference; lastKnownFileType = text; path = framebuf_frag.glsl; sourceTree = "<group>"; };
-		C20000000000000000000020 /* GLKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLKit.framework; path = System/Library/Frameworks/GLKit.framework; sourceTree = SDKROOT; };
-		C20000000000000000000021 /* OpenGLES.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGLES.framework; path = System/Library/Frameworks/OpenGLES.framework; sourceTree = SDKROOT; };
+		D20000000000000000000001 /* MandelbrotMetalRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MandelbrotMetalRenderer.swift; sourceTree = "<group>"; };
+		D20000000000000000000002 /* MandelbrotMetalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MandelbrotMetalView.swift; sourceTree = "<group>"; };
+		D20000000000000000000003 /* Mandelbrot.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Mandelbrot.metal; sourceTree = "<group>"; };
+		D20000000000000000000004 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		D20000000000000000000005 /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -60,8 +54,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C10000000000000000000020 /* GLKit.framework in Frameworks */,
-				C10000000000000000000021 /* OpenGLES.framework in Frameworks */,
+				D10000000000000000000004 /* Metal.framework in Frameworks */,
+				D10000000000000000000005 /* MetalKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -115,8 +109,8 @@
 				A20000000000000000000008 /* AdvancedModeView.swift */,
 				C20000000000000000000004 /* AdvancedModeViewModel.swift */,
 				C20000000000000000000001 /* MandelbrotNative.swift */,
-				C20000000000000000000002 /* MandelbrotGLRenderer.swift */,
-				C20000000000000000000003 /* MandelbrotGLView.swift */,
+				D20000000000000000000001 /* MandelbrotMetalRenderer.swift */,
+				D20000000000000000000002 /* MandelbrotMetalView.swift */,
 				C20000000000000000000005 /* mandel_native.cpp */,
 				C20000000000000000000006 /* mandel_native.h */,
 				C20000000000000000000007 /* MandelbrotApp-Bridging-Header.h */,
@@ -136,8 +130,8 @@
 		C40000000000000000000001 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				C20000000000000000000020 /* GLKit.framework */,
-				C20000000000000000000021 /* OpenGLES.framework */,
+				D20000000000000000000004 /* Metal.framework */,
+				D20000000000000000000005 /* MetalKit.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -145,10 +139,7 @@
 		C40000000000000000000002 /* Shaders */ = {
 			isa = PBXGroup;
 			children = (
-				C20000000000000000000010 /* mandelbrot_vert.glsl */,
-				C20000000000000000000011 /* mandelbrot_frag.glsl */,
-				C20000000000000000000012 /* framebuf_vert.glsl */,
-				C20000000000000000000013 /* framebuf_frag.glsl */,
+				D20000000000000000000003 /* Mandelbrot.metal */,
 			);
 			path = Shaders;
 			sourceTree = "<group>";
@@ -212,10 +203,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000000000000000000009 /* Assets.xcassets in Resources */,
-				C10000000000000000000010 /* mandelbrot_vert.glsl in Resources */,
-				C10000000000000000000011 /* mandelbrot_frag.glsl in Resources */,
-				C10000000000000000000012 /* framebuf_vert.glsl in Resources */,
-				C10000000000000000000013 /* framebuf_frag.glsl in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -235,8 +222,9 @@
 				A10000000000000000000007 /* MandelbrotCanvasView.swift in Sources */,
 				A10000000000000000000008 /* AdvancedModeView.swift in Sources */,
 				C10000000000000000000001 /* MandelbrotNative.swift in Sources */,
-				C10000000000000000000002 /* MandelbrotGLRenderer.swift in Sources */,
-				C10000000000000000000003 /* MandelbrotGLView.swift in Sources */,
+				D10000000000000000000001 /* MandelbrotMetalRenderer.swift in Sources */,
+				D10000000000000000000002 /* MandelbrotMetalView.swift in Sources */,
+				D10000000000000000000003 /* Mandelbrot.metal in Sources */,
 				C10000000000000000000004 /* AdvancedModeViewModel.swift in Sources */,
 				C10000000000000000000005 /* mandel_native.cpp in Sources */,
 			);

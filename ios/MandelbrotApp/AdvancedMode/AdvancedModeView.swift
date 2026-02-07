@@ -8,7 +8,7 @@ struct AdvancedModeView: View {
     @State private var showSaveSuccess = false
     @State private var saveMessage = ""
 
-    @State private var glController = MandelbrotGLViewController()
+    @State private var metalController = MandelbrotMetalViewController()
     @State private var hasInitialized = false
 
     private var iterationsSliderValue: Int {
@@ -18,12 +18,12 @@ struct AdvancedModeView: View {
 
     var body: some View {
         ZStack {
-            MandelbrotGLView(controller: glController)
+            MandelbrotMetalView(controller: metalController)
                 .ignoresSafeArea()
                 .onAppear {
                     if !hasInitialized {
                         hasInitialized = true
-                        glController.onUpdateState = { centerX, centerY, radius, iterations, colorScale in
+                        metalController.onUpdateState = { centerX, centerY, radius, iterations, colorScale in
                             viewModel.xCenter = centerX
                             viewModel.yCenter = centerY
                             viewModel.xExtent = radius
@@ -31,7 +31,7 @@ struct AdvancedModeView: View {
                             viewModel.colorScale = colorScale
                         }
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            glController.initState(
+                            metalController.initState(
                                 centerX: viewModel.xCenter,
                                 centerY: viewModel.yCenter,
                                 radius: viewModel.xExtent,
@@ -62,7 +62,7 @@ struct AdvancedModeView: View {
                     Image(systemName: "slider.horizontal.3")
                 }
 
-                Button(action: { glController.zoomOut(2.0) }) {
+                Button(action: { metalController.zoomOut(2.0) }) {
                     Image(systemName: "minus.magnifyingglass")
                 }
 
@@ -71,7 +71,7 @@ struct AdvancedModeView: View {
                 }
 
                 Button(action: {
-                    glController.reset()
+                    metalController.reset()
                     viewModel.numIterations = MandelbrotState.ITERATIONS
                     viewModel.colorScale = MandelbrotState.INIT_COLOR_SCALE
                 }) {
@@ -149,7 +149,7 @@ struct AdvancedModeView: View {
                 Button(action: {
                     let newVal = max(0, viewModel.colorScale - 1)
                     viewModel.colorScale = newVal
-                    glController.setCmapScale(newVal)
+                    metalController.setCmapScale(newVal)
                 }) {
                     Image(systemName: "minus.circle")
                         .foregroundColor(.white)
@@ -159,14 +159,14 @@ struct AdvancedModeView: View {
                     get: { Double(viewModel.colorScale) },
                     set: {
                         viewModel.colorScale = Float($0)
-                        glController.setCmapScale(Float($0))
+                        metalController.setCmapScale(Float($0))
                     }
                 ), in: 0...200, step: 1)
 
                 Button(action: {
                     let newVal = min(200, viewModel.colorScale + 1)
                     viewModel.colorScale = newVal
-                    glController.setCmapScale(newVal)
+                    metalController.setCmapScale(newVal)
                 }) {
                     Image(systemName: "plus.circle")
                         .foregroundColor(.white)
@@ -181,11 +181,11 @@ struct AdvancedModeView: View {
     private func doSetIterations(_ sliderValue: Int) {
         let iterations = Int(pow(2.0, Double(sliderValue + 10)))
         viewModel.numIterations = iterations
-        glController.setIterations(iterations)
+        metalController.setIterations(iterations)
     }
 
     private func saveImage() {
-        glController.saveToBitmap { image in
+        metalController.saveToBitmap { image in
             guard let image = image else {
                 saveMessage = "Failed to capture image."
                 showSaveSuccess = true

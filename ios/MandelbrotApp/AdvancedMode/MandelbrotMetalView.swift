@@ -1,38 +1,27 @@
 import SwiftUI
-import GLKit
-import OpenGLES
+import MetalKit
 
-class MandelbrotGLViewController: NSObject {
-    let renderer = MandelbrotGLRenderer()
-    var glView: GLKView?
-    private var displayLink: CADisplayLink?
-    private var context: EAGLContext?
-
-    private var touchDownX: CGFloat = 0
-    private var touchDownY: CGFloat = 0
-    private var touchSlop: CGFloat = 16
+class MandelbrotMetalViewController: NSObject {
+    let renderer = MandelbrotMetalRenderer()
+    var metalView: MTKView?
 
     var onUpdateState: ((String, String, String, Int, Float) -> Void)?
 
-    func setupView(_ view: GLKView) {
-        guard let ctx = EAGLContext(api: .openGLES3) else {
-            print("Failed to create OpenGL ES 3.0 context")
+    func setupView(_ view: MTKView) {
+        guard let device = MTLCreateSystemDefaultDevice() else {
+            print("Metal is not supported on this device")
             return
         }
-        context = ctx
-        view.context = ctx
-        view.drawableColorFormat = .RGBA8888
-        view.drawableDepthFormat = .formatNone
+        view.device = device
+        view.colorPixelFormat = .bgra8Unorm
+        view.isPaused = true
         view.enableSetNeedsDisplay = true
-        glView = view
+        metalView = view
 
         let tapRecognizer = UITapGestureRecognizer(target: self, action: #selector(handleTapGesture(_:)))
         view.addGestureRecognizer(tapRecognizer)
 
-        touchSlop = 16 * UIScreen.main.scale
-
-        EAGLContext.setCurrent(ctx)
-        renderer.setupGL()
+        renderer.setupMetal(device: device)
 
         renderer.onNeedRedraw = { [weak self] in
             self?.scheduleRedraw()
@@ -40,13 +29,11 @@ class MandelbrotGLViewController: NSObject {
     }
 
     func surfaceChanged(width: Int, height: Int) {
-        EAGLContext.setCurrent(context)
         renderer.setupSurface(width: width, height: height)
     }
 
-    func draw() {
-        EAGLContext.setCurrent(context)
-        renderer.drawFrame()
+    func draw(in view: MTKView) {
+        renderer.drawFrame(view: view)
     }
 
     func initState(centerX: String, centerY: String, radius: String, iterations: Int, colorScale: Float) {
@@ -82,7 +69,7 @@ class MandelbrotGLViewController: NSObject {
 
     func saveToBitmap(callback: @escaping (UIImage?) -> Void) {
         renderer.enqueueScreenshot(callback: callback)
-        glView?.setNeedsDisplay()
+        metalView?.setNeedsDisplay()
     }
 
     func requestRender() {
@@ -91,14 +78,16 @@ class MandelbrotGLViewController: NSObject {
     }
 
     @objc private func handleTapGesture(_ gesture: UITapGestureRecognizer) {
-        guard let view = glView else { return }
+        guard let view = metalView else { return }
         let location = gesture.location(in: view)
-        let scale = UIScreen.main.scale
+        let drawableSize = view.drawableSize
+        let scaleX = drawableSize.width / view.bounds.width
+        let scaleY = drawableSize.height / view.bounds.height
         renderer.handleTouch(
-            x: Float(location.x * scale),
-            y: Float(location.y * scale),
-            width: Int(view.bounds.width * scale),
-            height: Int(view.bounds.height * scale)
+            x: Float(location.x * scaleX),
+            y: Float(location.y * scaleY),
+            width: Int(drawableSize.width),
+            height: Int(drawableSize.height)
         )
         requestRender()
         doCallback()
@@ -111,52 +100,60 @@ class MandelbrotGLViewController: NSObject {
 
     private func scheduleRedraw() {
         DispatchQueue.main.async { [weak self] in
-            self?.glView?.setNeedsDisplay()
+            self?.metalView?.setNeedsDisplay()
         }
     }
 
     func cleanup() {
-        displayLink?.invalidate()
-        displayLink = nil
         renderer.cleanup()
     }
 }
 
-struct MandelbrotGLView: UIViewRepresentable {
-    let controller: MandelbrotGLViewController
+struct MandelbrotMetalView: UIViewRepresentable {
+    let controller: MandelbrotMetalViewController
 
-    func makeUIView(context: Context) -> GLKView {
-        let view = GLKView()
+    func makeUIView(context: Context) -> MTKView {
+        let view = MTKView()
         view.delegate = context.coordinator
         controller.setupView(view)
         return view
     }
 
-    func updateUIView(_ uiView: GLKView, context: Context) {
+    func updateUIView(_ uiView: MTKView, context: Context) {
     }
 
     func makeCoordinator() -> Coordinator {
         Coordinator(controller: controller)
     }
 
-    class Coordinator: NSObject, GLKViewDelegate {
-        let controller: MandelbrotGLViewController
+    class Coordinator: NSObject, MTKViewDelegate {
+        let controller: MandelbrotMetalViewController
         private var hasSetupSurface = false
 
-        init(controller: MandelbrotGLViewController) {
+        init(controller: MandelbrotMetalViewController) {
             self.controller = controller
         }
 
-        func glkView(_ view: GLKView, drawIn rect: CGRect) {
-            let scale = UIScreen.main.scale
-            let width = Int(view.bounds.width * scale)
-            let height = Int(view.bounds.height * scale)
-
-            if !hasSetupSurface && width > 0 && height > 0 {
+        func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
+            let width = Int(size.width)
+            let height = Int(size.height)
+            if width > 0 && height > 0 {
                 hasSetupSurface = true
                 controller.surfaceChanged(width: width, height: height)
             }
-            controller.draw()
+        }
+
+        func draw(in view: MTKView) {
+            if !hasSetupSurface {
+                let size = view.drawableSize
+                let width = Int(size.width)
+                let height = Int(size.height)
+                if width > 0 && height > 0 {
+                    hasSetupSurface = true
+                    controller.surfaceChanged(width: width, height: height)
+                }
+            }
+            controller.draw(in: view)
         }
     }
 }
