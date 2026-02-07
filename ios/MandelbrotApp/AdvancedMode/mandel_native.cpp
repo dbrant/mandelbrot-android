@@ -1,0 +1,428 @@
+/*
+ * Adapted from https://github.com/HastingsGreer/mandeljs
+ *
+ * Copyright 2025 Dmitry Brant
+ */
+
+#include <string>
+#include <vector>
+#include <cmath>
+#include <algorithm>
+#include <mpfr.h>
+#include <cstdio>
+#include <cstring>
+
+#include "mandel_native.h"
+
+#define CALC_WIDTH 1024
+#define CALC_HEIGHT 1024
+#define CALC_BAILOUT 400
+#define MPFR_DIGITS 1200
+
+class MandelbrotState {
+private:
+    mpfr_t center_x, center_y, radius;
+
+public:
+    int iterations;
+
+    std::shared_ptr<std::vector<float>> orbitPtr = std::make_shared<std::vector<float>>(CALC_WIDTH * CALC_HEIGHT);
+
+    MandelbrotState(double x, double y, double r, int iterations) {
+        mpfr_init2(center_x, MPFR_DIGITS);
+        mpfr_init2(center_y, MPFR_DIGITS);
+        mpfr_init2(radius, MPFR_DIGITS);
+
+        set(x, y, r, iterations);
+    }
+
+    ~MandelbrotState() {
+        mpfr_clear(center_x);
+        mpfr_clear(center_y);
+        mpfr_clear(radius);
+    }
+
+    void set(double x, double y, double r, int iter) {
+        mpfr_set_d(center_x, x, MPFR_RNDN);
+        mpfr_set_d(center_y, y, MPFR_RNDN);
+        mpfr_set_d(radius, r, MPFR_RNDN);
+        this->iterations = iter;
+    }
+
+    void set(const std::string& x_str, const std::string& y_str, const std::string& r_str, int iter) {
+        mpfr_set_str(center_x, x_str.c_str(), 10, MPFR_RNDN);
+        mpfr_set_str(center_y, y_str.c_str(), 10, MPFR_RNDN);
+        mpfr_set_str(radius, r_str.c_str(), 10, MPFR_RNDN);
+        this->iterations = iter;
+    }
+
+    void zoomIn(double dx, double dy, double factor) {
+        mpfr_t mx, my, offset_x, offset_y;
+        mpfr_init2(mx, MPFR_DIGITS);
+        mpfr_init2(my, MPFR_DIGITS);
+        mpfr_init2(offset_x, MPFR_DIGITS);
+        mpfr_init2(offset_y, MPFR_DIGITS);
+
+        mpfr_mul_d(mx, radius, dx, MPFR_RNDN);
+        mpfr_mul_d(my, radius, -dy, MPFR_RNDN);
+        mpfr_add(offset_x, center_x, mx, MPFR_RNDN);
+        mpfr_add(offset_y, center_y, my, MPFR_RNDN);
+
+        mpfr_mul_d(radius, radius, factor, MPFR_RNDN);
+
+        mpfr_mul_d(mx, radius, dx, MPFR_RNDN);
+        mpfr_mul_d(my, radius, -dy, MPFR_RNDN);
+        mpfr_sub(center_x, offset_x, mx, MPFR_RNDN);
+        mpfr_sub(center_y, offset_y, my, MPFR_RNDN);
+
+        mpfr_clear(mx);
+        mpfr_clear(my);
+        mpfr_clear(offset_x);
+        mpfr_clear(offset_y);
+    }
+
+    void zoomOut(double factor) {
+        mpfr_mul_d(radius, radius, factor, MPFR_RNDN);
+    }
+
+    mpfr_t* getCenterX() { return &center_x; }
+    mpfr_t* getCenterY() { return &center_y; }
+    mpfr_t* getRadius() { return &radius; }
+};
+
+std::string mpfr_to_string(mpfr_t *x, int base = 10, size_t precision = 0) {
+    mpfr_exp_t exp;
+    char *mantissa = mpfr_get_str(nullptr, &exp, base, precision, *x, MPFR_RNDN);
+    if (!mantissa) return {};
+
+    std::string result;
+    bool is_negative = (mantissa[0] == '-');
+    std::string digits = is_negative ? mantissa + 1 : mantissa;
+
+    if (is_negative)
+        result.push_back('-');
+
+    if (exp <= 0) {
+        result += "0.";
+        result.append(-exp, '0');
+        result += digits;
+    } else if ((size_t)exp >= digits.size()) {
+        result += digits;
+        result.append(exp - digits.size(), '0');
+    } else {
+        result.append(digits.substr(0, exp));
+        result.push_back('.');
+        result.append(digits.substr(exp));
+    }
+
+    if (auto dot_pos = result.find('.'); dot_pos != std::string::npos) {
+        while (!result.empty() && result.back() == '0')
+            result.pop_back();
+        if (!result.empty() && result.back() == '.')
+            result.pop_back();
+    }
+
+    mpfr_free_str(mantissa);
+    return result;
+}
+
+struct DoubleDouble {
+    double mantissa;
+    double exponent;
+
+    DoubleDouble(double m = 0.0, double e = 0.0) : mantissa(m), exponent(e) {}
+};
+
+DoubleDouble sub(const DoubleDouble& a, const DoubleDouble& b) {
+    double ret_e = std::max(a.exponent, b.exponent);
+    double am = a.mantissa;
+    double bm = b.mantissa;
+    if (ret_e > a.exponent) {
+        am = am * std::pow(2, a.exponent - ret_e);
+    } else {
+        bm = bm * std::pow(2, b.exponent - ret_e);
+    }
+    return DoubleDouble(am - bm, ret_e);
+}
+
+DoubleDouble add(const DoubleDouble& a, const DoubleDouble& b) {
+    double ret_e = std::max(a.exponent, b.exponent);
+    double am = a.mantissa;
+    double bm = b.mantissa;
+    if (ret_e > a.exponent) {
+        am = am * std::pow(2, a.exponent - ret_e);
+    } else {
+        bm = bm * std::pow(2, b.exponent - ret_e);
+    }
+    return DoubleDouble(am + bm, ret_e);
+}
+
+DoubleDouble mul(const DoubleDouble& a, const DoubleDouble& b) {
+    double m = a.mantissa * b.mantissa;
+    double e = a.exponent + b.exponent;
+    if (m != 0) {
+        double logm = std::round(std::log2(std::abs(m)));
+        m = m / std::pow(2, logm);
+        e = e + logm;
+    }
+    return DoubleDouble(m, e);
+}
+
+DoubleDouble maxabs(const DoubleDouble& a, const DoubleDouble& b) {
+    double ret_e = std::max(a.exponent, b.exponent);
+    double am = a.mantissa;
+    double bm = b.mantissa;
+    if (ret_e > a.exponent) {
+        am = am * std::pow(2, a.exponent - ret_e);
+    } else {
+        bm = bm * std::pow(2, b.exponent - ret_e);
+    }
+    return DoubleDouble(std::max(std::abs(am), std::abs(bm)), ret_e);
+}
+
+bool gt(const DoubleDouble& a, const DoubleDouble& b) {
+    double ret_e = std::max(a.exponent, b.exponent);
+    double am = a.mantissa;
+    double bm = b.mantissa;
+    if (ret_e > a.exponent) {
+        am = am * std::pow(2, a.exponent - ret_e);
+    } else {
+        bm = bm * std::pow(2, b.exponent - ret_e);
+    }
+    return am > bm;
+}
+
+float floaty(const DoubleDouble& d) {
+    return std::pow(2, d.exponent) * d.mantissa;
+}
+
+struct OrbitData {
+    std::vector<double> poly;
+    int polylim;
+    std::vector<float> polyScaled;
+    int polyScaleExp;
+};
+
+OrbitData makeReferenceOrbit(MandelbrotState& state) {
+    mpfr_t x, y, cx, cy;
+    mpfr_init2(x, MPFR_DIGITS);
+    mpfr_init2(y, MPFR_DIGITS);
+    mpfr_init2(cx, MPFR_DIGITS);
+    mpfr_init2(cy, MPFR_DIGITS);
+
+    mpfr_set_d(x, 0.0, MPFR_RNDN);
+    mpfr_set_d(y, 0.0, MPFR_RNDN);
+    mpfr_set(cx, *state.getCenterX(), MPFR_RNDN);
+    mpfr_set(cy, *state.getCenterY(), MPFR_RNDN);
+
+    std::vector<float>& orbit = *state.orbitPtr;
+    std::fill(orbit.begin(), orbit.end(), -1.0);
+
+    mpfr_t txx, txy, tyy;
+    mpfr_init2(txx, MPFR_DIGITS);
+    mpfr_init2(txy, MPFR_DIGITS);
+    mpfr_init2(tyy, MPFR_DIGITS);
+
+    int polylim = 0;
+
+    DoubleDouble Bx(0, 0), By(0, 0), Cx(0, 0), Cy(0, 0), Dx(0, 0), Dy(0, 0);
+    std::vector<DoubleDouble> poly = {Bx, By, Cx, Cy, Dx, Dy};
+    bool not_failed = true;
+
+    int i;
+    for (i = 0; i < state.iterations; i++) {
+        mpfr_exp_t x_exponent = mpfr_get_exp(x);
+        mpfr_exp_t y_exponent = mpfr_get_exp(y);
+        mpfr_exp_t scale_exponent = std::max(x_exponent, y_exponent);
+
+        if (scale_exponent < -10000) {
+            scale_exponent = 0;
+        }
+
+        if (3 * i + 2 < (int)orbit.size()) {
+            if (mpfr_zero_p(x) && mpfr_zero_p(y)) {
+                orbit[3 * i] = 0.0;
+                orbit[3 * i + 1] = 0.0;
+                orbit[3 * i + 2] = 0.0;
+            } else {
+                mpfr_exp_t dummy_exp;
+                double x_mantissa = mpfr_get_d_2exp(&dummy_exp, x, MPFR_RNDN);
+                double y_mantissa = mpfr_get_d_2exp(&dummy_exp, y, MPFR_RNDN);
+
+                orbit[3 * i] = mpfr_zero_p(x) ? 0.0 : (x_mantissa / std::pow(2, scale_exponent - x_exponent));
+                orbit[3 * i + 1] = mpfr_zero_p(y) ? 0.0 : (y_mantissa / std::pow(2, scale_exponent - y_exponent));
+                orbit[3 * i + 2] = scale_exponent;
+            }
+        }
+
+        DoubleDouble fx(orbit[3 * i], orbit[3 * i + 2]);
+        DoubleDouble fy(orbit[3 * i + 1], orbit[3 * i + 2]);
+
+        std::vector<DoubleDouble> prev_poly = {Bx, By, Cx, Cy, Dx, Dy};
+        mpfr_mul(txx, x, x, MPFR_RNDN);
+        mpfr_mul(txy, x, y, MPFR_RNDN);
+        mpfr_mul(tyy, y, y, MPFR_RNDN);
+        mpfr_sub(x, txx, tyy, MPFR_RNDN);
+        mpfr_add(x, x, cx, MPFR_RNDN);
+        mpfr_add(y, txy, txy, MPFR_RNDN);
+        mpfr_add(y, y, cy, MPFR_RNDN);
+
+        DoubleDouble new_Bx = add(mul(DoubleDouble(2, 0), sub(mul(fx, Bx), mul(fy, By))), DoubleDouble(1, 0));
+        DoubleDouble new_By = mul(DoubleDouble(2, 0), add(mul(fx, By), mul(fy, Bx)));
+
+        DoubleDouble new_Cx = sub(add(mul(DoubleDouble(2, 0), sub(mul(fx, Cx), mul(fy, Cy))), mul(Bx, Bx)), mul(By, By));
+        DoubleDouble new_Cy = add(mul(DoubleDouble(2, 0), add(mul(fx, Cy), mul(fy, Cx))), mul(mul(DoubleDouble(2, 0), Bx), By));
+
+        DoubleDouble new_Dx = mul(DoubleDouble(2, 0), add(sub(mul(fx, Dx), mul(fy, Dy)), sub(mul(Cx, Bx), mul(Cy, By))));
+        DoubleDouble new_Dy = mul(DoubleDouble(2, 0), add(add(add(mul(fx, Dy), mul(fy, Dx)), mul(Cx, By)), mul(Cy, Bx)));
+
+        Bx = new_Bx; By = new_By; Cx = new_Cx; Cy = new_Cy; Dx = new_Dx; Dy = new_Dy;
+
+        mpfr_exp_t fx_new_exp, fy_new_exp;
+        double fx_new_mantissa = mpfr_get_d_2exp(&fx_new_exp, x, MPFR_RNDN);
+        double fy_new_mantissa = mpfr_get_d_2exp(&fy_new_exp, y, MPFR_RNDN);
+
+        DoubleDouble fx_new(fx_new_mantissa, fx_new_exp);
+        DoubleDouble fy_new(fy_new_mantissa, fy_new_exp);
+
+        mpfr_t radius_for_poly;
+        mpfr_init2(radius_for_poly, MPFR_DIGITS);
+        mpfr_set(radius_for_poly, *state.getRadius(), MPFR_RNDN);
+        mpfr_exp_t radius_exp = mpfr_get_exp(radius_for_poly);
+
+        DoubleDouble threshold = mul(DoubleDouble(1000, radius_exp), maxabs(Dx, Dy));
+
+        if (i == 0 || gt(maxabs(Cx, Cy), threshold)) {
+            if (not_failed) {
+                poly = prev_poly;
+                polylim = i;
+            }
+        } else {
+            not_failed = false;
+        }
+
+        mpfr_clear(radius_for_poly);
+
+        DoubleDouble z_squared = add(mul(fx_new, fx_new), mul(fy_new, fy_new));
+        if (gt(z_squared, DoubleDouble(CALC_BAILOUT, 0))) {
+            break;
+        }
+    }
+
+    mpfr_clear(x);
+    mpfr_clear(y);
+    mpfr_clear(cx);
+    mpfr_clear(cy);
+    mpfr_clear(txx);
+    mpfr_clear(txy);
+    mpfr_clear(tyy);
+
+    std::vector<double> poly_double;
+    for (const auto& p : poly) {
+        poly_double.push_back(floaty(p));
+    }
+
+    mpfr_t radius_mpfr;
+    mpfr_init2(radius_mpfr, MPFR_DIGITS);
+    mpfr_set(radius_mpfr, *state.getRadius(), MPFR_RNDN);
+
+    mpfr_exp_t rexp = mpfr_get_exp(radius_mpfr);
+    mpfr_exp_t exp_temp;
+    double r_mantissa = mpfr_get_d_2exp(&exp_temp, radius_mpfr, MPFR_RNDN);
+    DoubleDouble r(r_mantissa, rexp);
+    mpfr_clear(radius_mpfr);
+
+    DoubleDouble poly_scale_exp = mul(DoubleDouble(1, 0), maxabs(poly[0], poly[1]));
+    DoubleDouble poly_scale(1, -poly_scale_exp.exponent);
+
+    std::vector<float> poly_scaled = {
+            floaty(mul(poly_scale, poly[0])),
+            floaty(mul(poly_scale, poly[1])),
+            floaty(mul(poly_scale, mul(r, poly[2]))),
+            floaty(mul(poly_scale, mul(r, poly[3]))),
+            floaty(mul(poly_scale, mul(r, mul(r, poly[4])))),
+            floaty(mul(poly_scale, mul(r, mul(r, poly[5]))))
+    };
+
+    return { poly_double, polylim, poly_scaled, (int)poly_scale_exp.exponent };
+}
+
+// Thread-local storage for returned strings
+static thread_local std::string g_centerX;
+static thread_local std::string g_centerY;
+static thread_local std::string g_radius;
+
+extern "C" {
+
+void* mandel_createState(double x, double y, double r, int iterations) {
+    return new MandelbrotState(x, y, r, iterations);
+}
+
+void mandel_destroyState(void* statePtr) {
+    delete reinterpret_cast<MandelbrotState*>(statePtr);
+}
+
+void mandel_setState(void* statePtr, double x, double y, double r, int iterations) {
+    reinterpret_cast<MandelbrotState*>(statePtr)->set(x, y, r, iterations);
+}
+
+void mandel_setStateStr(void* statePtr, const char* x_str, const char* y_str, const char* r_str, int iterations) {
+    reinterpret_cast<MandelbrotState*>(statePtr)->set(
+        std::string(x_str), std::string(y_str), std::string(r_str), iterations
+    );
+}
+
+void mandel_zoomIn(void* statePtr, double dx, double dy, double factor) {
+    reinterpret_cast<MandelbrotState*>(statePtr)->zoomIn(dx, dy, factor);
+}
+
+void mandel_zoomOut(void* statePtr, double factor) {
+    reinterpret_cast<MandelbrotState*>(statePtr)->zoomOut(factor);
+}
+
+OrbitResultC mandel_generateOrbit(void* statePtr) {
+    MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
+    OrbitData data = makeReferenceOrbit(*state);
+
+    OrbitResultC result;
+    result.orbitData = state->orbitPtr->data();
+    result.orbitSize = (int)state->orbitPtr->size();
+
+    for (int j = 0; j < 6; j++) {
+        result.polyScaled[j] = data.polyScaled[j];
+    }
+    result.polyLim = data.polylim;
+    result.polyScaleExp = data.polyScaleExp;
+
+    mpfr_t log_val;
+    mpfr_init2(log_val, MPFR_DIGITS);
+    mpfr_log2(log_val, *state->getRadius(), MPFR_RNDN);
+    result.radiusExp = mpfr_get_d(log_val, MPFR_RNDN);
+    mpfr_clear(log_val);
+
+    return result;
+}
+
+void mandel_setIterations(void* statePtr, int iterations) {
+    reinterpret_cast<MandelbrotState*>(statePtr)->iterations = iterations;
+}
+
+const char* mandel_getCenterX(void* statePtr) {
+    MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
+    g_centerX = mpfr_to_string(state->getCenterX());
+    return g_centerX.c_str();
+}
+
+const char* mandel_getCenterY(void* statePtr) {
+    MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
+    g_centerY = mpfr_to_string(state->getCenterY());
+    return g_centerY.c_str();
+}
+
+const char* mandel_getRadius(void* statePtr) {
+    MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
+    g_radius = mpfr_to_string(state->getRadius());
+    return g_radius.c_str();
+}
+
+}
