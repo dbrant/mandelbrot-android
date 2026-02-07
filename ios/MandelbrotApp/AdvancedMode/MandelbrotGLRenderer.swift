@@ -39,11 +39,7 @@ class MandelbrotGLRenderer {
     private var curOrbitResult: OrbitResult?
     private var recalculateOrbit = false
     private var tileQueue = [Int]()
-    private var tileHeight: Int = 0
-    private var tilesPerDraw: Int = 30
-    private let minTilesPerDraw = 20
-    private var lastFrameTime: CFTimeInterval = 0
-    private var heaviestFrameMillis: Int64 = 0
+    private let tileHeight: Int = 64
 
     private var saveBitmapCallback: ((UIImage?) -> Void)?
 
@@ -103,7 +99,6 @@ class MandelbrotGLRenderer {
 
         curOrbitResult = mandelbrotState!.generateOrbit()
 
-        tileHeight = (surfaceHeight / tilesPerDraw) + 1
         let yOffset = surfaceHeight / 2 - tileHeight / 2
         var offsetHi = yOffset
         var offsetLo = yOffset
@@ -261,14 +256,6 @@ class MandelbrotGLRenderer {
         if tileQueue.isEmpty && !recalculateOrbit {
             drawFrameBuffer(frameBufferTexture)
 
-            if heaviestFrameMillis > 250 {
-                tilesPerDraw += 4
-            } else {
-                tilesPerDraw -= 4
-            }
-            tilesPerDraw = max(tilesPerDraw, minTilesPerDraw)
-            tilesPerDraw = min(tilesPerDraw, 60)
-
             if let callback = saveBitmapCallback {
                 let image = captureFrameBuffer()
                 callback(image)
@@ -282,8 +269,6 @@ class MandelbrotGLRenderer {
 
         glBindTexture(GLenum(GL_TEXTURE_2D), orbitTexture)
         if recalculateOrbit {
-            heaviestFrameMillis = 0
-            lastFrameTime = CACurrentMediaTime()
             doRecalculateOrbit()
 
             glTexImage2D(GLenum(GL_TEXTURE_2D), 0, GL_R32F, 1024, 1024, 0, GLenum(GL_RED), GLenum(GL_FLOAT), curOrbitResult!.orbitData)
@@ -291,12 +276,6 @@ class MandelbrotGLRenderer {
 
             glClearColor(0.2, 0.2, 0.4, 1)
             glClear(GLbitfield(GL_COLOR_BUFFER_BIT))
-        } else {
-            let m = Int64((CACurrentMediaTime() - lastFrameTime) * 1000)
-            lastFrameTime = CACurrentMediaTime()
-            if m > heaviestFrameMillis {
-                heaviestFrameMillis = m
-            }
         }
         glDisable(GLenum(GL_DEPTH_TEST))
 
