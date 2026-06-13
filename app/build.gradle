@@ -2,13 +2,19 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 apply plugin: 'com.android.application'
 
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.JVM_17
+    }
+}
+
 android {
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId "com.dmitrybrant.android.mandelbrot"
         minSdk = 23
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 70
         versionName "${(new Date()).format('yyyy-MM-dd')}"
 
@@ -52,11 +58,6 @@ android {
         }
     }
 
-    kotlin {
-        compilerOptions {
-            jvmTarget = JvmTarget.JVM_17
-        }
-    }
     compileOptions {
         targetCompatibility JavaVersion.VERSION_17
         sourceCompatibility JavaVersion.VERSION_17
