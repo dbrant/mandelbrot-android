@@ -29,7 +29,7 @@ abstract class MandelbrotViewBase(context: Context, attrs: AttributeSet? = null)
     )
 
     private var isJulia = false
-    private val currentThreads = mutableListOf<Thread>()
+    private var currentThread: Thread? = null
     @Volatile private var terminateThreads = false
     private val paint = Paint()
     private lateinit var viewportBitmap: Bitmap
@@ -197,21 +197,15 @@ abstract class MandelbrotViewBase(context: Context, attrs: AttributeSet? = null)
         renderer.setParameters(power, numIterations, xmin, xmax, ymin, ymax,
             isJulia, jx, jy, screenWidth, screenHeight)
 
-        var y = 0
-        val numThreads = 2
-        for (i in 0 until numThreads) {
-            val t = MandelThread(0, y, screenWidth, screenHeight / numThreads, startCoarseness)
-            t.start()
-            currentThreads.add(t)
-            y += screenHeight / numThreads
-        }
+        // This thread steps through the levels, while the calculator spreads each one over all cores.
+        currentThread = MandelThread(startCoarseness).also { it.start() }
     }
 
     fun terminateThreads() {
         try {
             renderer.signalTerminate()
             terminateThreads = true
-            for (t in currentThreads) {
+            currentThread?.let { t ->
                 if (t.isAlive) {
                     t.join(DateUtils.SECOND_IN_MILLIS)
                 }
@@ -220,7 +214,7 @@ abstract class MandelbrotViewBase(context: Context, attrs: AttributeSet? = null)
                 }
             }
             terminateThreads = false
-            currentThreads.clear()
+            currentThread = null
         } catch (ex: Exception) {
             Log.w(TAG, "Exception while terminating threads: " + ex.message)
         }
@@ -280,11 +274,11 @@ abstract class MandelbrotViewBase(context: Context, attrs: AttributeSet? = null)
         pt.y = (event.getY(0) + event.getY(1)) * 0.5f
     }
 
-    private inner class MandelThread(private val startX: Int, private val startY: Int, private val startWidth: Int, private val startHeight: Int, private val level: Int) : Thread() {
+    private inner class MandelThread(private val level: Int) : Thread() {
         override fun run() {
             var curLevel = level
             while (true) {
-                renderer.drawFractal(startX, startY, startWidth, startHeight, curLevel, curLevel == level)
+                renderer.drawFractal(curLevel, curLevel == level)
                 postInvalidate()
                 if (terminateThreads) {
                     break
