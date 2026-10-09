@@ -35,8 +35,8 @@ class MandelGLView(context: Context, attrs: AttributeSet? = null) : GLSurfaceVie
     }
 
     override fun onDetachedFromWindow() {
-        renderer.cleanup()
         super.onDetachedFromWindow()
+        renderer.cleanup()
     }
 
     private fun doCallback() {

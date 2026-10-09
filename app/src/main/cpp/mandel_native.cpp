@@ -400,26 +400,35 @@ Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_destroyState(JNIEnv *en
 
 JNIEXPORT void JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_setState(JNIEnv *env, jobject clazz, jlong statePtr, jdouble x, jdouble y, jdouble r, jint iterations) {
-    reinterpret_cast<MandelbrotState*>(statePtr)->set(x, y, r, iterations);
+    MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
+    if (!state) return;
+    state->set(x, y, r, iterations);
 }
 
 JNIEXPORT void JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_setIterations(JNIEnv *env, jobject clazz, jlong statePtr, jint iterations) {
-    reinterpret_cast<MandelbrotState*>(statePtr)->iterations = iterations;
+    MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
+    if (!state) return;
+    state->iterations = iterations;
 }
 
 JNIEXPORT void JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_zoomIn(JNIEnv *env, jobject clazz, jlong statePtr, jdouble dx, jdouble dy, jdouble factor) {
-    reinterpret_cast<MandelbrotState*>(statePtr)->zoomIn(dx, dy, factor);
+    MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
+    if (!state) return;
+    state->zoomIn(dx, dy, factor);
 }
 
 JNIEXPORT void JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_setStateStr(JNIEnv *env, jobject clazz, jlong statePtr, jstring x_str, jstring y_str, jstring r_str, jint iterations) {
+    MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
+    if (!state) return;
+
     const char* x_cstr = env->GetStringUTFChars(x_str, nullptr);
     const char* y_cstr = env->GetStringUTFChars(y_str, nullptr);
     const char* r_cstr = env->GetStringUTFChars(r_str, nullptr);
     
-    reinterpret_cast<MandelbrotState*>(statePtr)->set(
+    state->set(
         std::string(x_cstr), std::string(y_cstr), std::string(r_cstr), iterations
     );
     
@@ -430,12 +439,15 @@ Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_setStateStr(JNIEnv *env
 
 JNIEXPORT void JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_zoomOut(JNIEnv *env, jobject clazz, jlong statePtr, jdouble factor) {
-    reinterpret_cast<MandelbrotState*>(statePtr)->zoomOut(factor);
+    MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
+    if (!state) return;
+    state->zoomOut(factor);
 }
 
 JNIEXPORT jobject JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_generateOrbit(JNIEnv *env, jobject clazz, jlong statePtr) {
     MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
+    if (!state) return nullptr;
     OrbitData data = makeReferenceOrbit(*state);
 
     jclass localClass = env->FindClass("com/dmitrybrant/android/mandelbrot/OrbitResult");
@@ -464,6 +476,7 @@ Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_generateOrbit(JNIEnv *e
 JNIEXPORT jstring JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getCenterX(JNIEnv *env, jobject clazz, jlong statePtr) {
     MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
+    if (!state) return nullptr;
     std::string str = mpfr_to_string(state->getCenterX());
     return env->NewStringUTF(str.c_str());
 }
@@ -471,6 +484,7 @@ Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getCenterX(JNIEnv *env,
 JNIEXPORT jstring JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getCenterY(JNIEnv *env, jobject clazz, jlong statePtr) {
     MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
+    if (!state) return nullptr;
     std::string str = mpfr_to_string(state->getCenterY());
     return env->NewStringUTF(str.c_str());
 }
@@ -478,6 +492,7 @@ Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getCenterY(JNIEnv *env,
 JNIEXPORT jstring JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getRadius(JNIEnv *env, jobject clazz, jlong statePtr) {
     MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
+    if (!state) return nullptr;
     std::string str = mpfr_to_string(state->getRadius());
     return env->NewStringUTF(str.c_str());
 }
