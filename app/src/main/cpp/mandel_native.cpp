@@ -188,14 +188,33 @@ struct DoubleDouble {
     DoubleDouble(double m = 0.0, double e = 0.0) : mantissa(m), exponent(e) {}
 };
 
+// Returns m * 2^e. The exponents used here are always whole numbers, and wherever 2^e is a
+// finite, nonzero double, ldexp gives exactly the same result as m * std::pow(2, e), much faster.
+double times_pow2(double m, double e) {
+    if (e >= -1074 && e <= 1023) {
+        return std::ldexp(m, (int)e);
+    }
+    return m * std::pow(2, e);
+}
+
+// Returns m / 2^e, exactly as m / std::pow(2, e) would; see times_pow2.
+double div_pow2(double m, double e) {
+    if (e >= -1074 && e <= 1023) {
+        return std::ldexp(m, -(int)e);
+    }
+    return m / std::pow(2, e);
+}
+
+constexpr double SQRT_HALF = 0.70710678118654752440;
+
 DoubleDouble sub(const DoubleDouble& a, const DoubleDouble& b) {
     double ret_e = std::max(a.exponent, b.exponent);
     double am = a.mantissa;
     double bm = b.mantissa;
     if (ret_e > a.exponent) {
-        am = am * std::pow(2, a.exponent - ret_e);
+        am = times_pow2(am, a.exponent - ret_e);
     } else {
-        bm = bm * std::pow(2, b.exponent - ret_e);
+        bm = times_pow2(bm, b.exponent - ret_e);
     }
     return DoubleDouble(am - bm, ret_e);
 }
@@ -205,9 +224,9 @@ DoubleDouble add(const DoubleDouble& a, const DoubleDouble& b) {
     double am = a.mantissa;
     double bm = b.mantissa;
     if (ret_e > a.exponent) {
-        am = am * std::pow(2, a.exponent - ret_e);
+        am = times_pow2(am, a.exponent - ret_e);
     } else {
-        bm = bm * std::pow(2, b.exponent - ret_e);
+        bm = times_pow2(bm, b.exponent - ret_e);
     }
     return DoubleDouble(am + bm, ret_e);
 }
@@ -216,9 +235,23 @@ DoubleDouble mul(const DoubleDouble& a, const DoubleDouble& b) {
     double m = a.mantissa * b.mantissa;
     double e = a.exponent + b.exponent;
     if (m != 0) {
-        double logm = std::round(std::log2(std::abs(m)));
-        m = m / std::pow(2, logm);
-        e = e + logm;
+        // Normalize m to [1/sqrt(2), sqrt(2)), i.e. divide out 2^round(log2(|m|)). frexp does this
+        // exactly; log2 is only used where its rounding could change the outcome: within a hair of
+        // the 1/sqrt(2) boundary, or for magnitudes far outside the ones that occur here.
+        int k;
+        double f = std::frexp(m, &k);  // m = f * 2^k, with 0.5 <= |f| < 1
+        if (std::isfinite(m) && k > -1000 && k < 1000 && std::abs(std::abs(f) - SQRT_HALF) > 1e-12) {
+            if (std::abs(f) < SQRT_HALF) {
+                f *= 2;
+                k--;
+            }
+            m = f;
+            e += k;
+        } else {
+            double logm = std::round(std::log2(std::abs(m)));
+            m = m / std::pow(2, logm);
+            e = e + logm;
+        }
     }
     return DoubleDouble(m, e);
 }
@@ -228,9 +261,9 @@ DoubleDouble maxabs(const DoubleDouble& a, const DoubleDouble& b) {
     double am = a.mantissa;
     double bm = b.mantissa;
     if (ret_e > a.exponent) {
-        am = am * std::pow(2, a.exponent - ret_e);
+        am = times_pow2(am, a.exponent - ret_e);
     } else {
-        bm = bm * std::pow(2, b.exponent - ret_e);
+        bm = times_pow2(bm, b.exponent - ret_e);
     }
     return DoubleDouble(std::max(std::abs(am), std::abs(bm)), ret_e);
 }
@@ -240,9 +273,9 @@ bool gt(const DoubleDouble& a, const DoubleDouble& b) {
     double am = a.mantissa;
     double bm = b.mantissa;
     if (ret_e > a.exponent) {
-        am = am * std::pow(2, a.exponent - ret_e);
+        am = times_pow2(am, a.exponent - ret_e);
     } else {
-        bm = bm * std::pow(2, b.exponent - ret_e);
+        bm = times_pow2(bm, b.exponent - ret_e);
     }
     return am > bm;
 }
@@ -320,8 +353,8 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
             double x_mantissa = mpfr_get_d_2exp(&dummy_exp, x, MPFR_RNDN);
             double y_mantissa = mpfr_get_d_2exp(&dummy_exp, y, MPFR_RNDN);
 
-            orbit[3 * i] = mpfr_zero_p(x) ? 0.0 : (x_mantissa / std::pow(2, scale_exponent - x_exponent));
-            orbit[3 * i + 1] = mpfr_zero_p(y) ? 0.0 : (y_mantissa / std::pow(2, scale_exponent - y_exponent));
+            orbit[3 * i] = mpfr_zero_p(x) ? 0.0 : div_pow2(x_mantissa, scale_exponent - x_exponent);
+            orbit[3 * i + 1] = mpfr_zero_p(y) ? 0.0 : div_pow2(y_mantissa, scale_exponent - y_exponent);
             orbit[3 * i + 2] = scale_exponent;
         }
 
