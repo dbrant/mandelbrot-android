@@ -54,7 +54,7 @@ class MandelbrotRenderer(private val context: Context, val callback: Callback) :
 
     private var curOrbitResult: OrbitResult? = null
     private var curOrbitBuffer: FloatBuffer? = null
-    private var recalculateOrbit = false
+    @Volatile private var recalculateOrbit = false
     private val tileQueue = ArrayDeque<Int>()
     private var tileHeight = 0
     private var tilesPerDraw = 9
@@ -349,11 +349,11 @@ class MandelbrotRenderer(private val context: Context, val callback: Callback) :
 
         glBindTexture(GL_TEXTURE_2D, orbitTexture)
         if (recalculateOrbit) {
+            recalculateOrbit = false
             heaviestFrameMillis = 0
             lastFrameMillis = System.currentTimeMillis()
             doRecalculateOrbit()
             glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, 1024, 1024, 0, GL_RED, GL_FLOAT, curOrbitBuffer)
-            recalculateOrbit = false
 
             glClearColor(0.2f, 0.2f, 0.4f, 1f)
             glClear(GL_COLOR_BUFFER_BIT)

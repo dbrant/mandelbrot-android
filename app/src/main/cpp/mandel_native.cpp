@@ -10,6 +10,7 @@
 #include <cmath>
 #include <string>
 #include <algorithm>
+#include <mutex>
 #include <mpfr.h>
 #include <android/log.h>
 
@@ -20,86 +21,6 @@
 #define CALC_HEIGHT 1024
 #define CALC_BAILOUT 400
 #define MPFR_DIGITS 1200
-
-class MandelbrotState {
-private:
-    mpfr_t center_x, center_y, radius;
-
-public:
-    int iterations;
-
-    std::shared_ptr<std::vector<float>> orbitPtr = std::make_shared<std::vector<float>>(CALC_WIDTH * CALC_HEIGHT);
-
-    MandelbrotState(double x, double y, double r, int iterations) {
-        mpfr_init2(center_x, MPFR_DIGITS);
-        mpfr_init2(center_y, MPFR_DIGITS);
-        mpfr_init2(radius, MPFR_DIGITS);
-
-        set(x, y, r, iterations);
-    }
-
-    ~MandelbrotState() {
-        mpfr_clear(center_x);
-        mpfr_clear(center_y);
-        mpfr_clear(radius);
-    }
-
-    void set(double x, double y, double r, int iter) {
-        mpfr_set_d(center_x, x, MPFR_RNDN);
-        mpfr_set_d(center_y, y, MPFR_RNDN);
-        mpfr_set_d(radius, r, MPFR_RNDN);
-        this->iterations = iter;
-    }
-
-    void set(const std::string& x_str, const std::string& y_str, const std::string& r_str, int iter) {
-        int result_x = mpfr_set_str(center_x, x_str.c_str(), 10, MPFR_RNDN);
-        int result_y = mpfr_set_str(center_y, y_str.c_str(), 10, MPFR_RNDN);
-        int result_r = mpfr_set_str(radius, r_str.c_str(), 10, MPFR_RNDN);
-        this->iterations = iter;
-        
-        if (result_x != 0 || result_y != 0 || result_r != 0) {
-            LOGI("Warning: Failed to parse some coordinate strings");
-        }
-    }
-
-    void zoomIn(double dx, double dy, double factor) {
-        mpfr_t mx, my, offset_x, offset_y;
-        mpfr_init2(mx, MPFR_DIGITS);
-        mpfr_init2(my, MPFR_DIGITS);
-        mpfr_init2(offset_x, MPFR_DIGITS);
-        mpfr_init2(offset_y, MPFR_DIGITS);
-
-        // Calculate the world-space position of the clicked point
-        // clicked_point = center + radius * (dx, -dy)
-        mpfr_mul_d(mx, radius, dx, MPFR_RNDN);
-        mpfr_mul_d(my, radius, -dy, MPFR_RNDN);
-        mpfr_add(offset_x, center_x, mx, MPFR_RNDN);  // clicked_x = center_x + mx
-        mpfr_add(offset_y, center_y, my, MPFR_RNDN);  // clicked_y = center_y + my
-
-        // Apply zoom to radius
-        mpfr_mul_d(radius, radius, factor, MPFR_RNDN);
-
-        // Calculate new center to keep clicked point at same screen position
-        // new_center = clicked_point - new_radius * (dx, -dy)
-        mpfr_mul_d(mx, radius, dx, MPFR_RNDN);
-        mpfr_mul_d(my, radius, -dy, MPFR_RNDN);
-        mpfr_sub(center_x, offset_x, mx, MPFR_RNDN);  // center_x = clicked_x - new_mx
-        mpfr_sub(center_y, offset_y, my, MPFR_RNDN);  // center_y = clicked_y - new_my
-
-        mpfr_clear(mx);
-        mpfr_clear(my);
-        mpfr_clear(offset_x);
-        mpfr_clear(offset_y);
-    }
-
-    void zoomOut(double factor) {
-        mpfr_mul_d(radius, radius, factor, MPFR_RNDN);
-    }
-
-    mpfr_t* getCenterX() { return &center_x; }
-    mpfr_t* getCenterY() { return &center_y; }
-    mpfr_t* getRadius() { return &radius; }
-};
 
 std::string mpfr_to_string(mpfr_t *x, int base = 10, size_t precision = 0) {
     mpfr_exp_t exp;
@@ -140,6 +61,118 @@ std::string mpfr_to_string(mpfr_t *x, int base = 10, size_t precision = 0) {
     mpfr_free_str(mantissa);
     return result;
 }
+
+class MandelbrotState {
+private:
+    // The view is changed on the UI thread and read on the GL thread, so all access to
+    // these fields goes through the mutex.
+    std::mutex mutex;
+    mpfr_t center_x, center_y, radius;
+    int iterations;
+
+public:
+    std::shared_ptr<std::vector<float>> orbitPtr = std::make_shared<std::vector<float>>(CALC_WIDTH * CALC_HEIGHT);
+
+    MandelbrotState(double x, double y, double r, int iterations) {
+        mpfr_init2(center_x, MPFR_DIGITS);
+        mpfr_init2(center_y, MPFR_DIGITS);
+        mpfr_init2(radius, MPFR_DIGITS);
+
+        set(x, y, r, iterations);
+    }
+
+    ~MandelbrotState() {
+        mpfr_clear(center_x);
+        mpfr_clear(center_y);
+        mpfr_clear(radius);
+    }
+
+    void set(double x, double y, double r, int iter) {
+        std::lock_guard<std::mutex> lock(mutex);
+        mpfr_set_d(center_x, x, MPFR_RNDN);
+        mpfr_set_d(center_y, y, MPFR_RNDN);
+        mpfr_set_d(radius, r, MPFR_RNDN);
+        this->iterations = iter;
+    }
+
+    void set(const std::string& x_str, const std::string& y_str, const std::string& r_str, int iter) {
+        std::lock_guard<std::mutex> lock(mutex);
+        int result_x = mpfr_set_str(center_x, x_str.c_str(), 10, MPFR_RNDN);
+        int result_y = mpfr_set_str(center_y, y_str.c_str(), 10, MPFR_RNDN);
+        int result_r = mpfr_set_str(radius, r_str.c_str(), 10, MPFR_RNDN);
+        this->iterations = iter;
+        
+        if (result_x != 0 || result_y != 0 || result_r != 0) {
+            LOGI("Warning: Failed to parse some coordinate strings");
+        }
+    }
+
+    void setIterations(int iter) {
+        std::lock_guard<std::mutex> lock(mutex);
+        iterations = iter;
+    }
+
+    void zoomIn(double dx, double dy, double factor) {
+        std::lock_guard<std::mutex> lock(mutex);
+        mpfr_t mx, my, offset_x, offset_y;
+        mpfr_init2(mx, MPFR_DIGITS);
+        mpfr_init2(my, MPFR_DIGITS);
+        mpfr_init2(offset_x, MPFR_DIGITS);
+        mpfr_init2(offset_y, MPFR_DIGITS);
+
+        // Calculate the world-space position of the clicked point
+        // clicked_point = center + radius * (dx, -dy)
+        mpfr_mul_d(mx, radius, dx, MPFR_RNDN);
+        mpfr_mul_d(my, radius, -dy, MPFR_RNDN);
+        mpfr_add(offset_x, center_x, mx, MPFR_RNDN);  // clicked_x = center_x + mx
+        mpfr_add(offset_y, center_y, my, MPFR_RNDN);  // clicked_y = center_y + my
+
+        // Apply zoom to radius
+        mpfr_mul_d(radius, radius, factor, MPFR_RNDN);
+
+        // Calculate new center to keep clicked point at same screen position
+        // new_center = clicked_point - new_radius * (dx, -dy)
+        mpfr_mul_d(mx, radius, dx, MPFR_RNDN);
+        mpfr_mul_d(my, radius, -dy, MPFR_RNDN);
+        mpfr_sub(center_x, offset_x, mx, MPFR_RNDN);  // center_x = clicked_x - new_mx
+        mpfr_sub(center_y, offset_y, my, MPFR_RNDN);  // center_y = clicked_y - new_my
+
+        mpfr_clear(mx);
+        mpfr_clear(my);
+        mpfr_clear(offset_x);
+        mpfr_clear(offset_y);
+    }
+
+    void zoomOut(double factor) {
+        std::lock_guard<std::mutex> lock(mutex);
+        mpfr_mul_d(radius, radius, factor, MPFR_RNDN);
+    }
+
+    // Copies the current view, so that the orbit can be computed from a consistent state
+    // without holding the lock for the duration.
+    void copyTo(mpfr_t x, mpfr_t y, mpfr_t r, int& iter) {
+        std::lock_guard<std::mutex> lock(mutex);
+        mpfr_set(x, center_x, MPFR_RNDN);
+        mpfr_set(y, center_y, MPFR_RNDN);
+        mpfr_set(r, radius, MPFR_RNDN);
+        iter = iterations;
+    }
+
+    std::string getCenterX() {
+        std::lock_guard<std::mutex> lock(mutex);
+        return mpfr_to_string(&center_x);
+    }
+
+    std::string getCenterY() {
+        std::lock_guard<std::mutex> lock(mutex);
+        return mpfr_to_string(&center_y);
+    }
+
+    std::string getRadius() {
+        std::lock_guard<std::mutex> lock(mutex);
+        return mpfr_to_string(&radius);
+    }
+};
 
 // Helper functions for double-double arithmetic (mantissa, exponent pairs)
 struct DoubleDouble {
@@ -217,22 +250,25 @@ struct OrbitData {
     int polylim;
     std::vector<float> polyScaled;
     int polyScaleExp;
+    double radiusExp;
 };
 
 OrbitData makeReferenceOrbit(MandelbrotState& state) {
     LOGI("makeReferenceOrbit: Starting orbit generation");
 
-    mpfr_t x, y, cx, cy;
+    mpfr_t x, y, cx, cy, radius;
     mpfr_init2(x, MPFR_DIGITS);
     mpfr_init2(y, MPFR_DIGITS);
     mpfr_init2(cx, MPFR_DIGITS);
     mpfr_init2(cy, MPFR_DIGITS);
+    mpfr_init2(radius, MPFR_DIGITS);
+
+    int iterations;
+    state.copyTo(cx, cy, radius, iterations);
 
     // Initialize starting point
     mpfr_set_d(x, 0.0, MPFR_RNDN);
     mpfr_set_d(y, 0.0, MPFR_RNDN);
-    mpfr_set(cx, *state.getCenterX(), MPFR_RNDN);
-    mpfr_set(cy, *state.getCenterY(), MPFR_RNDN);
 
     std::vector<float>& orbit = *state.orbitPtr;
     std::fill(orbit.begin(), orbit.end(), -1.0);
@@ -251,7 +287,7 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
     // Each orbit entry takes 3 floats (x, y, scale exponent). Stop one entry short of the
     // buffer's capacity so that the final entry keeps its -1 fill value, which the shader
     // treats as the end of the reference orbit (and rebases), instead of reading past the end.
-    const int maxIterations = std::min(state.iterations, (int)(orbit.size() / 3) - 1);
+    const int maxIterations = std::min(iterations, (int)(orbit.size() / 3) - 1);
 
     int i;
     for (i = 0; i < maxIterations; i++) {
@@ -316,7 +352,7 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
 
         mpfr_t radius_for_poly;
         mpfr_init2(radius_for_poly, MPFR_DIGITS);
-        mpfr_set(radius_for_poly, *state.getRadius(), MPFR_RNDN);
+        mpfr_set(radius_for_poly, radius, MPFR_RNDN);
         mpfr_exp_t radius_exp = mpfr_get_exp(radius_for_poly);
         
         DoubleDouble threshold = mul(DoubleDouble(1000, radius_exp), maxabs(Dx, Dy));
@@ -356,15 +392,15 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
     LOGI("Polynomial coefficients: [%f, %f, %f, %f, %f, %f]",
          poly_double[0], poly_double[1], poly_double[2], poly_double[3], poly_double[4], poly_double[5]);
 
-    mpfr_t radius_mpfr;
-    mpfr_init2(radius_mpfr, MPFR_DIGITS);
-    mpfr_set(radius_mpfr, *state.getRadius(), MPFR_RNDN);
-
-    mpfr_exp_t rexp = mpfr_get_exp(radius_mpfr);
+    mpfr_exp_t rexp = mpfr_get_exp(radius);
     mpfr_exp_t exp_temp;
-    double r_mantissa = mpfr_get_d_2exp(&exp_temp, radius_mpfr, MPFR_RNDN);
+    double r_mantissa = mpfr_get_d_2exp(&exp_temp, radius, MPFR_RNDN);
     DoubleDouble r(r_mantissa, rexp);
-    mpfr_clear(radius_mpfr);
+    mpfr_clear(radius);
+
+    // log2(radius), computed from the double mantissa rather than with mpfr_log2: the bundled
+    // MPFR isn't built thread-safe, and mpfr_log2 uses its global constant caches.
+    double radiusExp = exp_temp + std::log2(r_mantissa);
 
     DoubleDouble poly_scale_exp = mul(DoubleDouble(1, 0), maxabs(poly[0], poly[1]));
     DoubleDouble poly_scale(1, -poly_scale_exp.exponent);
@@ -381,7 +417,7 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
     LOGI("Scaled coefficients: [%f, %f, %f, %f, %f, %f]",
          poly_scaled[0], poly_scaled[1], poly_scaled[2], poly_scaled[3], poly_scaled[4], poly_scaled[5]);
 
-    return { poly_double, polylim, poly_scaled, (int)poly_scale_exp.exponent };
+    return { poly_double, polylim, poly_scaled, (int)poly_scale_exp.exponent, radiusExp };
 }
 
 // JNI wrapper functions
@@ -409,7 +445,7 @@ JNIEXPORT void JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_setIterations(JNIEnv *env, jobject clazz, jlong statePtr, jint iterations) {
     MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
     if (!state) return;
-    state->iterations = iterations;
+    state->setIterations(iterations);
 }
 
 JNIEXPORT void JNICALL
@@ -459,17 +495,11 @@ Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_generateOrbit(JNIEnv *e
     jfloatArray polyArr = env->NewFloatArray(data.polyScaled.size());
     env->SetFloatArrayRegion(polyArr, 0, data.polyScaled.size(), data.polyScaled.data());
 
-    mpfr_t log_val;
-    mpfr_init2(log_val, MPFR_DIGITS);
-    mpfr_log2(log_val, *state->getRadius(), MPFR_RNDN);
-    double radiusExp = mpfr_get_d(log_val, MPFR_RNDN);
-    mpfr_clear(log_val);
-
     jobject obj = env->NewObject(localClass, ctor,
                                  orbitBuffer, polyArr,
                                  (jint)data.polylim,
                                  (jint)data.polyScaleExp,
-                                 (jdouble)radiusExp);
+                                 (jdouble)data.radiusExp);
     return obj;
 }
 
@@ -477,7 +507,7 @@ JNIEXPORT jstring JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getCenterX(JNIEnv *env, jobject clazz, jlong statePtr) {
     MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
     if (!state) return nullptr;
-    std::string str = mpfr_to_string(state->getCenterX());
+    std::string str = state->getCenterX();
     return env->NewStringUTF(str.c_str());
 }
 
@@ -485,7 +515,7 @@ JNIEXPORT jstring JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getCenterY(JNIEnv *env, jobject clazz, jlong statePtr) {
     MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
     if (!state) return nullptr;
-    std::string str = mpfr_to_string(state->getCenterY());
+    std::string str = state->getCenterY();
     return env->NewStringUTF(str.c_str());
 }
 
@@ -493,7 +523,7 @@ JNIEXPORT jstring JNICALL
 Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_getRadius(JNIEnv *env, jobject clazz, jlong statePtr) {
     MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
     if (!state) return nullptr;
-    std::string str = mpfr_to_string(state->getRadius());
+    std::string str = state->getRadius();
     return env->NewStringUTF(str.c_str());
 }
 
