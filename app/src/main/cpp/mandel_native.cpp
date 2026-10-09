@@ -248,8 +248,13 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
     std::vector<DoubleDouble> poly = {Bx, By, Cx, Cy, Dx, Dy};
     bool not_failed = true;
 
+    // Each orbit entry takes 3 floats (x, y, scale exponent). Stop one entry short of the
+    // buffer's capacity so that the final entry keeps its -1 fill value, which the shader
+    // treats as the end of the reference orbit (and rebases), instead of reading past the end.
+    const int maxIterations = std::min(state.iterations, (int)(orbit.size() / 3) - 1);
+
     int i;
-    for (i = 0; i < state.iterations; i++) {
+    for (i = 0; i < maxIterations; i++) {
         // Get exponents for scaling
         mpfr_exp_t x_exponent = mpfr_get_exp(x);
         mpfr_exp_t y_exponent = mpfr_get_exp(y);
@@ -259,20 +264,18 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
             scale_exponent = 0;
         }
 
-        if (3 * i + 2 < orbit.size()) {
-            if (mpfr_zero_p(x) && mpfr_zero_p(y)) {
-                orbit[3 * i] = 0.0;
-                orbit[3 * i + 1] = 0.0;
-                orbit[3 * i + 2] = 0.0;
-            } else {
-                mpfr_exp_t dummy_exp;
-                double x_mantissa = mpfr_get_d_2exp(&dummy_exp, x, MPFR_RNDN);
-                double y_mantissa = mpfr_get_d_2exp(&dummy_exp, y, MPFR_RNDN);
+        if (mpfr_zero_p(x) && mpfr_zero_p(y)) {
+            orbit[3 * i] = 0.0;
+            orbit[3 * i + 1] = 0.0;
+            orbit[3 * i + 2] = 0.0;
+        } else {
+            mpfr_exp_t dummy_exp;
+            double x_mantissa = mpfr_get_d_2exp(&dummy_exp, x, MPFR_RNDN);
+            double y_mantissa = mpfr_get_d_2exp(&dummy_exp, y, MPFR_RNDN);
 
-                orbit[3 * i] = mpfr_zero_p(x) ? 0.0 : (x_mantissa / std::pow(2, scale_exponent - x_exponent));
-                orbit[3 * i + 1] = mpfr_zero_p(y) ? 0.0 : (y_mantissa / std::pow(2, scale_exponent - y_exponent));
-                orbit[3 * i + 2] = scale_exponent;
-            }
+            orbit[3 * i] = mpfr_zero_p(x) ? 0.0 : (x_mantissa / std::pow(2, scale_exponent - x_exponent));
+            orbit[3 * i + 1] = mpfr_zero_p(y) ? 0.0 : (y_mantissa / std::pow(2, scale_exponent - y_exponent));
+            orbit[3 * i + 2] = scale_exponent;
         }
 
         DoubleDouble fx(orbit[3 * i], orbit[3 * i + 2]);
