@@ -29,6 +29,8 @@ MPFR_SRC=$(pwd)/mpfr-4.2.2
 build_for_abi() {
     ABI=$1
     TARGET_HOST=$2
+    shift 2
+    GMP_EXTRA_ARGS=("$@")   # any remaining args go to GMP's configure
     CC=$TOOLCHAIN/bin/${TARGET_HOST}${API}-clang
     CXX=$TOOLCHAIN/bin/${TARGET_HOST}${API}-clang++
 
@@ -46,6 +48,7 @@ build_for_abi() {
         --enable-static \
         --disable-shared \
         --with-pic \
+        "${GMP_EXTRA_ARGS[@]}" \
         CC=$CC AR=$AR RANLIB=$RANLIB NM=$NM STRIP=$STRIP
     make -j$JOBS
     make install
@@ -68,5 +71,8 @@ build_for_abi() {
 
 # Build for each ABI
 build_for_abi arm64-v8a   aarch64-linux-android
-build_for_abi armeabi-v7a armv7a-linux-androideabi
+# GMP's 32-bit ARM assembly references the global __gmp_binvert_limb_table
+# with a PC-relative relocation (R_ARM_REL32), which lld rejects when linking
+# into a shared library ("recompile with -fPIC"), so use the generic C code.
+build_for_abi armeabi-v7a armv7a-linux-androideabi --disable-assembly
 build_for_abi x86_64      x86_64-linux-android
