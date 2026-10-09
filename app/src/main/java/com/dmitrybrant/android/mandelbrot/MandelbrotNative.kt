@@ -8,7 +8,9 @@ class OrbitResult(
     val polyScaled: FloatArray,
     val polyLim: Int,
     val polyScaleExp: Int,
-    val radiusExp: Double
+    val radiusExp: Double,
+    val centerX: Double,
+    val centerY: Double
 )
 
 object MandelbrotNative {

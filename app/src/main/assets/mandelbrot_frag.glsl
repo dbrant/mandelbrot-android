@@ -3,31 +3,51 @@
  * Adapted from https://github.com/HastingsGreer/mandeljs
  */
 precision highp float;
+// Fragment shaders default to mediump int, which can't hold iteration counts or orbit indices
+// (and makes conversions like float(q) mediump too).
+precision highp int;
 in highp vec2 delta;
 out vec4 fragColor;
 uniform vec4 uState;
 uniform vec4 poly1;
 uniform vec4 poly2;
 uniform sampler2D sequence;
+uniform vec3 uCenter;  // xy: view center as floats; z: nonzero when floats can locate pixels (shallow zoom)
 
 float get_orbit_x(int i) {
   i = i * 3;
-  return texelFetch(sequence, ivec2(i % 1024, i / 1024), 0)[0];
+  return texelFetch(sequence, ivec2(i & 1023, i >> 10), 0)[0];
 }
 
 float get_orbit_y(int i) {
   i = i * 3 + 1;
-  return texelFetch(sequence, ivec2(i % 1024, i / 1024), 0)[0];
+  return texelFetch(sequence, ivec2(i & 1023, i >> 10), 0)[0];
 }
 
 float get_orbit_scale(int i) {
   i = i * 3 + 2;
-  return texelFetch(sequence, ivec2(i % 1024, i / 1024), 0)[0];
+  return texelFetch(sequence, ivec2(i & 1023, i >> 10), 0)[0];
+}
+
+// Exact test for the main cardioid and the period-2 bulb, which are inside the set.
+bool inMainCardioidOrBulb(vec2 c) {
+  float xq = c.x - .25;
+  float q = xq * xq + c.y * c.y;
+  return q * (q + xq) < .25 * c.y * c.y || (c.x + 1.) * (c.x + 1.) + c.y * c.y < .0625;
+}
+
+vec4 iterationColor(float j) {
+  float c = (uState[3] - j) / uState[1];
+  return vec4(vec3(cos(c), cos(1.1214 * c) , cos(.8 * c)) / -2. + .5, 1.);
 }
 
 void main() {
   int q = int(uState[2]) - 1;
   int cq = q;
+  if (uCenter.z != 0. && inMainCardioidOrBulb(uCenter.xy + delta * exp2(float(cq)))) {
+    fragColor = iterationColor(uState[3]);
+    return;
+  }
   q = q + int(poly2[3]);
   float S = exp2(float(q));
   float dcx = delta[0];
@@ -48,11 +68,12 @@ void main() {
   int j = k;
   x = get_orbit_x(k);
   y = get_orbit_y(k);
+  float s = get_orbit_scale(k);
 
   for (int i = k; float(i) < uState[3]; i++){
     j++;
     k++;
-    os = get_orbit_scale(k - 1);
+    os = s;
 
     f1 = exp2(float(-q + cq - int(os)));
     dcx = delta[0] * f1;
@@ -72,7 +93,8 @@ void main() {
 
     x = get_orbit_x(k);
     y = get_orbit_y(k);
-    scaleExp2 = exp2(get_orbit_scale(k));
+    s = get_orbit_scale(k);
+    scaleExp2 = exp2(s);
     fx = x * scaleExp2 + S * dx;
     fy = y * scaleExp2 + S * dy;
     fx2 = fx * fx;
@@ -105,8 +127,8 @@ void main() {
       k = 0;
       x = get_orbit_x(0);
       y = get_orbit_y(0);
+      s = get_orbit_scale(0);
     }
   }
-  float c = (uState[3] - float(j)) / uState[1];
-  fragColor = vec4(vec3(cos(c), cos(1.1214 * c) , cos(.8 * c)) / -2. + .5, 1.);
+  fragColor = iterationColor(float(j));
 }

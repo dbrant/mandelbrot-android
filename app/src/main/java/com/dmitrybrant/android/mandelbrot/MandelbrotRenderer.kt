@@ -39,6 +39,7 @@ class MandelbrotRenderer(private val context: Context, val callback: Callback) :
     private var uState: Int = 0
     private var uPoly1: Int = 0
     private var uPoly2: Int = 0
+    private var uCenter: Int = 0
     private var aVertexPosition: Int = 0
 
     private val projectionMatrix = FloatArray(16)
@@ -246,6 +247,7 @@ class MandelbrotRenderer(private val context: Context, val callback: Callback) :
         uState = glGetUniformLocation(shaderProgram, "uState")
         uPoly1 = glGetUniformLocation(shaderProgram, "poly1")
         uPoly2 = glGetUniformLocation(shaderProgram, "poly2")
+        uCenter = glGetUniformLocation(shaderProgram, "uCenter")
         aVertexPosition = glGetAttribLocation(shaderProgram, "aVertexPosition")
 
         // Create and populate vertex buffer
@@ -382,6 +384,10 @@ class MandelbrotRenderer(private val context: Context, val callback: Callback) :
             curOrbitResult!!.polyScaled[2], curOrbitResult!!.polyScaled[3])
         glUniform4f(uPoly2, curOrbitResult!!.polyScaled[4], curOrbitResult!!.polyScaled[5],
             curOrbitResult!!.polyLim.toFloat(), curOrbitResult!!.polyScaleExp.toFloat())
+
+        // The interior test locates pixels using floats, so it's only enabled for shallow views.
+        glUniform3f(uCenter, curOrbitResult!!.centerX.toFloat(), curOrbitResult!!.centerY.toFloat(),
+            if (curOrbitResult!!.radiusExp > -10) 1f else 0f)
 
         glActiveTexture(GL_TEXTURE0)
         glUniform1i(glGetUniformLocation(shaderProgram, "sequence"), 0)

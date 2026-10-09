@@ -290,7 +290,35 @@ struct OrbitData {
     std::vector<float> polyScaled;
     int polyScaleExp;
     double radiusExp;
+    double centerX, centerY;
 };
+
+// Stores z = (x, y) as orbit entry i: both components scaled by a common power of two, followed
+// by its exponent.
+void storeOrbitEntry(std::vector<float>& orbit, int i, mpfr_srcptr x, mpfr_srcptr y) {
+    // Get exponents for scaling
+    mpfr_exp_t x_exponent = mpfr_get_exp(x);
+    mpfr_exp_t y_exponent = mpfr_get_exp(y);
+    mpfr_exp_t scale_exponent = std::max(x_exponent, y_exponent);
+
+    if (scale_exponent < -10000) {
+        scale_exponent = 0;
+    }
+
+    if (mpfr_zero_p(x) && mpfr_zero_p(y)) {
+        orbit[3 * i] = 0.0;
+        orbit[3 * i + 1] = 0.0;
+        orbit[3 * i + 2] = 0.0;
+    } else {
+        mpfr_exp_t dummy_exp;
+        double x_mantissa = mpfr_get_d_2exp(&dummy_exp, x, MPFR_RNDN);
+        double y_mantissa = mpfr_get_d_2exp(&dummy_exp, y, MPFR_RNDN);
+
+        orbit[3 * i] = mpfr_zero_p(x) ? 0.0 : div_pow2(x_mantissa, scale_exponent - x_exponent);
+        orbit[3 * i + 1] = mpfr_zero_p(y) ? 0.0 : div_pow2(y_mantissa, scale_exponent - y_exponent);
+        orbit[3 * i + 2] = scale_exponent;
+    }
+}
 
 OrbitData makeReferenceOrbit(MandelbrotState& state) {
     LOGI("makeReferenceOrbit: Starting orbit generation");
@@ -324,10 +352,11 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
     bool not_failed = true;
     const mpfr_exp_t radius_exp = mpfr_get_exp(radius);
 
-    // Each orbit entry takes 3 floats (x, y, scale exponent). Stop one entry short of the
-    // buffer's capacity so that the final entry keeps its -1 fill value, which the shader
-    // treats as the end of the reference orbit (and rebases), instead of reading past the end.
-    const int maxIterations = std::min(iterations, (int)(orbit.size() / 3) - 1);
+    // Each orbit entry takes 3 floats (x, y, scale exponent). Stop two entries short of the
+    // buffer's capacity: one for the escaping value, if the orbit escapes, and one that keeps its
+    // -1 fill value, which the shader treats as the end of the reference orbit (and rebases),
+    // instead of reading past the end.
+    const int maxIterations = std::min(iterations, (int)(orbit.size() / 3) - 2);
 
     int i;
     for (i = 0; i < maxIterations; i++) {
@@ -335,28 +364,7 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
             break;
         }
 
-        // Get exponents for scaling
-        mpfr_exp_t x_exponent = mpfr_get_exp(x);
-        mpfr_exp_t y_exponent = mpfr_get_exp(y);
-        mpfr_exp_t scale_exponent = std::max(x_exponent, y_exponent);
-
-        if (scale_exponent < -10000) {
-            scale_exponent = 0;
-        }
-
-        if (mpfr_zero_p(x) && mpfr_zero_p(y)) {
-            orbit[3 * i] = 0.0;
-            orbit[3 * i + 1] = 0.0;
-            orbit[3 * i + 2] = 0.0;
-        } else {
-            mpfr_exp_t dummy_exp;
-            double x_mantissa = mpfr_get_d_2exp(&dummy_exp, x, MPFR_RNDN);
-            double y_mantissa = mpfr_get_d_2exp(&dummy_exp, y, MPFR_RNDN);
-
-            orbit[3 * i] = mpfr_zero_p(x) ? 0.0 : div_pow2(x_mantissa, scale_exponent - x_exponent);
-            orbit[3 * i + 1] = mpfr_zero_p(y) ? 0.0 : div_pow2(y_mantissa, scale_exponent - y_exponent);
-            orbit[3 * i + 2] = scale_exponent;
-        }
+        storeOrbitEntry(orbit, i, x, y);
 
         // Once the series approximation has failed, poly and polylim are final, so the
         // coefficients no longer need to be computed.
@@ -408,9 +416,15 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
 
         DoubleDouble z_squared = add(mul(fx_new, fx_new), mul(fy_new, fy_new));
         if (gt(z_squared, DoubleDouble(CALC_BAILOUT, 0))) {
+            // Pixels near the reference escape at this same iteration, and the shader needs this
+            // value to see that; without it, it would compute them from the end-of-orbit marker.
+            storeOrbitEntry(orbit, i + 1, x, y);
             break;
         }
     }
+
+    double centerX = mpfr_get_d(cx, MPFR_RNDN);
+    double centerY = mpfr_get_d(cy, MPFR_RNDN);
 
     mpfr_clear(x);
     mpfr_clear(y);
@@ -455,7 +469,7 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
     LOGI("Scaled coefficients: [%f, %f, %f, %f, %f, %f]",
          poly_scaled[0], poly_scaled[1], poly_scaled[2], poly_scaled[3], poly_scaled[4], poly_scaled[5]);
 
-    return { poly_double, polylim, poly_scaled, (int)poly_scale_exp.exponent, radiusExp };
+    return { poly_double, polylim, poly_scaled, (int)poly_scale_exp.exponent, radiusExp, centerX, centerY };
 }
 
 // JNI wrapper functions
@@ -532,7 +546,7 @@ Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_generateOrbit(JNIEnv *e
     OrbitData data = makeReferenceOrbit(*state);
 
     jclass localClass = env->FindClass("com/dmitrybrant/android/mandelbrot/OrbitResult");
-    jmethodID ctor = env->GetMethodID(localClass, "<init>", "(Ljava/nio/ByteBuffer;[FIID)V");
+    jmethodID ctor = env->GetMethodID(localClass, "<init>", "(Ljava/nio/ByteBuffer;[FIIDDD)V");
 
     void* dataPtr = state->orbitPtr->data();
     jobject orbitBuffer = env->NewDirectByteBuffer(dataPtr, state->orbitPtr->size() * sizeof(float));
@@ -544,7 +558,9 @@ Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_generateOrbit(JNIEnv *e
                                  orbitBuffer, polyArr,
                                  (jint)data.polylim,
                                  (jint)data.polyScaleExp,
-                                 (jdouble)data.radiusExp);
+                                 (jdouble)data.radiusExp,
+                                 (jdouble)data.centerX,
+                                 (jdouble)data.centerY);
     return obj;
 }
 
