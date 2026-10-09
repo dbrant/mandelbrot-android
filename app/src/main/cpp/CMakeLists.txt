@@ -21,3 +21,7 @@ target_include_directories(mandel_native PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
 # Link
 target_link_libraries(mandel_native mpfr gmp log)
+
+# Keep GMP/MPFR symbols local to this library. Besides not exporting them, this is required for
+# the 32-bit ARM GMP assembly, whose PC-relative table references can't link against exported symbols.
+target_link_options(mandel_native PRIVATE "-Wl,--exclude-libs,ALL")
