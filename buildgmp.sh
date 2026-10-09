@@ -6,6 +6,17 @@ NDK=$HOME/android/ndk/27.0.12077973
 API=21
 TOOLCHAIN=$NDK/toolchains/llvm/prebuilt/darwin-x86_64
 
+# Use the NDK's LLVM binutils. Without these, configure falls back to the
+# host (macOS) ar/ranlib, which silently drop ELF objects and produce empty
+# .a files.
+AR=$TOOLCHAIN/bin/llvm-ar
+RANLIB=$TOOLCHAIN/bin/llvm-ranlib
+NM=$TOOLCHAIN/bin/llvm-nm
+STRIP=$TOOLCHAIN/bin/llvm-strip
+
+# nproc doesn't exist on macOS
+JOBS=$(sysctl -n hw.ncpu 2>/dev/null || nproc)
+
 # Root prebuilt output (relative to this script)
 PREBUILT_DIR=$(pwd)/prebuilt
 mkdir -p "$PREBUILT_DIR"
@@ -34,10 +45,9 @@ build_for_abi() {
         --prefix=$OUTDIR \
         --enable-static \
         --disable-shared \
-        --disable-assembly \
-        CC=$CC \
-        CFLAGS="-fPIC"
-    make -j$(nproc)
+        --with-pic \
+        CC=$CC AR=$AR RANLIB=$RANLIB NM=$NM STRIP=$STRIP
+    make -j$JOBS
     make install
 
     # MPFR
@@ -49,9 +59,10 @@ build_for_abi() {
         --with-gmp=$OUTDIR \
         --enable-static \
         --disable-shared \
-        CC=$CC \
-        CFLAGS="-fPIC"
-    make -j$(nproc)
+        --enable-thread-safe \
+        --with-pic \
+        CC=$CC AR=$AR RANLIB=$RANLIB NM=$NM STRIP=$STRIP
+    make -j$JOBS
     make install
 }
 
