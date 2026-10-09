@@ -10,6 +10,8 @@
 #include <cmath>
 #include <string>
 #include <algorithm>
+#include <array>
+#include <atomic>
 #include <mutex>
 #include <mpfr.h>
 #include <android/log.h>
@@ -72,6 +74,10 @@ private:
 
 public:
     std::shared_ptr<std::vector<float>> orbitPtr = std::make_shared<std::vector<float>>(CALC_WIDTH * CALC_HEIGHT);
+
+    // Set when the view is being torn down: stops any orbit computation in progress (and any
+    // later one) so that the GL thread can exit promptly.
+    std::atomic<bool> cancelled{false};
 
     MandelbrotState(double x, double y, double r, int iterations) {
         mpfr_init2(center_x, MPFR_DIGITS);
@@ -281,8 +287,9 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
     int polylim = 0;
 
     DoubleDouble Bx(0, 0), By(0, 0), Cx(0, 0), Cy(0, 0), Dx(0, 0), Dy(0, 0);
-    std::vector<DoubleDouble> poly = {Bx, By, Cx, Cy, Dx, Dy};
+    std::array<DoubleDouble, 6> poly = {Bx, By, Cx, Cy, Dx, Dy};
     bool not_failed = true;
+    const mpfr_exp_t radius_exp = mpfr_get_exp(radius);
 
     // Each orbit entry takes 3 floats (x, y, scale exponent). Stop one entry short of the
     // buffer's capacity so that the final entry keeps its -1 fill value, which the shader
@@ -291,6 +298,10 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
 
     int i;
     for (i = 0; i < maxIterations; i++) {
+        if (state.cancelled.load(std::memory_order_relaxed)) {
+            break;
+        }
+
         // Get exponents for scaling
         mpfr_exp_t x_exponent = mpfr_get_exp(x);
         mpfr_exp_t y_exponent = mpfr_get_exp(y);
@@ -314,59 +325,53 @@ OrbitData makeReferenceOrbit(MandelbrotState& state) {
             orbit[3 * i + 2] = scale_exponent;
         }
 
-        DoubleDouble fx(orbit[3 * i], orbit[3 * i + 2]);
-        DoubleDouble fy(orbit[3 * i + 1], orbit[3 * i + 2]);
+        // Once the series approximation has failed, poly and polylim are final, so the
+        // coefficients no longer need to be computed.
+        if (not_failed) {
+            DoubleDouble fx(orbit[3 * i], orbit[3 * i + 2]);
+            DoubleDouble fy(orbit[3 * i + 1], orbit[3 * i + 2]);
 
-        std::vector<DoubleDouble> prev_poly = {Bx, By, Cx, Cy, Dx, Dy};
+            std::array<DoubleDouble, 6> prev_poly = {Bx, By, Cx, Cy, Dx, Dy};
+
+            // B_n+1 = 2 * z_n * B_n + 1
+            DoubleDouble new_Bx = add(mul(DoubleDouble(2, 0), sub(mul(fx, Bx), mul(fy, By))), DoubleDouble(1, 0));
+            DoubleDouble new_By = mul(DoubleDouble(2, 0), add(mul(fx, By), mul(fy, Bx)));
+
+            // C_n+1 = 2 * z_n * C_n + B_n^2
+            DoubleDouble new_Cx = sub(add(mul(DoubleDouble(2, 0), sub(mul(fx, Cx), mul(fy, Cy))), mul(Bx, Bx)), mul(By, By));
+            DoubleDouble new_Cy = add(mul(DoubleDouble(2, 0), add(mul(fx, Cy), mul(fy, Cx))), mul(mul(DoubleDouble(2, 0), Bx), By));
+
+            // D_n+1 = 2 * z_n * D_n + 2 * B_n * C_n
+            DoubleDouble new_Dx = mul(DoubleDouble(2, 0), add(sub(mul(fx, Dx), mul(fy, Dy)), sub(mul(Cx, Bx), mul(Cy, By))));
+            DoubleDouble new_Dy = mul(DoubleDouble(2, 0), add(add(add(mul(fx, Dy), mul(fy, Dx)), mul(Cx, By)), mul(Cy, Bx)));
+
+            // Update the coefficients
+            Bx = new_Bx; By = new_By; Cx = new_Cx; Cy = new_Cy; Dx = new_Dx; Dy = new_Dy;
+
+            DoubleDouble threshold = mul(DoubleDouble(1000, radius_exp), maxabs(Dx, Dy));
+
+            if (i == 0 || gt(maxabs(Cx, Cy), threshold)) {
+                poly = prev_poly;
+                polylim = i;
+            } else {
+                not_failed = false;
+            }
+        }
+
         // Now do the Mandelbrot iteration: z = z^2 + c
-        mpfr_mul(txx, x, x, MPFR_RNDN);
+        mpfr_sqr(txx, x, MPFR_RNDN);
         mpfr_mul(txy, x, y, MPFR_RNDN);
-        mpfr_mul(tyy, y, y, MPFR_RNDN);
+        mpfr_sqr(tyy, y, MPFR_RNDN);
         mpfr_sub(x, txx, tyy, MPFR_RNDN);
         mpfr_add(x, x, cx, MPFR_RNDN);
         mpfr_add(y, txy, txy, MPFR_RNDN);
         mpfr_add(y, y, cy, MPFR_RNDN);
 
-        // B_n+1 = 2 * z_n * B_n + 1
-        DoubleDouble new_Bx = add(mul(DoubleDouble(2, 0), sub(mul(fx, Bx), mul(fy, By))), DoubleDouble(1, 0));
-        DoubleDouble new_By = mul(DoubleDouble(2, 0), add(mul(fx, By), mul(fy, Bx)));
-
-        // C_n+1 = 2 * z_n * C_n + B_n^2
-        DoubleDouble new_Cx = sub(add(mul(DoubleDouble(2, 0), sub(mul(fx, Cx), mul(fy, Cy))), mul(Bx, Bx)), mul(By, By));
-        DoubleDouble new_Cy = add(mul(DoubleDouble(2, 0), add(mul(fx, Cy), mul(fy, Cx))), mul(mul(DoubleDouble(2, 0), Bx), By));
-
-        // D_n+1 = 2 * z_n * D_n + 2 * B_n * C_n
-        DoubleDouble new_Dx = mul(DoubleDouble(2, 0), add(sub(mul(fx, Dx), mul(fy, Dy)), sub(mul(Cx, Bx), mul(Cy, By))));
-        DoubleDouble new_Dy = mul(DoubleDouble(2, 0), add(add(add(mul(fx, Dy), mul(fy, Dx)), mul(Cx, By)), mul(Cy, Bx)));
-
-        // Update the coefficients
-        Bx = new_Bx; By = new_By; Cx = new_Cx; Cy = new_Cy; Dx = new_Dx; Dy = new_Dy;
-
         mpfr_exp_t fx_new_exp, fy_new_exp;
         double fx_new_mantissa = mpfr_get_d_2exp(&fx_new_exp, x, MPFR_RNDN);
         double fy_new_mantissa = mpfr_get_d_2exp(&fy_new_exp, y, MPFR_RNDN);
-        
-        // These are used for polynomial selection and escape test
         DoubleDouble fx_new(fx_new_mantissa, fx_new_exp);
         DoubleDouble fy_new(fy_new_mantissa, fy_new_exp);
-
-        mpfr_t radius_for_poly;
-        mpfr_init2(radius_for_poly, MPFR_DIGITS);
-        mpfr_set(radius_for_poly, radius, MPFR_RNDN);
-        mpfr_exp_t radius_exp = mpfr_get_exp(radius_for_poly);
-        
-        DoubleDouble threshold = mul(DoubleDouble(1000, radius_exp), maxabs(Dx, Dy));
-        
-        if (i == 0 || gt(maxabs(Cx, Cy), threshold)) {
-            if (not_failed) {
-                poly = prev_poly;
-                polylim = i;
-            }
-        } else {
-            not_failed = false;
-        }
-        
-        mpfr_clear(radius_for_poly);
 
         DoubleDouble z_squared = add(mul(fx_new, fx_new), mul(fy_new, fy_new));
         if (gt(z_squared, DoubleDouble(CALC_BAILOUT, 0))) {
@@ -471,6 +476,13 @@ Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_setStateStr(JNIEnv *env
     env->ReleaseStringUTFChars(x_str, x_cstr);
     env->ReleaseStringUTFChars(y_str, y_cstr);
     env->ReleaseStringUTFChars(r_str, r_cstr);
+}
+
+JNIEXPORT void JNICALL
+Java_com_dmitrybrant_android_mandelbrot_MandelbrotNative_cancel(JNIEnv *env, jobject clazz, jlong statePtr) {
+    MandelbrotState* state = reinterpret_cast<MandelbrotState*>(statePtr);
+    if (!state) return;
+    state->cancelled = true;
 }
 
 JNIEXPORT void JNICALL

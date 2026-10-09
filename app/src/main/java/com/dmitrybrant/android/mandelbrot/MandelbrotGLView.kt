@@ -35,6 +35,7 @@ class MandelGLView(context: Context, attrs: AttributeSet? = null) : GLSurfaceVie
     }
 
     override fun onDetachedFromWindow() {
+        renderer.mandelbrotState?.cancel()
         super.onDetachedFromWindow()
         renderer.cleanup()
     }
